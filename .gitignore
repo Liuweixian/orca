@@ -147,6 +147,9 @@ playwright-report/
 /.agents/skills/
 /skills-lock.json
 
+# Codely CLI local state (machine-local, populated by agent tooling)
+.codely-cli/
+
 # Generated Clawpatch state includes machine-local paths and review records.
 /.clawpatch/
 /mobile/.clawpatch/
