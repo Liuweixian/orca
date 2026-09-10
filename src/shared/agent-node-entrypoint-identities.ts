@@ -26,5 +26,12 @@ export const EXACT_NODE_ENTRYPOINT_IDENTITIES: readonly {
     pattern: /(?:^|\/)node_modules\/prime-agent\/dist\/bundle\/cli\.js$/,
     agent: 'prime-agent',
     processName: 'prime-agent'
+  },
+  // Why: Codely's npm shim launches a bundle named gemini.js (it is a Gemini CLI
+  // fork); the exact package path is the only identity that cannot read as gemini.
+  {
+    pattern: /(?:^|\/)node_modules\/@codely\/cli\/bundle\/gemini\.js$/,
+    agent: 'codely',
+    processName: 'codely'
   }
 ]

@@ -64,6 +64,23 @@ describe('buildAgentStartupPlan', () => {
     })
   })
 
+  it('uses Codely interactive prompt mode like its Gemini CLI parent', () => {
+    expect(
+      buildAgentStartupPlan({
+        agent: 'codely',
+        prompt: 'Investigate this regression',
+        cmdOverrides: {},
+        platform: 'linux'
+      })
+    ).toEqual({
+      agent: 'codely',
+      launchCommand: "codely --prompt-interactive 'Investigate this regression'",
+      expectedProcess: 'codely',
+      followupPrompt: null,
+      launchConfig: emptyLaunchConfig('codely')
+    })
+  })
+
   it('launches aider first and injects the draft prompt after startup', () => {
     expect(
       buildAgentStartupPlan({

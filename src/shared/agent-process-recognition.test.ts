@@ -146,6 +146,27 @@ describe('agent process recognition', () => {
     expect(recognizeAgentProcess('trae-agent')).toBeNull()
   })
 
+  it('recognizes Codely by its codely binary and its bundled gemini.js entrypoint', () => {
+    expect(recognizeAgentProcess('codely')).toEqual({ agent: 'codely', processName: 'codely' })
+    // Why: the npm shim is a direct symlink, so the shebang process runs as `node <bin>/codely`.
+    expect(recognizeAgentProcessFromCommandLine('node /opt/homebrew/bin/codely -y')).toEqual({
+      agent: 'codely',
+      processName: 'codely'
+    })
+    // Why: Codely's bundle is named gemini.js (Gemini CLI fork); only the exact
+    // @codely/cli path is authoritative — it must never read as the gemini agent.
+    expect(
+      recognizeAgentProcessFromCommandLine(
+        'node /opt/homebrew/lib/node_modules/@codely/cli/bundle/gemini.js --yolo'
+      )
+    ).toEqual({ agent: 'codely', processName: 'codely' })
+    expect(
+      recognizeAgentProcessFromCommandLine(
+        'node /opt/homebrew/lib/node_modules/@google/gemini-cli/bin/gemini.js'
+      )
+    ).toEqual({ agent: 'gemini', processName: 'gemini' })
+  })
+
   it('does not recognize Trae headless one-shot commands as interactive agents', () => {
     expect(recognizeAgentProcessFromCommandLine('traecli -p "summarize this diff"')).toBeNull()
     expect(recognizeAgentProcessFromCommandLine('traecli --print "review this"')).toBeNull()

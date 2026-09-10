@@ -163,6 +163,11 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     detectCmd: 'gemini',
     promptInjectionMode: 'flag-prompt-interactive'
   },
+  codely: {
+    // Why: Tuanjie's Codely CLI is a Gemini CLI fork sharing its `--prompt-interactive` contract.
+    detectCmd: 'codely',
+    promptInjectionMode: 'flag-prompt-interactive'
+  },
   antigravity: {
     detectCmd: 'agy',
     promptInjectionMode: 'flag-prompt-interactive'

@@ -870,6 +870,10 @@ describe('formatAgentTypeLabel', () => {
     expect(formatAgentTypeLabel('prime-agent')).toBe('Prime Agent')
   })
 
+  it("maps 'codely' to 'Codely'", () => {
+    expect(formatAgentTypeLabel('codely')).toBe('Codely')
+  })
+
   it('passes through arbitrary custom agent names as-is', () => {
     expect(formatAgentTypeLabel('weirdo')).toBe('weirdo')
   })
@@ -896,6 +900,7 @@ describe('agentTypeToIconAgent', () => {
     expect(agentTypeToIconAgent('ante')).toBe('ante')
     expect(agentTypeToIconAgent('trae')).toBe('trae')
     expect(agentTypeToIconAgent('prime-agent')).toBe('prime-agent')
+    expect(agentTypeToIconAgent('codely')).toBe('codely')
   })
 
   it('returns null for arbitrary non-iconable strings', () => {
