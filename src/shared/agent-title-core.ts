@@ -26,6 +26,9 @@ export const GEMINI_SILENT_WORKING = '\u23f2' // ⏲
 export const GEMINI_IDLE = '\u25c7' // ◇
 export const GEMINI_PERMISSION = '\u270b' // ✋
 
+// Why: Codely prefixes its base title with ⏸️ while waiting for confirmation (U+23F8 U+FE0F).
+export const CODELY_WAITING = '\u23f8\ufe0f' // ⏸️
+
 const STRONG_IDLE_KEYWORDS = ['ready', 'idle', 'done'] as const
 const STRONG_WORKING_KEYWORDS = ['working', 'thinking', 'running'] as const
 

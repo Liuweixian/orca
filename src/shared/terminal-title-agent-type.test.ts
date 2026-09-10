@@ -45,6 +45,9 @@ describe('resolveExplicitTerminalTitleAgentType', () => {
     expect(resolveExplicitTerminalTitleAgentType('MiMo Code')).toBe('mimo-code')
     expect(resolveExplicitTerminalTitleAgentType('⠋ OpenClaude')).toBe('openclaude')
     expect(resolveExplicitTerminalTitleAgentType('OMP')).toBe('omp')
+    // Why: Codely's own base title is "Codely - <dir>"; the name token carries the identity.
+    expect(resolveExplicitTerminalTitleAgentType('Codely - orca')).toBe('codely')
+    expect(resolveExplicitTerminalTitleAgentType('\u23f8\ufe0f Codely - orca')).toBe('codely')
   })
 
   it('treats Claude generic status prefixes as activity-only, not identity', () => {

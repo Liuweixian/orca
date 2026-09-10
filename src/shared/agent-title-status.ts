@@ -2,6 +2,7 @@ import {
   AGY_AGENT_NAME_RE,
   BRAILLE_SPINNER_RE,
   CLAUDE_IDLE,
+  CODELY_WAITING,
   CURSOR_NATIVE_TITLE_LOWER,
   DROID_AGENT_NAME_RE,
   GEMINI_IDLE,
@@ -21,7 +22,8 @@ import {
   isClaudeManagementTitle,
   isGeminiTerminalTitle,
   isPiAgentTitle,
-  isPiTerminalTitle
+  isPiTerminalTitle,
+  titleHasAgentName
 } from './agent-title-core'
 import type { AgentStatus } from './agent-title-core'
 import { isOpenCodeNativeTitle } from './opencode-terminal-title'
@@ -206,6 +208,11 @@ function computeAgentStatusFromTitle(title: string): AgentStatus | null {
   }
   if (title.includes(GEMINI_IDLE)) {
     return 'idle'
+  }
+  // Why: Codely's waiting state only prefixes its base title with ⏸️; gate on the
+  // codely name so an ordinary pause-emoji task title cannot claim permission.
+  if (title.includes(CODELY_WAITING) && titleHasAgentName(title, 'codely')) {
+    return 'permission'
   }
 
   // Why: resolve synthetic Pi/OMP permission/idle labels before the broader

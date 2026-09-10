@@ -70,6 +70,38 @@ describe('buildTitleDerivedAgentRows', () => {
     ])
   })
 
+  it('adds a Codely row from its base title even while the agent is responding', () => {
+    // Why: Codely keeps one base title for idle AND responding, so presence — not
+    // state — is what the title can prove; surfacing the row is the point.
+    const rows = buildWorktreeAgentRows({
+      tabs: [makeTab('tab-1')],
+      entries: [],
+      retained: [],
+      runtimePaneTitlesByTabId: { 'tab-1': { 1: 'Codely - orca' } },
+      ptyIdsByTabId: { 'tab-1': ['pty-codely'] },
+      terminalLayoutsByTabId: { 'tab-1': makeSingleLayout(LEAF_ID_1) },
+      now: 2000
+    })
+
+    expect(rows.map((row) => [row.agentType, row.state, row.entry.prompt])).toEqual([
+      ['codely', 'idle', 'Codely']
+    ])
+  })
+
+  it('marks a waiting-confirmation Codely title as a permission row', () => {
+    const rows = buildWorktreeAgentRows({
+      tabs: [makeTab('tab-1')],
+      entries: [],
+      retained: [],
+      runtimePaneTitlesByTabId: { 'tab-1': { 1: '\u23f8\ufe0f Codely - orca' } },
+      ptyIdsByTabId: { 'tab-1': ['pty-codely'] },
+      terminalLayoutsByTabId: { 'tab-1': makeSingleLayout(LEAF_ID_1) },
+      now: 2000
+    })
+
+    expect(rows.map((row) => [row.agentType, row.state])).toEqual([['codely', 'waiting']])
+  })
+
   it('normalizes Pi-compatible title-derived rows to the launched OMP owner', () => {
     const rows = buildWorktreeAgentRows({
       tabs: [makeTab('tab-1', { launchAgent: 'omp' })],

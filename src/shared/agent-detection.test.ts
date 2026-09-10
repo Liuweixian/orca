@@ -101,6 +101,28 @@ describe('MiMo title detection', () => {
   )
 })
 
+describe('Codely title detection', () => {
+  // Why: Codely keeps one base title for idle AND responding, prefixes it with
+  // ⏸️ while waiting for confirmation, and ✅ after a completed turn.
+  it.each([
+    ['Codely - orca', 'idle'],
+    ['\u2705 Codely - orca', 'idle'],
+    ['\u23f8\ufe0f Codely - orca', 'permission'],
+    ['codely working', 'working']
+  ] as const)('classifies %s', (title, expectedStatus) => {
+    expect(getAgentLabel(title)).toBe('Codely')
+    expect(detectAgentStatusFromTitle(title)).toBe(expectedStatus)
+  })
+
+  it.each(['~/codely/working', 'codely-fixtures ready'])(
+    'does not classify path or hyphen false positive %s',
+    (title) => {
+      expect(getAgentLabel(title)).toBeNull()
+      expect(detectAgentStatusFromTitle(title)).toBeNull()
+    }
+  )
+})
+
 describe('OpenCode native title detection', () => {
   // Why: `OC | …` names no agent token, so title-derived display and target surfaces
   // previously dropped OpenCode panes. Runtime sends corroborate the title separately.

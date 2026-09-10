@@ -196,6 +196,9 @@ function computeAgentLabel(title: string): string | null {
   if (titleHasAgentName(title, 'aider')) {
     return 'Aider'
   }
+  if (titleHasAgentName(title, 'codely')) {
+    return 'Codely'
+  }
   // Why: `cursor` is ordinary editor vocabulary, not identity. Match Cursor's closed
   // title set (mirrors @cursor routing), before `isClaudeAgent` claims the braille frame.
   if (isCursorAgentTitle(title)) {
@@ -234,6 +237,7 @@ const TITLE_LABEL_TO_AGENT: Partial<Record<string, TuiAgent>> = {
   OpenCode: 'opencode',
   'MiMo Code': 'mimo-code',
   Aider: 'aider',
+  Codely: 'codely',
   Cursor: 'cursor',
   Droid: 'droid',
   Hermes: 'hermes',
