@@ -29,6 +29,8 @@
     "../src/main/claude/hook-service.ts",
     "../src/main/claude/statusline-script.ts",
     "../src/main/claude-accounts/keychain.ts",
+    "../src/main/codely/hook-service.ts",
+    "../src/main/codely/hook-env-allowlist.ts",
     "../src/main/codex/codex-app-server-capability-cache.ts",
     "../src/main/codex/codex-app-server-capability-signal.ts",
     "../src/main/codex/codex-app-server-client.ts",

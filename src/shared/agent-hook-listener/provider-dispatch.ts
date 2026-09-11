@@ -12,6 +12,7 @@ import { normalizeAmpEvent } from './providers/amp-events'
 import { normalizeClaudeEvent } from './providers/claude-events'
 import { normalizeCodexEvent } from './providers/codex-events'
 import { normalizeGeminiEvent } from './providers/gemini-events'
+import { normalizeCodelyEvent } from './providers/codely-events'
 import { normalizeOpenCodeFamilyEvent } from './providers/opencode-family-events'
 import { normalizeCursorEvent } from './providers/cursor-events'
 import { normalizePiCompatibleEvent } from './providers/pi-family-events'
@@ -57,6 +58,9 @@ export function normalizeProviderEvent(input: {
       break
     case 'gemini':
       payload = normalizeGeminiEvent(state, eventName, promptText, paneKey, hookPayload)
+      break
+    case 'codely':
+      payload = normalizeCodelyEvent(state, eventName, promptText, paneKey, hookPayload)
       break
     case 'antigravity':
       if (isNewTurnEvent('antigravity', eventName)) {

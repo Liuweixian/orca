@@ -49,6 +49,9 @@ export function isNewTurnEvent(source: AgentHookSource, eventName: unknown): boo
       return eventName === 'SessionStart' || eventName === 'UserPromptSubmit'
     case 'gemini':
       return eventName === 'BeforeAgent'
+    // Why: Codely is a Gemini fork; BeforeAgent is its user-turn boundary too.
+    case 'codely':
+      return eventName === 'BeforeAgent'
     case 'antigravity':
       return eventName === 'PreInvocation'
     case 'amp':
@@ -144,6 +147,9 @@ export function extractToolFields(
     case 'codex':
       return extractCodexToolFields(eventName, hookPayload)
     case 'gemini':
+      return extractGeminiToolFields(eventName, hookPayload)
+    // Why: Codely is a Gemini fork reusing Gemini's tool_name/tool_input and prompt_response fields.
+    case 'codely':
       return extractGeminiToolFields(eventName, hookPayload)
     case 'antigravity':
       return extractAntigravityToolFields(eventName, hookPayload)
