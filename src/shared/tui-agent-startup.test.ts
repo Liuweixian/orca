@@ -587,6 +587,26 @@ describe('tui agent startup plans', () => {
     ).toBeNull()
   })
 
+  it('keeps codely on the composer-cursor paste draft route', () => {
+    // Why: the spawn shell's own 2004h anchored the default quiet window, which
+    // could fire inside Codely's boot gap under load; the Gemini-CLI family
+    // discards stdin that arrives before its composer mounts, silently losing
+    // the draft. The composer cursor signal gates delivery on the TUI itself.
+    expect(TUI_AGENT_CONFIG.codely.draftPasteReadySignal).toBe(
+      'codely-composer-cursor-after-bracketed-paste'
+    )
+    expect(TUI_AGENT_CONFIG.codely.draftPromptFlag).toBeUndefined()
+    expect(TUI_AGENT_CONFIG.codely.draftPromptEnvVar).toBeUndefined()
+    expect(
+      buildAgentDraftLaunchPlan({
+        agent: 'codely',
+        draft: 'x',
+        cmdOverrides: {},
+        platform: 'darwin'
+      })
+    ).toBeNull()
+  })
+
   it('appends Kiro trust defaults to the chat subcommand that accepts them', () => {
     const plan = buildAgentStartupPlan({
       agent: 'kiro',

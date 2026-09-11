@@ -4,6 +4,7 @@ import type { DraftPasteReadySignal } from './tui-agent-config'
 // actually mounted/focused. These markers let the scanner detect the real
 // "input is ready" moment per agent instead of guessing from output silence.
 const DECSET_BRACKETED_PASTE = '\x1b[?2004h'
+const DECRST_BRACKETED_PASTE = '\x1b[?2004l'
 const CODEX_COMPOSER_PROMPT = '›'
 // Why: opencode emits the DECTCEM show-cursor only once the composer row is
 // mounted and the text cursor is placed in it — a "composer ready" signal,
@@ -12,6 +13,11 @@ const CODEX_COMPOSER_PROMPT = '›'
 // racing the composer mount under slow/noisy startup. mimo-code uses the same
 // signal by parity; the quiet-window fallback covers any agent that differs.
 const DECTCEM_SHOW_CURSOR = '\x1b[?25h'
+// Why: Gemini-CLI-family composers (Codely) render an empty input as a
+// reverse-video space cursor — the mount proof. The auth/resume boxes that
+// precede it render no reverse-video cursor, and the shell prompt's own
+// reverse-video glyphs (zsh's `%`) are different bytes, so neither trips it.
+const COMPOSER_REVERSE_VIDEO_CURSOR = '\x1b[7m \x1b[27m'
 // Why: grok's composer prompt glyph (U+276F), rendered once the input box
 // mounts. It is also the default glyph of popular shell prompts (starship,
 // pure), so it is anchored on the alternate-screen switch below — the shell
@@ -57,9 +63,23 @@ const DRAFT_PASTE_READY_SIGNALS: Record<DraftPasteReadySignal, DraftPasteReadySi
     // Why: the quiet window stays on DECSET 2004, independent of the alt-screen
     // marker anchor. grok can be configured to render inline (`--no-alt-screen`,
     // `[ui] screen_mode = "minimal"`), where 1049h never arrives — anchoring the
-    // fallback there too would leave the draft with no delivery path at all, and
-    // the main-process caller drops the draft when readiness never resolves.
+    // fallback there too would leave the draft with no delivery path at all, and the
+    // main-process caller drops the draft when readiness never resolves.
     quietAnchor: DECSET_BRACKETED_PASTE
+  },
+  'codely-composer-cursor-after-bracketed-paste': {
+    // Why: the spawn shell enables bracketed paste at its prompt and revokes it
+    // when it execs the agent, so the shell's own 2004h/2004l pair must not
+    // count as the anchor — only the agent's own 2004h does. Without the
+    // revocation, the anchor latches on the shell and the marker window (or the
+    // default quiet window) can fire inside the agent's boot gap.
+    markerAnchor: DECSET_BRACKETED_PASTE,
+    markerAnchorEnd: DECRST_BRACKETED_PASTE,
+    marker: COMPOSER_REVERSE_VIDEO_CURSOR,
+    // Why: marker-only like Codex/opencode — the boot gap between the shell
+    // prompt and the composer is silent, so a quiet window would fire there and
+    // pre-empt the marker; the caller's hard timeout is the backstop.
+    quietAnchor: null
   },
   'render-quiet-after-bracketed-paste': {
     markerAnchor: null,
@@ -113,6 +133,16 @@ export type DraftPasteReadyScanResult = {
  *     the shell, so a glyph after that is the shell's prompt, not grok's composer.
  *   - `render-quiet-after-bracketed-paste` (default): no signal marker; arms the
  *     quiet window once DECSET 2004 is seen.
+ *   - `codely-composer-cursor-after-bracketed-paste`: ready when the
+ *     reverse-video space cursor renders inside the bracketed-paste window the
+ *     agent itself holds. The anchor is entered on 2004h and revoked on 2004l,
+ *     so the spawn shell's own prompt-side 2004h/2004l pair cannot arm the
+ *     window — only the agent's own enable does. Like Codex/opencode it never
+ *     arms the quiet window: the shell→composer boot gap is silent, and
+ *     Gemini-CLI-family TUIs discard stdin that arrives before the composer
+ *     mounts, so a quiet window that fired there would silently lose the draft.
+ *     The caller's hard timeout (then its process-ownership fallback) is the
+ *     backstop when the cursor never renders.
  *
  * A 512-byte ring (`recent` / `postAnchorRecent`) covers escape sequences
  * split across chunk boundaries without retaining terminal scrollback.

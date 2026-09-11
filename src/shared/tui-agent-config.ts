@@ -14,6 +14,7 @@ export type DraftPasteReadySignal =
   | 'codex-composer-prompt'
   | 'render-cursor-after-bracketed-paste'
   | 'grok-composer-prompt'
+  | 'codely-composer-cursor-after-bracketed-paste'
 
 export type TuiAgentDetectionRuntime = NodeJS.Platform | 'wsl'
 
@@ -166,7 +167,13 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
   codely: {
     // Why: Tuanjie's Codely CLI is a Gemini CLI fork sharing its `--prompt-interactive` contract.
     detectCmd: 'codely',
-    promptInjectionMode: 'flag-prompt-interactive'
+    promptInjectionMode: 'flag-prompt-interactive',
+    // Why: the default quiet-window anchor latches onto the SPAWN SHELL's own
+    // DECSET 2004 and can fire inside the boot gap before the TUI mounts; the
+    // Gemini-CLI family discards stdin that arrives before its composer, so a
+    // premature paste loses the draft with no error. The composer's own
+    // bracketed-paste enable plus its reverse-video cursor is the mount proof.
+    draftPasteReadySignal: 'codely-composer-cursor-after-bracketed-paste'
   },
   antigravity: {
     detectCmd: 'agy',

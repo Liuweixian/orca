@@ -272,6 +272,102 @@ describe('createDraftPasteReadyScanner', () => {
     })
   })
 
+  describe('codely-composer-cursor-after-bracketed-paste (codely)', () => {
+    const DECRST_BRACKETED_PASTE = '\x1b[?2004l'
+    // The shell prompt's own reverse-video glyph (zsh's `%`) — must not read
+    // as the composer's reverse-video space cursor.
+    const ZSH_PROMPT = '\x1b[7m%\x1b[27m \x1b[32m~/worktree\x1b[0m '
+    const CODELY_COMPOSER_CURSOR = '\x1b[7m \x1b[27m'
+
+    it('does not fire while the spawn shell owns the bracketed-paste window', () => {
+      // Why: zsh enables 2004h at its prompt and revokes it when it execs the
+      // agent. The shell's own reverse-video prompt glyphs must not read as
+      // the composer cursor, or the paste would fire at the shell prompt.
+      const scanner = createDraftPasteReadyScanner('codely-composer-cursor-after-bracketed-paste')
+      expect(scanner.observe(`${DECSET_BRACKETED_PASTE}${ZSH_PROMPT}`)).toEqual({
+        ready: false,
+        armQuietTimer: false
+      })
+      expect(scanner.observe('codely -y\r\n')).toEqual({ ready: false, armQuietTimer: false })
+      expect(scanner.observe(DECRST_BRACKETED_PASTE)).toEqual({
+        ready: false,
+        armQuietTimer: false
+      })
+    })
+
+    it('never arms the quiet window during the silent boot gap before the composer', () => {
+      // Why: the regression this signal exists for — under load the gap between
+      // the shell prompt and the TUI exceeds the quiet window, firing a paste
+      // into a Codely that discards stdin before its composer mounts.
+      const scanner = createDraftPasteReadyScanner('codely-composer-cursor-after-bracketed-paste')
+      scanner.observe(`${DECSET_BRACKETED_PASTE}${ZSH_PROMPT}`)
+      scanner.observe(DECRST_BRACKETED_PASTE)
+      for (let i = 0; i < 5; i += 1) {
+        expect(scanner.observe(`boot-gap silence chunk ${i}`)).toEqual({
+          ready: false,
+          armQuietTimer: false
+        })
+      }
+    })
+
+    it('is ready when the composer cursor renders after the agent enables bracketed paste', () => {
+      const scanner = createDraftPasteReadyScanner('codely-composer-cursor-after-bracketed-paste')
+      scanner.observe(`${DECSET_BRACKETED_PASTE}${ZSH_PROMPT}`)
+      scanner.observe(DECRST_BRACKETED_PASTE)
+      expect(scanner.observe(`${DECSET_BRACKETED_PASTE}Codely banner\r\n1 CODELY.md file`)).toEqual(
+        { ready: false, armQuietTimer: false }
+      )
+      expect(scanner.observe(`> ${CODELY_COMPOSER_CURSOR} Type your message`)).toEqual({
+        ready: true,
+        armQuietTimer: false
+      })
+    })
+
+    it('resolves from a single replayed buffer holding the whole startup (remote replay path)', () => {
+      // Why: the runtime waiter feeds accumulated output as one observe() call
+      // when the startup raced the subscription attach; the shell h/l pair and
+      // the agent's own enable must both parse in one pass.
+      const scanner = createDraftPasteReadyScanner('codely-composer-cursor-after-bracketed-paste')
+      expect(
+        scanner.observe(
+          `${DECSET_BRACKETED_PASTE}${ZSH_PROMPT}${DECRST_BRACKETED_PASTE}` +
+            `${DECSET_BRACKETED_PASTE}banner\r\n> ${CODELY_COMPOSER_CURSOR} Type your message`
+        )
+      ).toEqual({ ready: true, armQuietTimer: false })
+    })
+
+    it('detects the composer cursor split across a chunk boundary', () => {
+      const scanner = createDraftPasteReadyScanner('codely-composer-cursor-after-bracketed-paste')
+      scanner.observe(DECSET_BRACKETED_PASTE)
+      expect(scanner.observe('> \x1b[7m')).toEqual({ ready: false, armQuietTimer: false })
+      expect(scanner.observe(` \x1b[27m Type your message`)).toEqual({
+        ready: true,
+        armQuietTimer: false
+      })
+    })
+
+    it('ignores a stray reverse-video cursor while no bracketed-paste window is held', () => {
+      // Why: after the shell revoked its window and before the agent enables
+      // its own, stray reverse-video output must not read as the composer.
+      const scanner = createDraftPasteReadyScanner('codely-composer-cursor-after-bracketed-paste')
+      scanner.observe(`${DECSET_BRACKETED_PASTE}${DECRST_BRACKETED_PASTE}`)
+      expect(scanner.observe(`noise ${CODELY_COMPOSER_CURSOR} more noise`)).toEqual({
+        ready: false,
+        armQuietTimer: false
+      })
+    })
+
+    it('detects the agent anchor split across a chunk boundary', () => {
+      const scanner = createDraftPasteReadyScanner('codely-composer-cursor-after-bracketed-paste')
+      expect(scanner.observe('\x1b[?20')).toEqual({ ready: false, armQuietTimer: false })
+      expect(scanner.observe('04h')).toEqual({ ready: false, armQuietTimer: false })
+      expect(scanner.observe(`> ${CODELY_COMPOSER_CURSOR}`)).toEqual({
+        ready: true,
+        armQuietTimer: false
+      })
+    })
+  })
+
   describe('render-quiet-after-bracketed-paste (default)', () => {
     it('arms the quiet timer after bracketed paste and never reports a signal', () => {
       const scanner = createDraftPasteReadyScanner('render-quiet-after-bracketed-paste')
