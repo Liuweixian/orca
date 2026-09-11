@@ -16898,6 +16898,25 @@
         "3d8e5f1b9c": "Share skills behind an unlisted link and install them on any machine you use.",
         "7e1a9c4d2f": "Signing in…",
         "c5b3e8a17d": "Sign in to Orca"
+      },
+      "taskPageBrowser": {
+        "preview": "Browser page",
+        "reload": "Reload",
+        "editUrl": "Edit URL",
+        "openExternally": "Open in default browser",
+        "unavailableTitle": "Page unavailable",
+        "unavailableDescription": "The page could not load. Reload, edit the URL, or open it in your default browser.",
+        "invalidUrl": "Enter a valid URL, e.g. https://example.com.",
+        "saved": "URL saved.",
+        "saveFailed": "Could not save the URL.",
+        "urlLabel": "Page URL",
+        "urlDescription": "Set the page this browser tab opens.",
+        "save": "Save",
+        "cancel": "Cancel",
+        "urlPlaceholder": "https://example.com",
+        "removeFailed": "Could not remove the tab.",
+        "removeTab": "Remove this tab",
+        "addTab": "Add browser tab"
       }
     },
     "i18n": {

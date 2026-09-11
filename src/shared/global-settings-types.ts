@@ -54,6 +54,12 @@ export type WorktreeVisibilityDefaults = {
   sourcePreferences?: WorktreeVisibilitySourcePreferences
 }
 
+/** Saved page for one Tasks-page browser tab. */
+export type TaskPageBrowserTab = {
+  id: string
+  url: string
+}
+
 export type GlobalSettings = {
   workspaceDir: string
   /** Host-owned defaults used when a repository has no explicit visibility override. */
@@ -359,6 +365,8 @@ export type GlobalSettings = {
   /** Persisted Linear team selection (tasks view). Same nullable-array pattern as
    *  defaultRepoSelection: null = sticky-all, string[] = frozen subset of team IDs. */
   defaultLinearTeamSelection: string[] | null
+  /** Saved pages shown as browser tabs in the Tasks page; each entry renders one tab button. */
+  taskPageBrowserTabs?: TaskPageBrowserTab[]
   /** Session cookie for OpenCode Go rate-limit fetching. Stored encrypted. */
   opencodeSessionCookie: string
   /** Optional OpenCode Go workspace ID override; when set, skips the workspaces lookup and fetches usage directly. */

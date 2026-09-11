@@ -195,6 +195,7 @@ export function buildDefaultSettings(args: {
     visibleTaskProvidersDefaultedForJira: true,
     defaultRepoSelection: null,
     defaultLinearTeamSelection: null,
+    taskPageBrowserTabs: [],
     opencodeSessionCookie: '',
     opencodeWorkspaceId: '',
     minimaxGroupId: '',
