@@ -86,7 +86,7 @@ export type AgentStatusOrchestrationContext = {
   attention?: OrchestrationFleetAttention
 }
 
-export type AgentSubagentState = 'working' | 'blocked' | 'waiting' | 'idle'
+export type AgentSubagentState = 'working' | 'blocked' | 'waiting' | 'idle' | 'unverifiable'
 
 /** A live in-process child of the pane's provider session. Rendered as an
  *  indented child row with no PTY of its own. */
@@ -103,6 +103,8 @@ export type AgentSubagentSnapshot = {
 }
 
 export type AgentStatusEntry = {
+  /** Renderer-local status-feed confirmation for children; absent on hook rows. */
+  subagentObservation?: 'live' | 'unverifiable'
   state: AgentStatusState
   /** Ongoing work that does not require foreground agent execution. Only valid while working. */
   workingMode?: AgentWorkingMode
@@ -303,7 +305,8 @@ function normalizeSubagentSnapshot(value: unknown): AgentSubagentSnapshot | null
     obj.state !== 'working' &&
     obj.state !== 'blocked' &&
     obj.state !== 'waiting' &&
-    obj.state !== 'idle'
+    obj.state !== 'idle' &&
+    obj.state !== 'unverifiable'
   ) {
     return null
   }
