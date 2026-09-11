@@ -18,6 +18,11 @@ describe('stripLeadingAgentTitleDecoration', () => {
     expect(stripLeadingAgentTitleDecoration('⠋ Pi')).toBe('Pi')
   })
 
+  it("strips Codely's waiting and completed-turn prefixes", () => {
+    expect(stripLeadingAgentTitleDecoration('\u2705 Codely - orca')).toBe('Codely - orca')
+    expect(stripLeadingAgentTitleDecoration('\u23f8\ufe0f Codely - orca')).toBe('Codely - orca')
+  })
+
   it('leaves an undecorated title untouched', () => {
     expect(stripLeadingAgentTitleDecoration('Dolphin-2')).toBe('Dolphin-2')
     expect(stripLeadingAgentTitleDecoration('npm run dev')).toBe('npm run dev')

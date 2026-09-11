@@ -102,11 +102,10 @@ describe('MiMo title detection', () => {
 })
 
 describe('Codely title detection', () => {
-  // Why: Codely keeps one base title for idle AND responding, prefixes it with
-  // ⏸️ while waiting for confirmation, and ✅ after a completed turn.
+  // Why: Codely keeps one base title for idle AND responding, and prefixes it with
+  // ⏸️ while waiting for confirmation.
   it.each([
     ['Codely - orca', 'idle'],
-    ['\u2705 Codely - orca', 'idle'],
     ['\u23f8\ufe0f Codely - orca', 'permission'],
     ['codely working', 'working']
   ] as const)('classifies %s', (title, expectedStatus) => {
