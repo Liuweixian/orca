@@ -6,12 +6,17 @@ import { TaskPageGitHubList } from './github/List'
 import { TaskPageGitLabTodoList } from './gitlab/TodoList'
 import { TaskPageGitLabItemList } from './gitlab/ItemList'
 import { TaskPageJiraContent } from './jira/Content'
+import { TaskPageBrowserPane } from './browser/TaskPageBrowserPane'
 export function TaskPageContent({
   model
 }: {
   model: TaskPageComposerActionsModel
 }): React.JSX.Element | null {
   const {
+    taskPageBrowserActive,
+    taskPageBrowserTabId,
+    openTaskPageBrowserTab,
+    openTaskPageBrowserNewTab,
     repoSelection,
     taskSource,
     githubMode,
@@ -25,7 +30,13 @@ export function TaskPageContent({
     closeTaskDetailPage,
     handleUseWorkItem
   } = model
-  return taskSource === 'github' && dialogWorkItem ? (
+  return taskPageBrowserActive && taskPageBrowserTabId !== null ? (
+    <TaskPageBrowserPane
+      selection={taskPageBrowserTabId}
+      onSelectTab={openTaskPageBrowserTab}
+      onStartNewTab={openTaskPageBrowserNewTab}
+    />
+  ) : taskSource === 'github' && dialogWorkItem ? (
     dialogWorkItem.type === 'pr' ? (
       <PullRequestPage
         workItem={dialogWorkItem}
