@@ -1,4 +1,5 @@
 import type { RuntimeTerminalSend } from '../../../shared/runtime-types'
+import type { TuiAgent } from '../../../shared/tui-agent'
 import { sanitizeTerminalPasteText } from '@/components/terminal-pane/terminal-bracketed-paste'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 import {
@@ -16,6 +17,8 @@ import {
 import { codeForReadinessStatus, runtimeFailureCode } from './active-agent-note-send-diagnostics'
 
 const ORCA_DESKTOP_TERMINAL_CLIENT = { id: 'orca-desktop', type: 'desktop' as const }
+const CODELY_FOCUS_IN = '\x1b[I'
+const CODELY_FOCUS_IN_SETTLE_MS = 50
 
 export async function sendPromptWithLegacyCombinedSend(
   runtimeTarget: Parameters<typeof callRuntimeRpc>[0],
@@ -46,11 +49,52 @@ export async function sendPromptWithLegacyCombinedSend(
   }
 }
 
+async function restoreCodelyTerminalFocus(
+  runtimeTarget: Parameters<typeof callRuntimeRpc>[0],
+  terminalHandle: string
+): Promise<ActiveAgentNotesSendResult | null> {
+  try {
+    const { send } = await callRuntimeRpc<{ send: RuntimeTerminalSend }>(
+      runtimeTarget,
+      'terminal.send',
+      {
+        terminal: terminalHandle,
+        text: CODELY_FOCUS_IN,
+        requireAgentStatus: 'sendable',
+        client: ORCA_DESKTOP_TERMINAL_CLIENT
+      },
+      { timeoutMs: ACTIVE_AGENT_SEND_RPC_TIMEOUT_MS }
+    )
+    if (!send.accepted) {
+      if (send.refusedReason === 'permission') {
+        return { status: 'permission', code: 'terminal-send-permission' }
+      }
+      if (send.refusedReason === 'no-agent') {
+        return { status: 'no-agent', code: 'no-agent' }
+      }
+      return { status: 'not-writable', code: 'terminal-send-refused' }
+    }
+  } catch (error) {
+    if (isRuntimeTerminalUnavailable(error)) {
+      return {
+        status: 'no-active-terminal',
+        code: runtimeFailureCode(error) ?? 'runtime-unverifiable'
+      }
+    }
+    if (isRuntimeTerminalNotWritable(error)) {
+      return { status: 'not-writable', code: 'terminal_not_writable' }
+    }
+    throw error
+  }
+  await new Promise<void>((resolve) => setTimeout(resolve, CODELY_FOCUS_IN_SETTLE_MS))
+  return null
+}
+
 export async function sendPromptWithGuardedPasteAndEnter(
   runtimeTarget: Parameters<typeof callRuntimeRpc>[0],
   terminalHandle: string,
   prompt: string,
-  options: { allowLegacyFallback: boolean }
+  options: { allowLegacyFallback: boolean; agent?: TuiAgent | null }
 ): Promise<ActiveAgentNotesSendResult> {
   const initialAgentStatus = await getTerminalAgentSendReadiness(
     runtimeTarget,
@@ -64,6 +108,15 @@ export async function sendPromptWithGuardedPasteAndEnter(
     return {
       status: initialAgentStatus.status,
       code: initialAgentStatus.code ?? codeForReadinessStatus(initialAgentStatus.status)
+    }
+  }
+
+  if (options.agent === 'codely') {
+    // Why: Codely/Gemini InputPrompt drops non-paste keys after xterm FOCUS_OUT
+    // (clicking the notes menu). Restore focus, then send the paste frame.
+    const focusRestore = await restoreCodelyTerminalFocus(runtimeTarget, terminalHandle)
+    if (focusRestore) {
+      return focusRestore
     }
   }
 

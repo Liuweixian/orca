@@ -1,4 +1,5 @@
 import type { RuntimeTerminalWait } from '../../../shared/runtime-types'
+import type { TuiAgent } from '../../../shared/tui-agent'
 import { useAppStore } from '@/store'
 import { callRuntimeRpc, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
 import { getSettingsForWorktreeRuntimeOwner } from '@/lib/worktree-runtime-owner'
@@ -88,7 +89,12 @@ async function sendNotesToActiveAgentSessionInternal({
   }
   if (explicitNoteTarget) {
     return reportNoteSendFailure(
-      await sendPromptToExplicitAgentTarget(runtimeTarget, terminal.handle, trimmedPrompt),
+      await sendPromptToExplicitAgentTarget(
+        runtimeTarget,
+        terminal.handle,
+        trimmedPrompt,
+        terminal.agentIdentity
+      ),
       noteTarget
     )
   }
@@ -161,7 +167,8 @@ async function sendNotesToActiveAgentSessionInternal({
   if (finalAgentStatus.supportsGuardedSend) {
     return reportNoteSendFailure(
       await sendPromptWithGuardedPasteAndEnter(runtimeTarget, terminal.handle, trimmedPrompt, {
-        allowLegacyFallback: false
+        allowLegacyFallback: false,
+        agent: terminal.agentIdentity
       }),
       noteTarget
     )
@@ -176,9 +183,11 @@ async function sendNotesToActiveAgentSessionInternal({
 async function sendPromptToExplicitAgentTarget(
   runtimeTarget: ReturnType<typeof getActiveRuntimeTarget>,
   terminalHandle: string,
-  prompt: string
+  prompt: string,
+  agent?: TuiAgent | null
 ): Promise<ActiveAgentNotesSendResult> {
   return await sendPromptWithGuardedPasteAndEnter(runtimeTarget, terminalHandle, prompt, {
-    allowLegacyFallback: false
+    allowLegacyFallback: false,
+    agent
   })
 }

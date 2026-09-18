@@ -131,6 +131,82 @@ describe('active agent note send', () => {
     )
   })
 
+  it('restores Codely terminal focus before sending a bracketed paste frame', async () => {
+    testState.callRuntimeRpc.mockImplementation(async (_target, method) => {
+      if (method === 'terminal.list') {
+        return {
+          terminals: [
+            {
+              handle: 'term-1',
+              worktreeId: 'wt-1',
+              worktreePath: '/repo',
+              branch: 'main',
+              tabId: 'tab-1',
+              leafId: LEAF_ID,
+              title: 'Codely',
+              agentIdentity: 'codely',
+              connected: true,
+              writable: true,
+              lastOutputAt: 1,
+              preview: ''
+            }
+          ],
+          totalCount: 1,
+          truncated: false
+        }
+      }
+      if (method === 'terminal.agentStatus') {
+        return { agentStatus: { handle: 'term-1', isRunningAgent: true, status: 'idle' } }
+      }
+      if (method === 'terminal.wait') {
+        return {
+          wait: {
+            handle: 'term-1',
+            condition: 'tui-idle',
+            satisfied: true,
+            status: 'running',
+            exitCode: null
+          }
+        }
+      }
+      if (method === 'terminal.send') {
+        return { send: { handle: 'term-1', accepted: true, bytesWritten: 1 } }
+      }
+      throw new Error(`unexpected method ${method}`)
+    })
+
+    await expect(
+      sendNotesToActiveAgentSession({
+        worktreeId: 'wt-1',
+        prompt: 'File: src/app.ts\nLine: 42\nUser comment: "fix this"'
+      })
+    ).resolves.toEqual({ status: 'sent' })
+
+    const sendCalls = testState.callRuntimeRpc.mock.calls.filter(
+      (call) => call[1] === 'terminal.send'
+    )
+    expect(sendCalls.map((call) => call[2])).toEqual([
+      {
+        terminal: 'term-1',
+        text: '\x1b[I',
+        requireAgentStatus: 'sendable',
+        client: { id: 'orca-desktop', type: 'desktop' }
+      },
+      {
+        terminal: 'term-1',
+        text: `${PASTE_BEGIN}File: src/app.ts\nLine: 42\nUser comment: "fix this"${PASTE_END}`,
+        requireAgentStatus: 'sendable',
+        client: { id: 'orca-desktop', type: 'desktop' }
+      },
+      {
+        terminal: 'term-1',
+        enter: true,
+        requireAgentStatus: 'sendable',
+        client: { id: 'orca-desktop', type: 'desktop' }
+      }
+    ])
+  })
+
   it('maps active-focused guarded paste permission refusal to permission', async () => {
     testState.callRuntimeRpc.mockImplementation(async (_target, method, params) => {
       if (method === 'terminal.list') {
