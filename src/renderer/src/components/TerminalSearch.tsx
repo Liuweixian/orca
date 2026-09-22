@@ -40,6 +40,16 @@ export default function TerminalSearch({
   const [results, setResults] = useState(EMPTY_RESULTS)
   const requestQuery = getFindRequestQuery(query)
 
+  // Why: the overlay stays mounted while closed, so reset the stale query while
+  // rendering the reopening frame — the effect below then sees an empty query.
+  const [wasOpen, setWasOpen] = useState(isOpen)
+  if (isOpen !== wasOpen) {
+    setWasOpen(isOpen)
+    if (isOpen) {
+      setQuery('')
+    }
+  }
+
   // xterm needs hex colors; explicit highlights stay visible over terminal themes (#612).
   const searchOptions = useCallback(
     (incremental: boolean = false) => ({

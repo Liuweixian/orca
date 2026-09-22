@@ -130,10 +130,35 @@ export function installOpenDraftAddReviewNoteGuard(target: HTMLElement): () => v
 type MonacoFindShortcutEditor = {
   getAction: (id: string) => { run: () => void | Promise<void> } | null
   getContainerDomNode: () => HTMLElement
+  // Why optional: test doubles omit it; real monaco editors always provide it.
+  getContribution?: (id: string) => unknown
+}
+
+type MonacoFindControllerLike = {
+  getState: () => { isRevealed: boolean }
+  setSearchString: (searchString: string) => void
+}
+
+// Why: monaco keeps the last find query in its per-editor find state, so without this
+// reset Cmd/Ctrl+F would reopen the widget pre-filled with the previous session's text.
+// An already-revealed widget keeps its query — the user is mid-session there.
+function clearStaleMonacoFindQuery(editor: MonacoFindShortcutEditor): void {
+  if (editor.getContribution === undefined) {
+    return
+  }
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: monaco does not export the find controller type; getState/setSearchString are its verified 0.55 contribution shape.
+  const controller = editor.getContribution(
+    'editor.contrib.findController'
+  ) as MonacoFindControllerLike | null
+  const state = controller?.getState()
+  if (controller && state && !state.isRevealed) {
+    controller.setSearchString('')
+  }
 }
 
 export function installMonacoEditorFindShortcut(editor: MonacoFindShortcutEditor): () => void {
   return installEditorFindShortcut(editor.getContainerDomNode(), () => {
+    clearStaleMonacoFindQuery(editor)
     void editor.getAction('actions.find')?.run()
   })
 }

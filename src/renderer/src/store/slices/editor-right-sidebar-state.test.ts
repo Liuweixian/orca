@@ -167,7 +167,7 @@ describe('createEditorSlice right sidebar state', () => {
     expect(store.getState().rightSidebarExplorerViewByWorktree).toEqual({ 'wt-1': 'files' })
   })
 
-  it('showRightSidebarSearch opens Explorer search and requests focus without payload', () => {
+  it('showRightSidebarSearch clears a stale query when opening fresh without payload', () => {
     const store = createEditorStore()
     store.getState().updateFileSearchState('wt-1', {
       query: 'needle',
@@ -181,11 +181,33 @@ describe('createEditorSlice right sidebar state', () => {
     expect(store.getState().rightSidebarExplorerView).toBe('search')
     expect(store.getState().rightSidebarExplorerViewByWorktree).toEqual({ 'wt-1': 'search' })
     expect(store.getState().fileSearchStateByWorktree['wt-1']).toMatchObject({
+      query: '',
+      results: null,
+      loading: false,
+      focusRequestId: 1
+    })
+    expect(store.getState().fileSearchStateByWorktree['wt-1']?.seedRequestId).toBeUndefined()
+  })
+
+  it('showRightSidebarSearch keeps the active query when the search view is already showing', () => {
+    const store = createEditorStore()
+    store.setState({
+      rightSidebarOpen: true,
+      rightSidebarTab: 'explorer',
+      rightSidebarExplorerView: 'search'
+    })
+    store.getState().updateFileSearchState('wt-1', {
+      query: 'needle',
+      results: { files: [], totalMatches: 1, truncated: false }
+    })
+
+    store.getState().showRightSidebarSearch()
+
+    expect(store.getState().fileSearchStateByWorktree['wt-1']).toMatchObject({
       query: 'needle',
       results: { files: [], totalMatches: 1, truncated: false },
       focusRequestId: 1
     })
-    expect(store.getState().fileSearchStateByWorktree['wt-1']?.seedRequestId).toBeUndefined()
   })
 
   it('showRightSidebarSearch seeds query and include together with one request', () => {

@@ -104,9 +104,26 @@ export function createRightSidebarState(set: EditorSet, _get: EditorGet): RightS
         const includePattern = payload?.includePattern?.trim() ? payload.includePattern : null
         const current = s.fileSearchStateByWorktree[s.activeWorktreeId] || defaultFileSearchState()
         const shouldSeed = Boolean(query || (includePattern && current.query.trim()))
+        // Why: a plain open (no payload) starts from an empty box instead of resurrecting
+        // the previous session's query — unless the search view is already on screen, where
+        // the query belongs to the session in progress and the chord should only refocus it.
+        const searchViewAlreadyActive =
+          s.rightSidebarOpen &&
+          s.rightSidebarTab === 'explorer' &&
+          s.rightSidebarExplorerView === 'search'
+        const shouldClearStaleQuery = !query && !includePattern && !searchViewAlreadyActive
         const shouldFocus = !shouldSeed
         const nextSearchState = {
           ...current,
+          ...(shouldClearStaleQuery
+            ? {
+                query: '',
+                results: null,
+                resultOwner: null,
+                loading: false,
+                collapsedFiles: new Set<string>()
+              }
+            : {}),
           ...(query ? { query } : {}),
           ...(includePattern ? { includePattern } : {}),
           ...(shouldSeed

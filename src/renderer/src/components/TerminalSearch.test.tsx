@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import '@testing-library/jest-dom/vitest'
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import type { SearchAddon } from '@xterm/addon-search'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -169,5 +170,30 @@ describe('TerminalSearch cleanup', () => {
     )
     expect(inputRef.current).toBeNull()
     expect(addon.findNext).toHaveBeenLastCalledWith('')
+  })
+})
+
+describe('TerminalSearch stale query', () => {
+  it('clears the previous query when the overlay reopens', () => {
+    const { addon } = createSearchAddon()
+    const searchStateRef = { current: { query: '', caseSensitive: false, regex: false } }
+    const baseProps = { onClose: vi.fn(), searchAddon: addon, searchStateRef }
+    const view = render(<TerminalSearch {...baseProps} isOpen />)
+
+    fireEvent.change(view.getByPlaceholderText('Search...'), { target: { value: 'needle' } })
+    expect(addon.findNext).toHaveBeenCalledWith(
+      'needle',
+      expect.objectContaining({ incremental: true })
+    )
+
+    view.rerender(<TerminalSearch {...baseProps} isOpen={false} />)
+    view.rerender(<TerminalSearch {...baseProps} isOpen />)
+
+    expect(view.getByPlaceholderText('Search...')).toHaveValue('')
+    expect(searchStateRef.current.query).toBe('')
+    // Why: the stale query must never drive a second find session after reopening.
+    expect(vi.mocked(addon.findNext).mock.calls.filter(([term]) => term === 'needle')).toHaveLength(
+      1
+    )
   })
 })
