@@ -38,7 +38,7 @@ export type TuiAgentConfig = {
   /** Startup env var that seeds the input without submitting, for agents with no `--prefill`-style flag (e.g. pi); avoids the paste-after-ready race. */
   draftPromptEnvVar?: string
   /** Pre-write a trust artifact so the agent's first-launch "trust this folder?" menu doesn't consume the bracketed paste (see agent-trust-presets.ts). */
-  preflightTrust?: 'cursor' | 'copilot' | 'codex'
+  preflightTrust?: 'cursor' | 'copilot' | 'codex' | 'antigravity'
   /** Agent-specific signal that the composer is ready for paste, stronger than the default quiet-render window. */
   draftPasteReadySignal?: DraftPasteReadySignal
   /** Hard deadline for the agent's composer readiness signal. */
@@ -129,7 +129,12 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     detectCmd: 'opencode',
     promptInjectionMode: 'flag-prompt',
     // Why: opencode enables bracketed paste before its composer mounts; wait for the post-\x1b[?2004h show-cursor so paste lands.
-    draftPasteReadySignal: 'render-cursor-after-bracketed-paste'
+    draftPasteReadySignal: 'render-cursor-after-bracketed-paste',
+    // Why: ConPTY never forwards DECSET 2004 (terminal-agent-paste-bracketing.ts), so on Windows
+    // this signal cannot fire at all and the budget becomes the fixed settle delay before the
+    // blind process-ownership paste. 8s lands mid-startup there; match codex, the other
+    // quiet-window-less signal, which needed the same headroom (#22479).
+    draftPasteReadyTimeoutMs: 20_000
   },
   // Why: opencode2 installs as a separate binary and uses the same prompt flags.
   // Its @opentui composer keeps the same cursor-gated paste signal.
@@ -139,7 +144,8 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     launchCmd: 'opencode2 --standalone',
     expectedProcess: 'opencode2',
     promptInjectionMode: 'flag-prompt',
-    draftPasteReadySignal: 'render-cursor-after-bracketed-paste'
+    draftPasteReadySignal: 'render-cursor-after-bracketed-paste',
+    draftPasteReadyTimeoutMs: 20_000
   },
   'mimo-code': {
     detectCmd: 'mimo',
@@ -190,6 +196,11 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
   antigravity: {
     detectCmd: 'agy',
     promptInjectionMode: 'flag-prompt-interactive',
+    // Why: agy's first-launch trust menu consumes the bracketed paste, and its trust is
+    // exact-path rather than inherited, so every freshly created child worktree raises it
+    // again — a supervised worker would otherwise always fail at agent_readiness
+    // (agent-trust-presets.ts).
+    preflightTrust: 'antigravity',
     // Why: agy 1.2.x collapses long paste as "↑ N more lines" and expands it over seconds; byte
     // ingest alone (~500 ms on macOS) finishes before the composer is submit-ready.
     submitLineSettleMsPerLine: 45
@@ -232,6 +243,10 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
   },
   codebuff: {
     detectCmd: 'codebuff',
+    promptInjectionMode: 'stdin-after-start'
+  },
+  freebuff: {
+    detectCmd: 'freebuff',
     promptInjectionMode: 'stdin-after-start'
   },
   'command-code': {
@@ -310,6 +325,12 @@ const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     // timeout; its composer glyph lands ~0.6s in.
     draftPasteReadySignal: 'grok-composer-prompt',
     ctrlEnterEncoding: 'csi-u'
+  },
+  muse: {
+    detectCmd: 'muse',
+    launchCmd: 'muse --trust-workspace',
+    // Muse 1.3 treats subcommand-shaped prompts as commands even after `--`.
+    promptInjectionMode: 'stdin-after-start'
   },
   devin: {
     detectCmd: 'devin',

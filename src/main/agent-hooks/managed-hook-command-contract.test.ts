@@ -21,6 +21,7 @@ import {
 } from '../copilot/copilot-managed-hook-definitions'
 import { getDevinManagedCommand, getDevinRemoteManagedCommand } from '../devin/hook-settings'
 import { getGrokManagedCommand } from '../grok/grok-hook-script'
+import { getMuseManagedCommand, getMuseRemoteManagedCommand } from '../muse/hook-settings'
 import {
   wrapPosixHookCommand,
   wrapWindowsCmdHookCommand,
@@ -140,6 +141,15 @@ const buildersByAgent = new Map<string, CommandBuilders>([
     {
       local: (path) => [wrapPosixHookCommand(path.replaceAll('\\', '/'))],
       remote: (path) => [wrapPosixHookCommand(path)]
+    }
+  ],
+  // Why: Codely is a Gemini CLI fork — its hook service exercises the same shared wrappers.
+  ['codely', standardCommands],
+  [
+    'muse',
+    {
+      local: (path) => [getMuseManagedCommand(path)],
+      remote: (path) => [getMuseRemoteManagedCommand(path)]
     }
   ]
 ])

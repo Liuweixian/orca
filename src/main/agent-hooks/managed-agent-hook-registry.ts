@@ -14,6 +14,7 @@ import { grokHookService } from '../grok/hook-service'
 import { hermesHookService } from '../hermes/hook-service'
 import { kimiHookService } from '../kimi/hook-service'
 import { codelyHookService } from '../codely/hook-service'
+import { museHookService } from '../muse/hook-service'
 import { openClaudeHookService } from '../openclaude/hook-service'
 
 // Why (#16441): Codex's installer awaits a codex app-server trust-grant session
@@ -52,7 +53,8 @@ export const MANAGED_AGENT_HOOK_INSTALLERS: readonly ManagedAgentHookInstaller[]
   ['hermes', () => hermesHookService.install()],
   ['devin', () => devinHookService.install()],
   ['kimi', () => kimiHookService.install()],
-  ['codely', () => codelyHookService.install()]
+  ['codely', () => codelyHookService.install()],
+  ['muse', () => museHookService.install()]
 ]
 
 // Why: covers the shared launcher/statusline scripts under ~/.orca/agent-hooks — the files a
@@ -74,7 +76,8 @@ export const MANAGED_AGENT_HOOK_SCRIPT_REFRESHERS: readonly ManagedAgentHookScri
   ['copilot', () => copilotHookService.refreshManagedScripts()],
   ['devin', () => devinHookService.refreshManagedScripts()],
   ['kimi', () => kimiHookService.refreshManagedScripts()],
-  ['codely', () => codelyHookService.refreshManagedScripts()]
+  ['codely', () => codelyHookService.refreshManagedScripts()],
+  ['muse', () => museHookService.refreshManagedScripts()]
 ]
 
 export const MANAGED_AGENT_HOOK_REMOVERS: readonly ManagedAgentHookRemover[] = [
@@ -92,7 +95,8 @@ export const MANAGED_AGENT_HOOK_REMOVERS: readonly ManagedAgentHookRemover[] = [
   ['hermes', () => hermesHookService.remove()],
   ['devin', () => devinHookService.remove()],
   ['kimi', () => kimiHookService.remove()],
-  ['codely', () => codelyHookService.remove()]
+  ['codely', () => codelyHookService.remove()],
+  ['muse', () => museHookService.remove()]
 ]
 
 export const MANAGED_AGENT_HOOK_ASYNC_REMOVERS: readonly ManagedAgentHookAsyncRemover[] = [
@@ -114,5 +118,6 @@ export const MANAGED_AGENT_HOOK_STATUS_READERS: readonly ManagedAgentHookStatusR
   ['hermes', () => hermesHookService.getStatus()],
   ['devin', () => devinHookService.getStatus()],
   ['kimi', () => kimiHookService.getStatus()],
-  ['codely', () => codelyHookService.getStatus()]
+  ['codely', () => codelyHookService.getStatus()],
+  ['muse', () => museHookService.getStatus()]
 ]

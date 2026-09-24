@@ -120,6 +120,7 @@ const ICONABLE_AGENT_TYPES: Record<TuiAgent, true> = {
   aug: true,
   cline: true,
   codebuff: true,
+  freebuff: true,
   'command-code': true,
   continue: true,
   cursor: true,
@@ -135,7 +136,8 @@ const ICONABLE_AGENT_TYPES: Record<TuiAgent, true> = {
   devin: true,
   ante: true,
   trae: true,
-  codely: true
+  codely: true,
+  muse: true
 }
 
 // Why: return null (not a 'claude' fallback) for unknown so Codex panes don't flash the Claude icon before the hook fires.
