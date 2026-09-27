@@ -27,7 +27,8 @@ const WELL_KNOWN_LABELS: Record<string, string> = {
   trae: 'Trae',
   kimi: 'Kimi',
   codely: 'Codely',
-  muse: 'Muse'
+  muse: 'Muse',
+  zcode: 'ZCode'
 }
 
 export function formatAgentTypeLabel(agentType: AgentType | null | undefined): string {

@@ -211,6 +211,7 @@ export function buildDefaultSettings(args: {
     taskPageBrowserTabs: [],
     opencodeSessionCookie: '',
     opencodeWorkspaceId: '',
+    opencodeGoApiKey: '',
     minimaxGroupId: '',
     minimaxUsageModels: 'general',
     minimaxEndpoint: 'overseas',
