@@ -15129,7 +15129,12 @@
       "TerminalContextMenu": {
         "copySessionId": "Copiar ID de sesión",
         "copySessionIdSuccess": "ID de sesión copiado",
-        "copySessionIdError": "No se pudo copiar el ID de sesión"
+        "copySessionIdError": "No se pudo copiar el ID de sesión",
+        "sendToAgent": "Enviar al agente",
+        "sendToAgentNoTargets": "No hay agentes en ejecución",
+        "sendToAgentNoSelection": "No hay texto seleccionado.",
+        "sendToAgentSending": "Enviando al agente...",
+        "sendToAgentSent": "Enviado al agente activo {{value0}}."
       }
     }
   },

@@ -3271,7 +3271,7 @@
             "missing": {
               "tui": {
                 "title": "This ZCode build has no terminal UI",
-                "description": "Orca's hooks installed correctly \u2014 the zcode on your PATH just cannot open a session. The ZCode desktop app bundles the agent runtime without its terminal UI. Install a zcode that ships the TUI, then run zcode outside Orca to confirm."
+                "description": "Orca's hooks installed correctly — the zcode on your PATH just cannot open a session. The ZCode desktop app bundles the agent runtime without its terminal UI. Install a zcode that ships the TUI, then run zcode outside Orca to confirm."
               }
             }
           },
@@ -18147,7 +18147,12 @@
       "TerminalContextMenu": {
         "copySessionId": "Copy Session ID",
         "copySessionIdSuccess": "Session ID copied",
-        "copySessionIdError": "Unable to copy session ID"
+        "copySessionIdError": "Unable to copy session ID",
+        "sendToAgent": "Send to Agent",
+        "sendToAgentNoTargets": "No running agents",
+        "sendToAgentNoSelection": "No text selected.",
+        "sendToAgentSending": "Sending to agent...",
+        "sendToAgentSent": "Sent to active agent {{value0}}."
       }
     },
     "settings": {

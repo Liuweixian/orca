@@ -34,6 +34,8 @@ import { isMacPlatform, nativeChatToggleShortcutLabel } from '../native-chat/nat
 import { AgentSessionContinuationMenuItem } from './AgentSessionContinuationMenuItem'
 import type { TerminalQuickCommandMenuHost } from '@/hooks/use-terminal-quick-command-hosts'
 import { TerminalQuickCommandsSubmenu } from './TerminalQuickCommandsSubmenu'
+import { TerminalSendToAgentSubmenu } from './TerminalSendToAgentSubmenu'
+import type { NotesSendAgentTarget } from '@/lib/notes-send-agent-targets'
 
 type TerminalContextMenuProps = {
   open: boolean
@@ -62,6 +64,9 @@ type TerminalContextMenuProps = {
   isNativeChatView: boolean
   onToggleNativeChat: () => void
   onCopyAgentSessionContext: () => void
+  worktreeId: string
+  canSendSelectionToAgent: boolean
+  onSendSelectionToAgent: (target: NotesSendAgentTarget) => Promise<void>
   quickCommandHosts: TerminalQuickCommandMenuHost[]
   quickCommandHostLoadFailed: boolean
   quickCommandHostOwnershipPending: boolean
@@ -151,6 +156,9 @@ function TerminalContextMenuItems({
   isNativeChatView,
   onToggleNativeChat,
   onCopyAgentSessionContext,
+  worktreeId,
+  canSendSelectionToAgent,
+  onSendSelectionToAgent,
   quickCommandHosts,
   quickCommandHostLoadFailed,
   quickCommandHostOwnershipPending,
@@ -212,6 +220,12 @@ function TerminalContextMenuItems({
         onClose={() => onOpenChange(false)}
         onAdd={onAddQuickCommand}
       />
+      {canSendSelectionToAgent ? (
+        <TerminalSendToAgentSubmenu
+          worktreeId={worktreeId}
+          onSend={(target) => void onSendSelectionToAgent(target)}
+        />
+      ) : null}
       {canContinueAgentSessionInNewSession ? (
         <AgentSessionContinuationMenuItem onSelect={onContinueAgentSessionInNewSession} />
       ) : null}

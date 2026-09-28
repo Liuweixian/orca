@@ -26,6 +26,8 @@ import { useTerminalContextMenuTrigger } from './use-terminal-context-menu-trigg
 import { useAppStore } from '@/store'
 import { makePaneKey } from '../../../../shared/stable-pane-id'
 import { resolvePaneAgentSessionId } from './pane-agent-session-id'
+import type { NotesSendAgentTarget } from '@/lib/notes-send-agent-targets'
+import { sendTerminalSelectionToAgentTarget } from './terminal-pane-menu-send-selection-to-agent'
 
 type UseTerminalPaneContextMenuDeps = {
   managerRef: React.RefObject<PaneManager | null>
@@ -71,6 +73,8 @@ type TerminalMenuState = {
   onForkAgentSession: () => Promise<void>
   onContinueAgentSessionInNewSession: () => void
   onCopyAgentSessionContext: () => Promise<void>
+  onSendSelectionToAgent: (target: NotesSendAgentTarget) => Promise<void>
+  menuPaneHasSelection: boolean
   onQuickCommand: (command: TerminalQuickCommand, historyId: string) => void
   onToggleExpand: () => void
   onSetTitle: () => void
@@ -218,6 +222,14 @@ export function useTerminalPaneContextMenu({
   const onCopyAgentSessionContext = async (): Promise<void> =>
     copyAgentSessionContextFromMenuPane(resolveMenuPane())
 
+  const onSendSelectionToAgent = async (target: NotesSendAgentTarget): Promise<void> => {
+    const pane = resolveMenuPane()
+    if (!pane) {
+      return
+    }
+    await sendTerminalSelectionToAgentTarget({ pane, worktreeId, target })
+  }
+
   const onQuickCommand = (command: TerminalQuickCommand, historyId: string): void => {
     if (isTerminalAgentQuickCommand(command)) {
       runQuickCommandInNewTab({ command, worktreeId, groupId, historyId })
@@ -274,6 +286,7 @@ export function useTerminalPaneContextMenu({
   // render across hundreds of mounted terminal tabs.
   const paneCount = open ? (managerRef.current?.getPanes().length ?? 1) : 1
   const menuPaneId = open ? (resolveMenuPane()?.id ?? null) : null
+  const menuPaneHasSelection = open ? (resolveMenuPane()?.terminal.hasSelection() ?? false) : false
 
   return {
     open,
@@ -298,6 +311,8 @@ export function useTerminalPaneContextMenu({
     onForkAgentSession,
     onContinueAgentSessionInNewSession,
     onCopyAgentSessionContext,
+    onSendSelectionToAgent,
+    menuPaneHasSelection,
     onQuickCommand,
     onToggleExpand,
     onSetTitle: handleSetTitle,

@@ -17992,7 +17992,12 @@
       "TerminalContextMenu": {
         "copySessionId": "세션 ID 복사",
         "copySessionIdSuccess": "세션 ID를 복사했습니다",
-        "copySessionIdError": "세션 ID를 복사하지 못했습니다"
+        "copySessionIdError": "세션 ID를 복사하지 못했습니다",
+        "sendToAgent": "에이전트에게 보내기",
+        "sendToAgentNoTargets": "실행 중인 에이전트 없음",
+        "sendToAgentNoSelection": "선택한 텍스트가 없습니다.",
+        "sendToAgentSending": "에이전트에게 전송 중...",
+        "sendToAgentSent": "활성 에이전트 {{value0}}에게 전송했습니다."
       }
     },
     "jiraUserPicker": {

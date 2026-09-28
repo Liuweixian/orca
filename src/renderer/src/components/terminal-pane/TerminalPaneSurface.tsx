@@ -249,6 +249,9 @@ export function TerminalPaneSurface({
         isNativeChatView={contextMenuIsChatView}
         onToggleNativeChat={handleContextMenuToggleNativeChat}
         onCopyAgentSessionContext={() => void contextMenu.onCopyAgentSessionContext()}
+        worktreeId={worktreeId}
+        canSendSelectionToAgent={contextMenu.menuPaneHasSelection}
+        onSendSelectionToAgent={contextMenu.onSendSelectionToAgent}
         quickCommandHosts={visibleQuickCommandHosts}
         quickCommandHostLoadFailed={quickCommandHostLoadFailed}
         quickCommandHostOwnershipPending={quickCommandHostOwnershipPending}

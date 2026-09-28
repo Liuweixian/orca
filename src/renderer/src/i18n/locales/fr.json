@@ -18111,7 +18111,12 @@
       "TerminalContextMenu": {
         "copySessionId": "Copier l'ID de session",
         "copySessionIdSuccess": "ID de session copié",
-        "copySessionIdError": "Impossible de copier l'ID de session"
+        "copySessionIdError": "Impossible de copier l'ID de session",
+        "sendToAgent": "Envoyer à l'agent",
+        "sendToAgentNoTargets": "Aucun agent en cours d'exécution",
+        "sendToAgentNoSelection": "Aucun texte sélectionné.",
+        "sendToAgentSending": "Envoi à l'agent...",
+        "sendToAgentSent": "Envoyé à l'agent actif {{value0}}."
       }
     },
     "settings": {

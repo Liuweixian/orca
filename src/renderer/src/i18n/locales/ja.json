@@ -17992,7 +17992,12 @@
       "TerminalContextMenu": {
         "copySessionId": "セッション ID をコピー",
         "copySessionIdSuccess": "セッション ID をコピーしました",
-        "copySessionIdError": "セッション ID のコピーに失敗しました"
+        "copySessionIdError": "セッション ID のコピーに失敗しました",
+        "sendToAgent": "Agent に送信",
+        "sendToAgentNoTargets": "実行中の Agent がありません",
+        "sendToAgentNoSelection": "テキストが選択されていません。",
+        "sendToAgentSending": "Agent に送信中…",
+        "sendToAgentSent": "アクティブな Agent {{value0}} に送信しました。"
       }
     },
     "jiraUserPicker": {

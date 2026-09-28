@@ -9,6 +9,10 @@ type ItemProps = { onSelect?: () => void; children?: React.ReactNode }
 
 const items = vi.hoisted(() => ({ list: [] as ItemProps[] }))
 const shortcuts = vi.hoisted(() => ({ list: [] as string[] }))
+const sendToAgentSubmenu = vi.hoisted(() => {
+  const renders: Record<string, unknown>[] = []
+  return { renders }
+})
 
 vi.mock('@/components/ui/dropdown-menu', async () => {
   const React_ = await import('react')
@@ -44,6 +48,12 @@ vi.mock('@/i18n/i18n', () => ({ translate: vi.fn((_key: string, fallback: string
 vi.mock('@/lib/agent-catalog', () => ({ AgentIcon: () => null }))
 vi.mock('./terminal-context-menu-dismiss', () => ({
   shouldIgnoreTerminalMenuPointerDownOutside: () => false
+}))
+vi.mock('./TerminalSendToAgentSubmenu', () => ({
+  TerminalSendToAgentSubmenu: function TerminalSendToAgentSubmenu(props: Record<string, unknown>) {
+    sendToAgentSubmenu.renders.push(props)
+    return null
+  }
 }))
 
 function childrenText(children: React.ReactNode): string {
@@ -85,6 +95,9 @@ function renderMenu(overrides: Record<string, unknown> = {}): string {
     isNativeChatView: false,
     onToggleNativeChat: vi.fn(),
     onCopyAgentSessionContext: vi.fn(),
+    worktreeId: 'wt-menu',
+    canSendSelectionToAgent: false,
+    onSendSelectionToAgent: vi.fn(),
     quickCommandHosts: [
       { hostId: 'local' as const, label: 'Local Linux', repoCommands: [], globalCommands: [] }
     ],
@@ -111,6 +124,7 @@ describe('TerminalContextMenu', () => {
     vi.mocked(translate).mockClear()
     items.list = []
     shortcuts.list = []
+    sendToAgentSubmenu.renders = []
     vi.stubGlobal('navigator', { userAgent: 'Linux' })
   })
 
@@ -158,6 +172,30 @@ describe('TerminalContextMenu', () => {
 
     handoffItem?.onSelect?.()
     expect(onContinueAgentSessionInNewSession).toHaveBeenCalledTimes(1)
+  })
+
+  it('shows the Send to Agent submenu only when the pane has a selection', () => {
+    renderMenu()
+    expect(sendToAgentSubmenu.renders).toHaveLength(0)
+
+    renderMenu({ canSendSelectionToAgent: true })
+    expect(sendToAgentSubmenu.renders).toHaveLength(1)
+  })
+
+  it('routes a send-to-agent pick to the selection-send handler for the menu worktree', () => {
+    const onSendSelectionToAgent = vi.fn()
+    renderMenu({ canSendSelectionToAgent: true, onSendSelectionToAgent })
+
+    const [submenuProps] = sendToAgentSubmenu.renders
+    expect(submenuProps?.worktreeId).toBe('wt-menu')
+
+    const target = { paneKey: 'tab-a|leaf-b', tabId: 'tab-a', leafId: 'leaf-b' }
+    const onSend = submenuProps?.onSend
+    expect(typeof onSend).toBe('function')
+    if (typeof onSend === 'function') {
+      onSend(target)
+    }
+    expect(onSendSelectionToAgent).toHaveBeenCalledWith(target)
   })
 
   it('does not expose a native/terminal view switch in the terminal menu', () => {
