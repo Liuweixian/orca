@@ -19,6 +19,7 @@ export const AGENT_KIND_VALUES = [
   'pi',
   'omp',
   'prime-agent',
+  'qoder',
   'gemini',
   'antigravity',
   'aider',
@@ -30,6 +31,7 @@ export const AGENT_KIND_VALUES = [
   'aug',
   'cline',
   'codebuff',
+  'freebuff',
   'command-code',
   'continue',
   'cursor',
@@ -47,6 +49,7 @@ export const AGENT_KIND_VALUES = [
   'trae',
   'codely',
   'muse',
+  'dsh',
   'zcode',
   'other'
 ] as const

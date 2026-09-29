@@ -33,5 +33,13 @@ export const EXACT_NODE_ENTRYPOINT_IDENTITIES: readonly {
     pattern: /(?:^|\/)node_modules\/@codely\/cli\/bundle\/gemini\.js$/,
     agent: 'codely',
     processName: 'codely'
+  },
+  // Why: DSH's npm shim launches a generic `lib/bin.js`, and the launcher re-execs it
+  // directly on Windows, so only the package path identifies it. The profile still decides
+  // whether the pane is the agent — `dsh web` resolves here too and is filtered after.
+  {
+    pattern: /(?:^|\/)node_modules\/@deepseek-ai\/dsh\/lib\/bin\.js$/,
+    agent: 'dsh',
+    processName: 'dsh'
   }
 ]

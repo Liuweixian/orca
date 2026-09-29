@@ -6,6 +6,8 @@ const WELL_KNOWN_LABELS: Record<string, string> = {
   claude: 'Claude',
   openclaude: 'OpenClaude',
   codex: 'Codex',
+  qoder: 'Qoder CLI',
+  qodercli: 'Qoder CLI',
   gemini: 'Gemini',
   antigravity: 'Antigravity',
   amp: 'Amp',
@@ -28,7 +30,8 @@ const WELL_KNOWN_LABELS: Record<string, string> = {
   kimi: 'Kimi',
   codely: 'Codely',
   muse: 'Muse',
-  zcode: 'ZCode'
+  zcode: 'ZCode',
+  dsh: 'DeepSeek Harness'
 }
 
 export function formatAgentTypeLabel(agentType: AgentType | null | undefined): string {
