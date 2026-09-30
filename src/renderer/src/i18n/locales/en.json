@@ -208,6 +208,12 @@
         "restartRequired": "Restart required",
         "unavailable": "Browser identity is unavailable."
       }
+    },
+    "agents": {
+      "codexTerminalServerIsolation": {
+        "title": "Run each Codex terminal on its own server",
+        "description": "Keeps Orca's status and closing tabs working correctly. Turn off to use Codex's shared server and its agents overview. Applies to new terminals."
+      }
     }
   },
   "menu": {
@@ -617,7 +623,8 @@
           "d443a47995": "Prime Agent",
           "mimo_code_label": "MiMo Code",
           "codely_label": "Codely",
-          "opencode2_label": "OpenCode 2"
+          "opencode2_label": "OpenCode 2",
+          "codebuddy_label": "CodeBuddy"
         },
         "skill": {
           "cli": {
@@ -1728,7 +1735,6 @@
         "notConnected": "Not connected",
         "notePasteTooLarge": "Paste is too large for the note field.",
         "waitForSetupBeforeAgent": "Wait for setup to complete before starting agent",
-        "waitForSetupBeforeAgentHelp": "Turn this on when setup installs dependencies, MCP servers, or config files the agent needs during startup.",
         "destroyDisabled": "destroy disabled",
         "destroyConfigured": "destroy configured",
         "noDestroyConfigured": "no destroy",
@@ -3194,6 +3200,7 @@
           },
           "TerminalContextMenu": {
             "b4cdd9314e": "Clear Screen",
+            "resetTerminal": "Reset Terminal",
             "8c17d6786d": "Close Pane",
             "copyTerminalId": "Copy Terminal ID",
             "2cf85a6a55": "Copy Pane ID",
@@ -4128,7 +4135,12 @@
             "checkLabel": "{{value0}} chats to check",
             "checkAriaOne": "1 chat to check after resuming. Click for details.",
             "checkAria": "{{value0}} chats to check after resuming. Click for details.",
-            "checkTooltip": "Chats Orca couldn’t resume, or couldn’t confirm it resumed, after the restart. Click for details."
+            "checkTooltip": "Chats Orca couldn’t resume, or couldn’t confirm it resumed, after the restart. Click for details.",
+            "resumingLabelOne": "Resuming 1 chat",
+            "resumingLabel": "Resuming {{value0}} chats",
+            "resumingAriaOne": "Resuming 1 chat. Click to open details.",
+            "resumingAria": "Resuming {{value0}} chats. Click to open details.",
+            "resumingTooltip": "Restoring interrupted chats and asking them to carry on…"
           }
         }
       },
@@ -8054,8 +8066,7 @@
           "81057d5f71": "Saving...",
           "da37d6f10e": "Copy",
           "3149964b66": "Copied",
-          "waitForSetupBeforeAgent": "Wait for setup to complete before starting agent",
-          "waitForSetupBeforeAgentHelp": "Turn this on when setup installs dependencies, MCP servers, or config files the agent needs during startup."
+          "waitForSetupBeforeAgent": "Wait for setup to complete before starting agent"
         },
         "RepositoryIconPicker": {
           "2b7d27b93c": "Use {{value0}} repo color",
@@ -9174,6 +9185,9 @@
             "0d1c334987": "lid",
             "ff8de8a2ad": "display",
             "0d752916f8": "hooks",
+            "agent-trust-trust": "trust",
+            "agent-trust-folder": "folder",
+            "agent-trust-worktree": "worktree",
             "6984d4291a": "status",
             "13b20636a6": "waiting",
             "8599603496": "done",
@@ -9183,6 +9197,11 @@
             "042c551bc5": "config",
             "f412abbba5": "claude",
             "5ded38b843": "codex",
+            "7e15b89f6e": "server",
+            "ff457e1e7b": "daemon",
+            "9f3becc4e8": "shared",
+            "34337ed5c7": "isolate",
+            "9a84e65118": "agents overview",
             "be7ea3553b": "tab",
             "6956646a1e": "title",
             "32836788b0": "generated title",
@@ -9722,7 +9741,8 @@
               "openclaude": "openclaude",
               "omp": "omp",
               "terminal": "terminal",
-              "agent": "agent"
+              "agent": "agent",
+              "queue": "queue"
             },
             "agentDashboard": {
               "title": "Agent Dashboard",
@@ -10925,6 +10945,10 @@
         "agent-status-hooks-copy": {
           "7707c15abb": "Agent status hooks",
           "a68a642835": "Shows working, waiting, and done states in Orca. Turn off to remove Orca-managed hooks and stop reinstalling them."
+        },
+        "agent-workspace-trust-copy": {
+          "title": "Trust the folder when Orca starts an agent",
+          "description": "Agents Orca starts skip their \"Do you trust this folder?\" prompt, so the project's agent hooks and settings run right away. Without this, each agent asks the first time it runs in a folder. Agents running without you watching, such as orchestration workers, automations and agents started from your phone, will wait at that question until you answer it in their terminal. Folders already trusted stay trusted."
         },
         "agent-generated-tab-title-copy": {
           "19ad21615a": "Auto-generate tab titles",
@@ -17517,6 +17541,8 @@
         "historyUnreadable": "Orca couldn't read this chat's saved history.",
         "historyUnusable": "Unable to load this chat.",
         "historyUnavailable": "Orca couldn't open this chat's history right now.",
+        "savedByNewerOrca": "Chats were saved by a newer Orca.",
+        "updateOrcaToKeepUsing": "Update Orca to keep using them.",
         "unsupported": "The Orca running this chat doesn't support this. Update Orca, then try again.",
         "unreachable": "Orca couldn't reach the agent.",
         "recordFailed": "Orca couldn't record it in this chat's history.",
@@ -17785,6 +17811,7 @@
           "subtitle": "The transcript could not be read. Toggle back to the terminal to keep working.",
           "retryingSubtitle": "The transcript could not be read. Orca keeps trying to load it."
         },
+        "reconnecting": "Reconnecting to this chat…",
         "pairHost": "Pair a host to view agent chat history.",
         "notAgent": {
           "title": "No conversation here",
@@ -17819,6 +17846,7 @@
       },
       "ask": {
         "awaiting": "Awaiting user input:",
+        "awaitingUnnamed": "Awaiting user input",
         "asked": "Asked:",
         "questionCount": "{{value0}} questions"
       },
@@ -17855,7 +17883,9 @@
         "startedN": "Kicked off {{value0}} subagents",
         "ranOne": "Ran 1 subagent",
         "ranN": "Ran {{value0}} subagents",
-        "tokens": "{{value0}} tokens"
+        "tokens": "{{value0}} tokens",
+        "unnamed": "Subagent",
+        "writtenBy": "Written by subagent {{value0}}"
       },
       "conversationCommand": {
         "pendingWork": "Wait for pending work and messages to finish before using this command.",
@@ -17891,6 +17921,29 @@
         "label": "Context {{used}} of {{window}} tokens, {{percent}}% used",
         "title": "Context",
         "estimated": "Estimated from the last response."
+      },
+      "queuedMessages": {
+        "behindReturnedHold": "Waiting — a message ahead needs attention",
+        "awaitingAnswerHold": "Waiting for your answer",
+        "steer": "Steer",
+        "send": "Send",
+        "steerHint": "Submit without interrupting the model",
+        "sendHint": "Send this message now",
+        "delete": "Delete",
+        "moreActions": "More actions",
+        "editMessage": "Edit message",
+        "turnOffQueueing": "Turn off queueing",
+        "listLabel": "Queued messages",
+        "alreadySent": "This message was already sent.",
+        "editAlreadySent": "Already sent — your text is still in the composer.",
+        "withdrawnHold": "Stopped before it was sent",
+        "pausedSendFailed": "Couldn't send — press Send to retry.",
+        "paused": "Paused",
+        "queuePausedStopped": "Queue paused because you interrupted",
+        "queuePausedRestarted": "Queue paused because Orca restarted",
+        "queuePausedCleared": "Queue paused after you cleared the conversation",
+        "queuePaused": "Queue paused",
+        "resume": "Resume"
       }
     },
     "tab": {
@@ -18218,7 +18271,15 @@
             "spaces": "spaces"
           }
         }
+      },
+      "nativeChat": {
+        "queueFollowUpsTitle": "Queue follow-ups",
+        "queueFollowUpsCopy": "Messages you send while the agent is working wait as cards you can steer, edit, or delete. Messages with images send right away.",
+        "queueFollowUpsToggleLabel": "Toggle queue follow-ups"
       }
+    },
+    "agentChildRow": {
+      "ended": "Ended"
     }
   },
   "dashboardPopout": {
@@ -18521,5 +18582,75 @@
   },
   "common": {
     "retry": "Retry"
+  },
+  "terminal": {
+    "sessionSaveFailure": {
+      "title": "Could not save terminal session",
+      "capacity": "The device saving this terminal reported full storage or an exceeded storage quota. Free space on that device, then try again.",
+      "unknown": "Orca could not save the terminal state. Try again. If this continues, share the Orca logs with support so we can identify the cause."
+    },
+    "codexTerminalServerIsolationNotice": {
+      "title": "Orca now runs Codex without its shared server",
+      "description": "This makes agent status more reliable. You can turn it back on in Settings.",
+      "openSettings": "Open Settings"
+    }
+  },
+  "fileExplorer": {
+    "root": {
+      "label": "Explorer root",
+      "full": "Repository root",
+      "viewing": "Viewing: {{path}}",
+      "back": "Back to {{path}}",
+      "searchScope": "Search scope: workspace files",
+      "retry": "Retry",
+      "omittedFiles": "Files omitted by sparse checkout are not searched.",
+      "viewOnly": "Sparse checkout · View changes do not change checked-out files.",
+      "sparseStatus": "Sparse checkout",
+      "scopeDetails": "About sparse checkout scope",
+      "scopeExplanation": "The folder picker changes what you see, not which files are checked out. Repository root includes the checked-out root and ancestor files.",
+      "searchExplanation": "Names filters the folder you are viewing. Contents searches across the workspace. Files omitted by sparse checkout are not searched.",
+      "findInFolder": "Find in {{path}}",
+      "folderLoadError": "Could not load this folder:",
+      "emptyFolder": "No files in this folder"
+    }
+  },
+  "sparsePreset": {
+    "name": "Name",
+    "namePlaceholder": "Web app and shared UI",
+    "directories": "Directories",
+    "pathHelp": "One repository-relative directory per line. Spaces within a path are preserved.",
+    "coneHelp": "Git also keeps files at the repository root and along the parent folders of these directories.",
+    "cancel": "Cancel",
+    "save": "Save preset",
+    "new": "New sparse preset",
+    "edit": "Edit sparse preset",
+    "description": "Choose the folders a new workspace checks out.",
+    "saveFailed": "Could not save the preset. Try again.",
+    "nameRequired": "Name is required.",
+    "nameTooLong": "Name must be 80 characters or fewer.",
+    "nameExists": "A preset named “{{name}}” already exists.",
+    "loading": "Loading presets...",
+    "details": "What gets checked out?",
+    "finishEditing": "Save or cancel the preset to continue creating your workspace.",
+    "pathInstructions": "Pick folders from the repository, or type any repo-relative path.",
+    "retryLoad": "Retry loading presets",
+    "fullCheckout": "Full checkout",
+    "checkoutPreset": "Checkout preset",
+    "search": "Find a preset…",
+    "noMatches": "No matching presets.",
+    "allFiles": "All repository files",
+    "editNamed": "Edit {{name}}",
+    "addPath": "Add a folder",
+    "findPath": "Find a folder…",
+    "noPathMatches": "No folders found.",
+    "repositoryRoot": "Repository root",
+    "loadingPaths": "Reading folders…",
+    "pathsUnavailable": "Could not read this folder. Type the path instead.",
+    "pathAdded": "Added",
+    "openFolder": "Open {{name}}",
+    "findOrTypePath": "Find a folder, or type any path…",
+    "addTypedPath": "Add",
+    "noDirectories": "No folders added yet.",
+    "removePath": "Remove {{name}}"
   }
 }

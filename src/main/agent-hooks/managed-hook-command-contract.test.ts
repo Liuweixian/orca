@@ -97,6 +97,20 @@ const buildersByAgent = new Map<string, CommandBuilders>([
     }
   ],
   [
+    'codebuddy',
+    {
+      local: (path) => [
+        getManagedLifecycleHook(path, {
+          configDirName: '.codebuddy',
+          scriptBaseName: 'codebuddy-hook',
+          usesWindowsCompatLauncher: true,
+          windowsHookShell: 'powershell'
+        }).command
+      ],
+      remote: (path) => [getClaudeRemoteCommand(path)]
+    }
+  ],
+  [
     'codex',
     {
       local: (path) => [getCodexCommand(path), wrapReadablePosixHookCommand(path)],
@@ -226,7 +240,8 @@ describe('managed hook command contract', () => {
         const scannedCommand =
           platform === 'win32' &&
           ((agent === 'codex' && command.startsWith('if (Test-Path')) ||
-            (agent === 'qoder' && command.startsWith('$scriptPath = Join-Path')))
+            ((agent === 'qoder' || agent === 'codebuddy') &&
+              command.startsWith('$scriptPath = Join-Path')))
             ? command
                 .replaceAll('$LASTEXITCODE', '')
                 .replaceAll('$env:', '')

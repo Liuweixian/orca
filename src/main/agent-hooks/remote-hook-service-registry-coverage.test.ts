@@ -1,3 +1,4 @@
+import { codebuddyHookService } from '../codebuddy/hook-service'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('electron', () => ({
@@ -55,6 +56,7 @@ describe('remote hook service registry coverage', () => {
       ['codely', codelyHookService],
       ['muse', museHookService],
       ['qoder', qoderHookService],
+      ['codebuddy', codebuddyHookService],
       ['zcode', zcodeHookService],
       ['dsh', dshHookService]
     ])
