@@ -44,6 +44,12 @@ export const sendTerminalSelectionToAgentTarget = async ({
     focus: () => pane.terminal.focus()
   })
 
+  // Why: this send reads a terminal pane's selection, so only a terminal
+  // message target has the pane leaf it delivers to.
+  if (target.messageTarget.kind !== 'terminal') {
+    return
+  }
+
   const pending = toast.loading(
     translate(
       'components.terminalPane.TerminalContextMenu.sendToAgentSending',
@@ -54,7 +60,7 @@ export const sendTerminalSelectionToAgentTarget = async ({
     const result = await sendNotesToActiveAgentSession({
       worktreeId,
       prompt: selection,
-      noteTarget: { tabId: target.tabId, leafId: target.leafId }
+      noteTarget: { tabId: target.tabId, leafId: target.messageTarget.leafId }
     })
     if (result.status === 'sent') {
       toast.success(

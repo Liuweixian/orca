@@ -30,6 +30,7 @@ import zcodeUrl from '../../../shared/agent-icons/zcode.png?url'
 import openclawUrl from '../../../shared/agent-icons/openclaw.png?url'
 import codelyUrl from '../../../shared/agent-icons/codely.png?url'
 import dshUrl from '../../../shared/agent-icons/dsh.png?url'
+import jcodeUrl from '../../../shared/agent-icons/jcode.png?url'
 
 // Why: these agents have no hand-authored SVG glyph, so previously their icons
 // loaded live from Google's favicon service. That service is unreachable in some
@@ -45,6 +46,7 @@ export const AGENT_FAVICON_ASSETS: Partial<Record<TuiAgent, string>> = {
   trae: traeUrl,
   'prime-agent': primeAgentUrl,
   qoder: qoderUrl,
+  'qoder-cn': qoderUrl,
   gemini: geminiUrl,
   antigravity: antigravityUrl,
   goose: gooseUrl,
@@ -69,5 +71,6 @@ export const AGENT_FAVICON_ASSETS: Partial<Record<TuiAgent, string>> = {
   dsh: dshUrl,
   zcode: zcodeUrl,
   openclaw: openclawUrl,
-  codely: codelyUrl
+  codely: codelyUrl,
+  jcode: jcodeUrl
 }

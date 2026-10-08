@@ -55,7 +55,7 @@ const WORKTREE_ID = 'wt-menu-send'
 const TARGET: NotesSendAgentTarget = {
   paneKey: 'tab-a|leaf-b',
   tabId: 'tab-a',
-  leafId: 'leaf-b',
+  messageTarget: { kind: 'terminal', tabId: 'tab-a', leafId: 'leaf-b' },
   agentType: 'claude',
   tabTitle: 'Bug bash',
   status: 'eligible'

@@ -29,7 +29,8 @@ export const AGENT_NAMES = [
   'grok',
   'devin',
   'codely',
-  'zcode'
+  'zcode',
+  'jcode'
 ]
 
 // Why: Windows agent titles can surface launcher process names such as

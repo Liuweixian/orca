@@ -1,4 +1,5 @@
 import type { RuntimeTerminalWait } from '../../../shared/runtime-types'
+import { isTuiAgent } from '../../../shared/tui-agent-config'
 import type { TuiAgent } from '../../../shared/tui-agent'
 import { useAppStore } from '@/store'
 import { callRuntimeRpc, getActiveRuntimeTarget } from '@/runtime/runtime-rpc-client'
@@ -93,7 +94,7 @@ async function sendNotesToActiveAgentSessionInternal({
         runtimeTarget,
         terminal.handle,
         trimmedPrompt,
-        terminal.agentIdentity
+        isTuiAgent(terminal.agentIdentity) ? terminal.agentIdentity : null
       ),
       noteTarget
     )
@@ -168,7 +169,7 @@ async function sendNotesToActiveAgentSessionInternal({
     return reportNoteSendFailure(
       await sendPromptWithGuardedPasteAndEnter(runtimeTarget, terminal.handle, trimmedPrompt, {
         allowLegacyFallback: false,
-        agent: terminal.agentIdentity
+        agent: isTuiAgent(terminal.agentIdentity) ? terminal.agentIdentity : null
       }),
       noteTarget
     )

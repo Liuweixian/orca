@@ -31,6 +31,7 @@ export function TerminalSendToAgentSubmenu({
 }: TerminalSendToAgentSubmenuProps): React.JSX.Element {
   const agentStatusByPaneKey = useAppStore((s) => s.agentStatusByPaneKey)
   const tabsByWorktree = useAppStore((s) => s.tabsByWorktree)
+  const unifiedTabsByWorktree = useAppStore((s) => s.unifiedTabsByWorktree)
   const terminalLayoutsByTabId = useAppStore((s) => s.terminalLayoutsByTabId)
   const ptyIdsByTabId = useAppStore(useShallow((s) => selectLivePtyIdsForWorktree(s, worktreeId)))
   const runtimePaneTitlesByTabId = useAppStore((s) => s.runtimePaneTitlesByTabId)
@@ -43,16 +44,20 @@ export function TerminalSendToAgentSubmenu({
       {
         agentStatusByPaneKey,
         tabsByWorktree,
+        unifiedTabsByWorktree,
         terminalLayoutsByTabId,
         ptyIdsByTabId,
         runtimePaneTitlesByTabId
       },
       worktreeId
-    )
+      // Why: this menu pastes the pane's selected text into a terminal; a
+      // structured chat has no pane to read from, so only terminal rows list.
+    ).filter((target) => target.messageTarget.kind === 'terminal')
   }, [
     agentStatusEpoch,
     agentStatusByPaneKey,
     tabsByWorktree,
+    unifiedTabsByWorktree,
     terminalLayoutsByTabId,
     runtimePaneTitlesByTabId,
     ptyIdsByTabId,
