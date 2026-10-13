@@ -7,6 +7,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { LinearScopeSelector } from '@/components/linear-scope-selector'
 import { TaskPageBrowserTabStrip } from './browser/TaskPageBrowserTabStrip'
+import { getGitHubProjectSourceSummary } from '../task-page-source-context'
 import {
   Select,
   SelectTrigger,
@@ -38,6 +39,10 @@ export function TaskPageSourceBar({
     openTaskPageBrowserNewTab,
     taskSourceAvailabilityNoticeByProvider,
     taskSourceContextSummary,
+    githubMode,
+    accountBackedTaskSourceHostId,
+    hostRegistryById,
+    hostLabelById,
     taskSourceManuallyChangedRef,
     setSelectedJiraIssueKey,
     setSelectedJiraIssueFallback,
@@ -53,6 +58,16 @@ export function TaskPageSourceBar({
     handleLinearTeamSelectionChange,
     handleLinearScopeOpen
   } = model
+  const sourceSummary =
+    taskSource === 'github' && githubMode === 'project'
+      ? getGitHubProjectSourceSummary({
+          providerLabel:
+            visibleSourceOptions.find((source) => source.id === 'github')?.label ?? 'GitHub',
+          hostId: accountBackedTaskSourceHostId,
+          host: hostRegistryById.get(accountBackedTaskSourceHostId),
+          hostLabelById
+        })
+      : taskSourceContextSummary
   return (
     <div className="flex items-center justify-between gap-2">
       <div
@@ -139,9 +154,9 @@ export function TaskPageSourceBar({
         {!taskPageBrowserActive ? (
           <div
             className="hidden min-w-0 max-w-[min(420px,40vw)] items-center rounded-md border border-border/50 bg-muted/35 px-2 py-1 text-xs text-muted-foreground sm:flex"
-            title={taskSourceContextSummary.title}
+            title={sourceSummary.title}
           >
-            <span className="truncate">{taskSourceContextSummary.label}</span>
+            <span className="truncate">{sourceSummary.label}</span>
           </div>
         ) : null}
       </div>
