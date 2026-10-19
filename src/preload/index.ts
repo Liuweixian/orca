@@ -80,6 +80,7 @@ import { cursorAccountsApi } from './api/cursor-accounts-bridge'
 import { sshApi } from './api/ssh-bridge'
 import { legacyRelayBridgeApi } from './api/legacy-relay-bridge-api'
 import { automationsApi } from './api/automations-bridge'
+import { agentsWorkflowsApi } from './api/agents-workflow-bridge'
 import { e2eApi } from './api/e2e-bridge'
 import { mobileApi } from './api/mobile-bridge'
 import { agentStatusApi } from './api/agent-status-bridge'
@@ -181,6 +182,7 @@ const api = {
   ssh: sshApi,
   legacyRelayBridge: legacyRelayBridgeApi,
   automations: automationsApi,
+  agentsWorkflows: agentsWorkflowsApi,
   e2e: e2eApi,
   mobile: mobileApi,
   agentStatus: agentStatusApi,

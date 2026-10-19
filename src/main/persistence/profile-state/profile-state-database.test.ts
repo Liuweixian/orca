@@ -50,6 +50,7 @@ describe('profile state database', () => {
       expect(
         opened.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all()
       ).toEqual([
+        { name: 'profile_state_agents_workflow_runs' },
         { name: 'profile_state_automation_runs' },
         { name: 'profile_state_automation_runs_meta' },
         { name: 'profile_state_documents' },
@@ -94,6 +95,7 @@ describe('profile state database', () => {
       expect(
         opened.db.prepare("SELECT name FROM sqlite_master WHERE type = 'table' ORDER BY name").all()
       ).toEqual([
+        { name: 'profile_state_agents_workflow_runs' },
         { name: 'profile_state_automation_runs' },
         { name: 'profile_state_automation_runs_meta' },
         { name: 'profile_state_documents' },

@@ -22,6 +22,10 @@ import {
   validateProfileStateDomainTransaction,
   type PreparedProfileStateMutation
 } from './profile-state-domain-write-validation'
+import {
+  AGENTS_WORKFLOW_RUNS_DOMAIN,
+  replaceProfileStateAgentsWorkflowRuns
+} from './profile-state-agents-workflow-runs'
 
 export { ProfileStateRevisionConflictError } from './profile-state-documents'
 
@@ -193,6 +197,14 @@ export function writeProfileStateDomains(
       }
       if (mutation.payload === null) {
         db.prepare('DELETE FROM profile_state_documents WHERE domain = ?').run(mutation.domain)
+        if (mutation.domain === AGENTS_WORKFLOW_RUNS_DOMAIN) {
+          replaceProfileStateAgentsWorkflowRuns(
+            db,
+            null,
+            nextRevision,
+            (mutation.now ?? Date.now)()
+          )
+        }
       } else {
         const updatedAt = (mutation.now ?? Date.now)()
         if (!Number.isSafeInteger(updatedAt) || updatedAt < 0) {
@@ -216,6 +228,9 @@ export function writeProfileStateDomains(
           updatedAt,
           mutation.payloadHash
         )
+        if (mutation.domain === AGENTS_WORKFLOW_RUNS_DOMAIN) {
+          replaceProfileStateAgentsWorkflowRuns(db, mutation.payload, nextRevision, updatedAt)
+        }
       }
     }
     db.prepare(

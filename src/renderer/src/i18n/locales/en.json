@@ -415,7 +415,8 @@
     "help": "Help",
     "paste": "Paste",
     "copy": "Copy",
-    "selectAll": "Select All"
+    "selectAll": "Select All",
+    "showAgentsWorkflowButton": "Show Workflows Button"
   },
   "tray": {
     "openOrca": "Open Orca",
@@ -5785,7 +5786,8 @@
           "fee535205b": "Tasks",
           "d599269755": "Hide from sidebar",
           "artifacts": "Artifacts",
-          "skills": "Skills"
+          "skills": "Skills",
+          "agentsWorkflows": "Workflows"
         },
         "SidebarRepositoryFilterSection": {
           "d3a9c4cea1": "Clear",
@@ -7232,7 +7234,8 @@
           "showPinnedWorktreesInGroups": {
             "title": "Also show pinned worktrees in their original lists",
             "description": "Pinned worktrees stay in Pinned and also appear in All, Project, Status, and PR."
-          }
+          },
+          "agentsWorkflows": "Show Workflows Button"
         },
         "AutoRenameBranchFromWorkSetting": {
           "1626524572": "Nautilus",
@@ -9750,6 +9753,13 @@
               "kw": {
                 "cursor": "cursor"
               }
+            },
+            "agentsWorkflows": {
+              "title": "Show Workflows Button",
+              "description": "Show the Workflows button at the top of the left sidebar.",
+              "workflow": "workflow",
+              "agent": "agent",
+              "chinese": "工作流"
             }
           }
         },
@@ -18109,6 +18119,127 @@
         "a62f9db53d": "Cancel",
         "c77189bc0c": "Update filter",
         "19af906d12": "Save filter"
+      },
+      "agents-workflow": {
+        "newAgent": "New agent",
+        "newCondition": "New condition",
+        "newLoop": "New loop",
+        "exported": "Workflow JSON copied.",
+        "exportFailed": "Could not copy workflow JSON.",
+        "imported": "Workflow JSON imported.",
+        "importFailed": "Could not import workflow JSON.",
+        "importFile": "Import workflow JSON file",
+        "edge": {
+          "yes": "Yes",
+          "no": "No",
+          "each": "Each",
+          "done": "Done"
+        },
+        "inspector": {
+          "runInput": "Run input",
+          "nodeOutput": "{{title}} output",
+          "loopItem": "{{title}} item",
+          "loopIndex": "{{title}} index",
+          "loopOutput": "{{title}} results",
+          "empty": "Select a node to edit its settings.",
+          "title": "Title",
+          "agent": "Agent",
+          "prompt": "Prompt",
+          "insertVariable": "Insert variable",
+          "extraArgs": "Extra agent arguments",
+          "terminal": "Terminal node",
+          "input": "Input",
+          "operator": "Operator",
+          "contains": "Contains",
+          "notContains": "Does not contain",
+          "emptyOperator": "Is empty",
+          "notEmpty": "Is not empty",
+          "lengthAtLeast": "Length at least",
+          "operand": "Value",
+          "loopMode": "Iteration mode",
+          "fixedCount": "Fixed count",
+          "jsonList": "JSON list",
+          "count": "Count",
+          "items": "Items",
+          "issues": "Issues"
+        },
+        "node": {
+          "start": "Start",
+          "agent": "Agent",
+          "condition": "Condition",
+          "loop": "Loop"
+        },
+        "topbar": {
+          "valid": "Ready to save",
+          "errors": "{{count}} issues",
+          "addAgent": "Agent",
+          "addCondition": "Condition",
+          "addLoop": "Loop",
+          "import": "Import JSON",
+          "export": "Copy JSON",
+          "run": "Run",
+          "delete": "Delete workflow",
+          "saving": "Saving",
+          "save": "Save",
+          "runInput": "Run input",
+          "runInputPlaceholder": "Manual run input",
+          "starting": "Starting"
+        },
+        "loading": "Loading workflows…",
+        "createFirst": "Create workflow",
+        "conflict": "This workflow changed in another window. Reload it before saving.",
+        "reload": "Reload",
+        "delete": {
+          "title": "Delete workflow?",
+          "description": "Run history remains available until retention removes it.",
+          "cancel": "Cancel",
+          "confirm": "Delete"
+        },
+        "definition": {
+          "new": "New workflow",
+          "name": "Name",
+          "enabled": "Enabled",
+          "defaultInput": "Default scheduled input",
+          "schedule": "Scheduled runs",
+          "timezone": "Timezone",
+          "grace": "Missed-run grace (minutes)"
+        },
+        "history": {
+          "title": "Run history",
+          "empty": "No runs yet.",
+          "more": "Load more",
+          "select": "Select a run to inspect attempts and output.",
+          "revision": "Definition revision {{revision}}",
+          "cancel": "Cancel run",
+          "skippedActive": "Skipped because another run was active.",
+          "skippedGrace": "Skipped because the missed-run grace period elapsed.",
+          "pending": "Pending",
+          "running": "Running",
+          "cancelling": "Cancelling",
+          "completed": "Completed",
+          "failed": "Failed",
+          "cancelled": "Cancelled",
+          "skipped": "Skipped",
+          "unverifiable": "Unverifiable",
+          "attemptPending": "Pending",
+          "attemptRunning": "Running",
+          "attemptCompleted": "Completed",
+          "attemptFailed": "Failed",
+          "attemptSkipped": "Skipped",
+          "attemptCancelled": "Cancelled",
+          "attemptUnverifiable": "Unverifiable"
+        },
+        "controller": {
+          "loadFailed": "Could not load the workflow.",
+          "listFailed": "Could not load workflows.",
+          "createFailed": "Could not create the workflow.",
+          "saved": "Workflow saved.",
+          "saveFailed": "Could not save the workflow.",
+          "deleteFailed": "Could not delete the workflow.",
+          "runFailed": "Could not start the workflow.",
+          "runLoadFailed": "Could not load the run.",
+          "newName": "New workflow"
+        }
       }
     },
     "i18n": {

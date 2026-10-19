@@ -15,6 +15,7 @@ import { SessionSnapshotOperations } from './session-snapshot-operations'
 import { MetadataLineageOperations } from './metadata-lineage-operations'
 import { ProjectCollectionOperations } from './project-collection-operations'
 import { AutomationPersistence } from './automation-persistence'
+import { AgentsWorkflowPersistence } from './agents-workflow-persistence'
 import { MobileTabSelectionPersistence } from './mobile-tab-selection-persistence'
 import { RemoteLayoutSnapshotPersistence } from '../../remote-layout-snapshot'
 import { SparsePresetPersistence } from './sparse-preset-persistence'
@@ -35,6 +36,7 @@ export type StoreDomainOperations = WriteSchedulingOperations &
   RemoteLayoutSnapshotPersistence &
   SparsePresetPersistence &
   AutomationPersistence &
+  AgentsWorkflowPersistence &
   MetadataLineageOperations &
   ProfilePreferences &
   SessionHostPartitionOperations &
@@ -65,6 +67,7 @@ export type StoreDomains = {
   metadata: MetadataLineageOperations
   projects: ProjectCollectionOperations
   automations: AutomationPersistence
+  agentsWorkflows: AgentsWorkflowPersistence
   mobileTabSelections: MobileTabSelectionPersistence
   remoteLayoutSnapshots: RemoteLayoutSnapshotPersistence
   sparsePresets: SparsePresetPersistence
@@ -87,6 +90,7 @@ export const STORE_DOMAIN_OPERATION_CLASSES = [
   RemoteLayoutSnapshotPersistence,
   SparsePresetPersistence,
   AutomationPersistence,
+  AgentsWorkflowPersistence,
   MetadataLineageOperations,
   ProfilePreferences,
   SessionHostPartitionOperations,
@@ -133,6 +137,7 @@ export function createStoreDomains(runtime: StoreRuntimeState): StoreDomains {
   const metadata = new MetadataLineageOperations(runtime, scheduling, sessions)
   const projects = new ProjectCollectionOperations(runtime, repos, scheduling, metadata)
   const automations = new AutomationPersistence(runtime, flushBarriers, preferences)
+  const agentsWorkflows = new AgentsWorkflowPersistence(runtime, flushBarriers)
   const mobileTabSelections = new MobileTabSelectionPersistence(runtime, scheduling)
   const remoteLayoutSnapshots = new RemoteLayoutSnapshotPersistence(runtime, scheduling)
   const sparsePresets = new SparsePresetPersistence(runtime, scheduling)
@@ -162,6 +167,7 @@ export function createStoreDomains(runtime: StoreRuntimeState): StoreDomains {
     metadata,
     projects,
     automations,
+    agentsWorkflows,
     mobileTabSelections,
     remoteLayoutSnapshots,
     sparsePresets,

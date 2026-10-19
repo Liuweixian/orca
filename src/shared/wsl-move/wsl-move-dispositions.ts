@@ -91,6 +91,8 @@ export const PERSISTED_STATE_DISPOSITIONS = {
   automationRuns: moveDisposition(19, {
     note: 'An in-flight run in scope blocks the move.'
   }),
+  agentsWorkflows: notApplicableDisposition(62, 'Desktop authority keeps workflow definitions.'),
+  agentsWorkflowRuns: notApplicableDisposition(62, 'Desktop authority keeps workflow runs.'),
   orcadMigrationImportReceipts: notApplicableDisposition(67, 'Mover-owned.'),
   orcadMigrationEvictedReceipts: notApplicableDisposition(67, 'Mover-owned.'),
   orcadMigrationStagedCatalogs: notApplicableDisposition(68, 'Mover-owned.'),

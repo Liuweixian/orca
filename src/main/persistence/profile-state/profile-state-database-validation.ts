@@ -11,6 +11,7 @@ import {
   PROFILE_STATE_AUTOMATION_RUNS_TABLE
 } from './profile-state-automation-runs'
 import { ProfileStateDatabaseOpenError } from './profile-state-database-errors'
+import { PROFILE_STATE_AGENTS_WORKFLOW_RUNS_TABLE } from './profile-state-agents-workflow-runs'
 
 export function verifyProfileStateSchema(
   db: Database.Database,
@@ -24,7 +25,8 @@ export function verifyProfileStateSchema(
       !tables.has('profile_state_documents') ||
       (schemaVersion >= 2 &&
         (!tables.has(PROFILE_STATE_AUTOMATION_RUNS_META_TABLE) ||
-          !tables.has(PROFILE_STATE_AUTOMATION_RUNS_TABLE)))
+          !tables.has(PROFILE_STATE_AUTOMATION_RUNS_TABLE))) ||
+      (schemaVersion >= 4 && !tables.has(PROFILE_STATE_AGENTS_WORKFLOW_RUNS_TABLE))
     ) {
       throw new Error('Profile state database schema is incomplete')
     }
@@ -55,6 +57,19 @@ export function verifyProfileStateSchema(
         ordinal: { type: 'INTEGER', notNull: true, primaryKey: false },
         payload: { type: 'TEXT', notNull: true, primaryKey: false },
         content_hash: { type: 'TEXT', notNull: true, primaryKey: false },
+        revision: { type: 'INTEGER', notNull: true, primaryKey: false },
+        updated_at: { type: 'INTEGER', notNull: true, primaryKey: false }
+      })
+    }
+    if (schemaVersion >= 4) {
+      verifyProfileStateColumns(db, PROFILE_STATE_AGENTS_WORKFLOW_RUNS_TABLE, {
+        run_id: { type: 'TEXT', notNull: true, primaryKey: true },
+        workflow_id: { type: 'TEXT', notNull: true, primaryKey: false },
+        request_key: { type: 'TEXT', notNull: true, primaryKey: false },
+        workspace_id: { type: 'TEXT', notNull: false, primaryKey: false },
+        status: { type: 'TEXT', notNull: true, primaryKey: false },
+        created_at: { type: 'INTEGER', notNull: true, primaryKey: false },
+        payload: { type: 'TEXT', notNull: true, primaryKey: false },
         revision: { type: 'INTEGER', notNull: true, primaryKey: false },
         updated_at: { type: 'INTEGER', notNull: true, primaryKey: false }
       })

@@ -64,6 +64,7 @@
     "../src/main/persistence/profile-state/profile-state-automation-runs-storage.ts",
     "../src/main/persistence/profile-state/profile-state-automation-runs-validation.ts",
     "../src/main/persistence/profile-state/profile-state-automation-runs-writer.ts",
+    "../src/main/persistence/profile-state/profile-state-agents-workflow-runs.ts",
     "../src/main/persistence/profile-state/profile-state-offline-settings.ts",
     "../src/main/persistence/profile-state/legacy-json/profile-state-export-path.ts",
     "../src/main/persistence/profile-state/legacy-json/profile-state-legacy-backup-path.ts",

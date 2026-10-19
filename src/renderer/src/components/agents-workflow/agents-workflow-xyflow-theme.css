@@ -1,0 +1,32 @@
+@import '@xyflow/react/dist/style.css';
+
+/*
+ * Why the unsuffixed --xy-* names: @xyflow/react re-declares every --xy-*-default
+ * variable on .react-flow itself, and an element's own declaration always beats
+ * one inherited from this wrapper — so -default overrides set here never reach
+ * Controls or MiniMap (white buttons in dark mode, washed-out minimap). The
+ * library only looks the plain names up first and never declares them, so these
+ * are the ones that actually apply.
+ */
+.agents-workflow-canvas {
+  --xy-background-color: var(--background);
+  --xy-background-pattern-color: var(--border);
+  --xy-edge-stroke-selected: var(--ring);
+  --xy-connectionline-stroke: var(--ring);
+  --xy-minimap-background-color: var(--card);
+  --xy-minimap-mask-background-color: color-mix(in srgb, var(--background) 70%, transparent);
+  --xy-controls-button-background-color: var(--card);
+  --xy-controls-button-background-color-hover: var(--accent);
+  --xy-controls-button-color: var(--card-foreground);
+  --xy-controls-button-border-color: var(--border);
+}
+
+/* Why: the minimap panel ships with no outline, and in light mode --card
+   equals the page background, so the panel vanished into the canvas. */
+.agents-workflow-canvas .react-flow__minimap {
+  border: 1px solid var(--border);
+}
+
+.agents-workflow-edge-aggregate {
+  stroke-dasharray: 6 4;
+}

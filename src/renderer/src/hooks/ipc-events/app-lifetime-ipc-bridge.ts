@@ -2,6 +2,7 @@ import { observeJiraImageHostStatus } from '@/runtime/runtime-jira-image-cache'
 import type { RuntimeHostStatusSnapshot } from '../../../../shared/runtime-host-status'
 import { getTabIdsAwaitingHostHydrationRemount } from '@/lib/parked-terminal-host-hydration'
 import { emitAutomationsChangedWindowEvent } from '@/lib/automations-changed-window-event'
+import { emitAgentsWorkflowsChangedWindowEvent } from '@/lib/agents-workflows-changed-window-event'
 import { createBackgroundSleepingAgentWakeDispatcher } from '@/lib/wake-sleeping-agents-in-background'
 import { attachMobileMarkdownBridge } from '@/runtime/mobile-markdown-bridge'
 import { remoteRuntimeTerminalColorPush } from '@/runtime/remote-runtime-terminal-color-push'
@@ -54,6 +55,11 @@ export function installAppLifetimeIpcEvents(): () => void {
   unsubs.push(attachMobileMarkdownBridge())
   unsubs.push(
     window.api.automations.onChanged((payload) => emitAutomationsChangedWindowEvent(payload))
+  )
+  unsubs.push(
+    window.api.agentsWorkflows.onChanged((payload) =>
+      emitAgentsWorkflowsChangedWindowEvent(payload)
+    )
   )
 
   const worktreeRuntime = createWorktreeEventRuntime(unsubs, isRuntimeEnvironmentActive)

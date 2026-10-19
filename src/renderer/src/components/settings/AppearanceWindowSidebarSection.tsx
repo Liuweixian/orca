@@ -288,11 +288,35 @@ export function AppearanceWindowSidebarSection({
 
                   <SearchableSetting
                     title={translate(
+                      'auto.components.settings.AppearancePane.agentsWorkflows',
+                      'Show Workflows Button'
+                    )}
+                    description={sidebarEntries[2]?.description}
+                    keywords={
+                      sidebarEntries[2]?.keywords ?? ['workflow', 'agent', '工作流', 'sidebar']
+                    }
+                  >
+                    <SettingsSwitchRow
+                      label={translate(
+                        'auto.components.settings.AppearancePane.agentsWorkflows',
+                        'Show Workflows Button'
+                      )}
+                      checked={settings.showAgentsWorkflowButton !== false}
+                      onChange={() =>
+                        updateSettings({
+                          showAgentsWorkflowButton: !(settings.showAgentsWorkflowButton !== false)
+                        })
+                      }
+                    />
+                  </SearchableSetting>
+
+                  <SearchableSetting
+                    title={translate(
                       'auto.components.settings.AppearancePane.9da1020447',
                       'Show Orca Mobile Button'
                     )}
-                    description={sidebarEntries[2]?.description}
-                    keywords={sidebarEntries[2]?.keywords ?? ['mobile', 'phone', 'sidebar']}
+                    description={sidebarEntries[3]?.description}
+                    keywords={sidebarEntries[3]?.keywords ?? ['mobile', 'phone', 'sidebar']}
                   >
                     <SettingsSwitchRow
                       label={translate(

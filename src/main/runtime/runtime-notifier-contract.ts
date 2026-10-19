@@ -34,6 +34,7 @@ export type RuntimeNotifier = {
     selector?: { kind: 'self' } | { kind: 'ssh'; targetId: string } | { kind: 'orphan' }
     reason?: 'definition' | 'run' | 'usage'
   }): void
+  agentsWorkflowsChanged?(payload: { reason?: 'definition' | 'run' }): void
   worktreesChanged(
     repoId: string,
     renamed?: { oldWorktreeId: string; newWorktreeId: string },

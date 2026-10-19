@@ -67,10 +67,12 @@ export function getSchedulePresetDraft(
 export function AutomationSchedulePicker({
   draft,
   validateAdvancedSchedule = isValidAutomationSchedule,
+  allowCustom = true,
   onDraftChange
 }: {
   draft: AutomationDraft
   validateAdvancedSchedule?: (schedule: string) => boolean
+  allowCustom?: boolean
   onDraftChange: (updater: (current: AutomationDraft) => AutomationDraft) => void
 }): React.JSX.Element {
   const customSchedule = draft.customSchedule.trim()
@@ -115,7 +117,9 @@ export function AutomationSchedulePicker({
           <SelectValue />
         </SelectTrigger>
         <SelectContent position="popper">
-          {AUTOMATION_SCHEDULE_PRESET_OPTIONS.map(([value, fallbackLabel, labelKey]) => (
+          {AUTOMATION_SCHEDULE_PRESET_OPTIONS.filter(
+            ([value]) => allowCustom || value !== 'custom'
+          ).map(([value, fallbackLabel, labelKey]) => (
             <SelectItem key={value} value={value}>
               {getAutomationSchedulePresetLabel([value, fallbackLabel, labelKey])}
             </SelectItem>

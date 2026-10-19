@@ -6,6 +6,8 @@ import type {
   SshTarget
 } from './ssh-types'
 import type { Automation, AutomationRun } from './automations-types'
+import type { AgentsWorkflowDefinition } from './agents-workflow-types'
+import type { AgentsWorkflowRun } from './agents-workflow-run-types'
 import type { MigrationUnsupportedPtyEntry } from './agent-status-types'
 import type { FeatureInteractionTelemetryBucketState } from './feature-interactions'
 import type { CodexResetCreditAttemptLedger } from './codex-reset-credit-attempt-ledger'
@@ -118,6 +120,10 @@ export type PersistedState = {
   legacyPaneKeyAliasEntries: LegacyPaneKeyAliasEntry[]
   automations: Automation[]
   automationRuns: AutomationRun[]
+  /** Desktop-authority workflow definitions. Absent in profiles written by older builds. */
+  agentsWorkflows?: AgentsWorkflowDefinition[]
+  /** Durable workflow execution history. Absent in profiles written by older builds. */
+  agentsWorkflowRuns?: AgentsWorkflowRun[]
   /** Catalogs an orcad imported, so a retried commit returns the same receipt. */
   orcadMigrationImportReceipts?: OrcadMigrationImportReceipt[]
   /** Commits whose full receipt aged out of the list above; still answered as committed. */

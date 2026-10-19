@@ -29,6 +29,56 @@ import {
 } from './normalize-loaded-state-collections'
 import { normalizeRetiredNameRegistryMap } from './retired-name-registry-normalization'
 import { hydrateWorktreeMetaAliasProjection } from './worktree-meta-alias-projection'
+import { AgentsWorkflowDefinitionSchema } from '../../../shared/agents-workflow-types'
+import { AgentsWorkflowRunSchema } from '../../../shared/agents-workflow-run-types'
+
+function normalizeAgentsWorkflows(value: unknown): PersistedState['agentsWorkflows'] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.flatMap((entry) => {
+    const parsed = AgentsWorkflowDefinitionSchema.safeParse(entry)
+    return parsed.success ? [parsed.data] : []
+  })
+}
+
+function normalizeAgentsWorkflowRuns(
+  value: unknown,
+  markNeedsSave: () => void
+): PersistedState['agentsWorkflowRuns'] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  const now = Date.now()
+  return value.flatMap((entry) => {
+    const parsed = AgentsWorkflowRunSchema.safeParse(entry)
+    if (!parsed.success) {
+      return []
+    }
+    if (
+      parsed.data.status !== 'pending' &&
+      parsed.data.status !== 'running' &&
+      parsed.data.status !== 'cancel_requested'
+    ) {
+      return [parsed.data]
+    }
+    markNeedsSave()
+    return [
+      {
+        ...parsed.data,
+        status: 'unverifiable' as const,
+        finishedAt: now,
+        errorCode: 'execution_evidence_lost',
+        errorMessage: 'The app restarted without reliable process-exit evidence.',
+        attempts: parsed.data.attempts.map((attempt) =>
+          attempt.status === 'running' || attempt.status === 'pending'
+            ? { ...attempt, status: 'unverifiable' as const, finishedAt: now }
+            : attempt
+        )
+      }
+    ]
+  })
+}
 
 export function normalizeLoadedProfileState(
   parsed: PersistedState,
@@ -112,6 +162,8 @@ export function normalizeLoadedProfileState(
     legacyPaneKeyAliasEntries: normalizeLegacyPaneKeyAliasEntries(parsed.legacyPaneKeyAliasEntries),
     automations: Array.isArray(parsed.automations) ? parsed.automations : [],
     automationRuns: normalizeLoadedAutomationRuns(parsed, markNeedsSave),
+    agentsWorkflows: normalizeAgentsWorkflows(parsed.agentsWorkflows),
+    agentsWorkflowRuns: normalizeAgentsWorkflowRuns(parsed.agentsWorkflowRuns, markNeedsSave),
     orcadMigrationImportReceipts: normalizeOrcadMigrationImportReceipts(
       parsed.orcadMigrationImportReceipts
     ),

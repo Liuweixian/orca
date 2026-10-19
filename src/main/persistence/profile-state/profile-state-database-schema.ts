@@ -4,8 +4,9 @@ import {
   PROFILE_STATE_AUTOMATION_RUNS_META_TABLE,
   PROFILE_STATE_AUTOMATION_RUNS_TABLE
 } from './profile-state-automation-runs-model'
+import { PROFILE_STATE_AGENTS_WORKFLOW_RUNS_TABLE } from './profile-state-agents-workflow-runs'
 
-export const PROFILE_STATE_DATABASE_SCHEMA_VERSION = 3
+export const PROFILE_STATE_DATABASE_SCHEMA_VERSION = 4
 export const PROFILE_STATE_DOCUMENT_VERSION = 1
 
 export const PROFILE_STATE_META_PROFILE_ID = 'profile_id'
@@ -37,5 +38,17 @@ export function createProfileStateTablesSql(): string {
     content_hash TEXT NOT NULL,
     revision INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
+  );
+  CREATE TABLE IF NOT EXISTS ${PROFILE_STATE_AGENTS_WORKFLOW_RUNS_TABLE} (
+    run_id TEXT PRIMARY KEY NOT NULL,
+    workflow_id TEXT NOT NULL,
+    request_key TEXT NOT NULL,
+    workspace_id TEXT,
+    status TEXT NOT NULL,
+    created_at INTEGER NOT NULL,
+    payload TEXT NOT NULL,
+    revision INTEGER NOT NULL,
+    updated_at INTEGER NOT NULL,
+    UNIQUE(workflow_id, request_key)
   );`
 }

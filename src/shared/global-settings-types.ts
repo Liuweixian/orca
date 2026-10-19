@@ -258,6 +258,8 @@ export type GlobalSettings = GlobalSettingsBase & {
   showTasksButton: boolean
   /** Only toggles the sidebar shortcut; Automations stay reachable from Settings/View menu. */
   showAutomationsButton?: boolean
+  /** Only toggles the sidebar shortcut; Agent Workflows stay reachable from Appearance settings. */
+  showAgentsWorkflowButton?: boolean
   /** Deprecated: Artifacts are always available. Use showArtifactsButton for sidebar visibility. */
   artifactsEnabled?: boolean
   /** Capability gate for agent-driven publishing; off until granted, enforced in main, not just the UI. */

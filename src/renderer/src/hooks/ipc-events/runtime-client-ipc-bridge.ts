@@ -1,4 +1,5 @@
 import { applyHostWorktreeTerminalSleepState } from '@/components/terminal-pane/pty-shutdown-exit-deferral'
+import { emitAgentsWorkflowsChangedWindowEvent } from '@/lib/agents-workflows-changed-window-event'
 import { dispatchTerminalSideEffectBatch } from '@/components/terminal-pane/terminal-side-effect-facts-handler'
 import { emitAutomationsChangedWindowEvent } from '@/lib/automations-changed-window-event'
 import { applyNativeChatLaunchDraftResolved } from '@/runtime/native-chat-launch-draft-runtime-resolution'
@@ -122,6 +123,13 @@ export function registerRuntimeClientIpcBridge(
       emitAutomationsChangedWindowEvent({
         environmentId,
         ...(event.selector ? { selector: event.selector } : {}),
+        ...(event.reason ? { reason: event.reason } : {})
+      })
+      return
+    }
+    if (event.type === 'agentsWorkflowsChanged') {
+      emitAgentsWorkflowsChangedWindowEvent({
+        environmentId,
         ...(event.reason ? { reason: event.reason } : {})
       })
       return

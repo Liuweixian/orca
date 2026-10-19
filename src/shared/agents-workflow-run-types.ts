@@ -1,0 +1,87 @@
+import { z } from 'zod'
+import { AgentsWorkflowDefinitionSchema } from './agents-workflow-types'
+
+export const AgentsWorkflowRunStatusSchema = z.enum([
+  'pending',
+  'running',
+  'cancel_requested',
+  'completed',
+  'failed',
+  'cancelled',
+  'skipped',
+  'unverifiable'
+])
+
+export const AgentsWorkflowNodeAttemptStatusSchema = z.enum([
+  'pending',
+  'running',
+  'completed',
+  'failed',
+  'skipped',
+  'cancelled',
+  'unverifiable'
+])
+
+export const AgentsWorkflowNodeOutputSchema = z.strictObject({
+  format: z.literal('plain_text'),
+  content: z.string(),
+  capturedAt: z.number().int(),
+  truncated: z.boolean(),
+  source: z.enum(['structured_assistant_message', 'terminal_snapshot'])
+})
+
+export const AgentsWorkflowNodeAttemptSchema = z.strictObject({
+  id: z.string().min(1),
+  nodeId: z.string().min(1),
+  status: AgentsWorkflowNodeAttemptStatusSchema,
+  loopNodeId: z.string().min(1).optional(),
+  loopIteration: z.number().int().nonnegative().optional(),
+  selectedBranch: z.enum(['yes', 'no']).optional(),
+  startedAt: z.number().int().nullable(),
+  finishedAt: z.number().int().nullable(),
+  output: AgentsWorkflowNodeOutputSchema.nullable(),
+  errorCode: z.string().min(1).optional(),
+  errorMessage: z.string().optional()
+})
+
+export const AgentsWorkflowRunSchema = z.strictObject({
+  schemaVersion: z.literal(1),
+  id: z.string().min(1),
+  workflowId: z.string().min(1),
+  workflowRevision: z.number().int().positive(),
+  definitionSnapshot: AgentsWorkflowDefinitionSchema,
+  requestKey: z.string().min(1),
+  trigger: z.enum(['manual', 'schedule']),
+  scheduledFor: z.number().int().optional(),
+  input: z.string(),
+  status: AgentsWorkflowRunStatusSchema,
+  workspaceId: z.string().min(1).nullable(),
+  workspaceDisplayName: z.string().nullable(),
+  attempts: z.array(AgentsWorkflowNodeAttemptSchema),
+  executionTrace: z.array(z.string().min(1)),
+  createdAt: z.number().int(),
+  startedAt: z.number().int().nullable(),
+  finishedAt: z.number().int().nullable(),
+  errorCode: z.string().min(1).optional(),
+  errorMessage: z.string().optional(),
+  skipReason: z.enum(['active_run', 'missed_grace']).optional()
+})
+
+export const AgentsWorkflowRunSummarySchema = AgentsWorkflowRunSchema.omit({
+  definitionSnapshot: true,
+  attempts: true,
+  executionTrace: true
+})
+
+export const AgentsWorkflowRunsPageSchema = z.strictObject({
+  runs: z.array(AgentsWorkflowRunSummarySchema),
+  nextCursor: z.string().nullable()
+})
+
+export type AgentsWorkflowRunStatus = z.infer<typeof AgentsWorkflowRunStatusSchema>
+export type AgentsWorkflowNodeAttemptStatus = z.infer<typeof AgentsWorkflowNodeAttemptStatusSchema>
+export type AgentsWorkflowNodeOutput = z.infer<typeof AgentsWorkflowNodeOutputSchema>
+export type AgentsWorkflowNodeAttempt = z.infer<typeof AgentsWorkflowNodeAttemptSchema>
+export type AgentsWorkflowRun = z.infer<typeof AgentsWorkflowRunSchema>
+export type AgentsWorkflowRunSummary = z.infer<typeof AgentsWorkflowRunSummarySchema>
+export type AgentsWorkflowRunsPage = z.infer<typeof AgentsWorkflowRunsPageSchema>

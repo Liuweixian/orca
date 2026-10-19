@@ -34,6 +34,21 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
         activeView: state.previousViewBeforeAutomations,
         worktreeNavHistoryIndex: rewindHistoryIndexPastView(state, 'automations')
       })),
+    openAgentsWorkflowPage: () => {
+      get().recordViewVisit('agents-workflow')
+      set((state) => ({
+        activeView: 'agents-workflow',
+        previousViewBeforeAgentsWorkflow:
+          state.activeView === 'agents-workflow'
+            ? state.previousViewBeforeAgentsWorkflow
+            : state.activeView
+      }))
+    },
+    closeAgentsWorkflowPage: () =>
+      set((state) => ({
+        activeView: state.previousViewBeforeAgentsWorkflow,
+        worktreeNavHistoryIndex: rewindHistoryIndexPastView(state, 'agents-workflow')
+      })),
     openSpacePage: () => {
       get().recordFeatureInteraction?.('workspace-cleanup')
       if (typeof window !== 'undefined' && window.api?.workspaceSpace?.openWindow) {

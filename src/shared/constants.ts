@@ -179,6 +179,7 @@ export function getDefaultPersistedState(homedir: string): PersistedState {
     legacyPaneKeyAliasEntries: [],
     automations: [],
     automationRuns: [],
+    agentsWorkflows: [],
     onboarding: getDefaultOnboardingState(),
     featureInteractionTelemetryBuckets: {},
     codexResetCreditAttemptLedger: structuredClone(EMPTY_CODEX_RESET_CREDIT_ATTEMPT_LEDGER)

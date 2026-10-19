@@ -234,6 +234,7 @@
     "showStatusBar": "显示状态栏",
     "showTasksButton": "显示任务按钮",
     "showAutomationsButton": "显示自动化按钮",
+    "showAgentsWorkflowButton": "显示工作流按钮",
     "showMobileButton": "显示 Orca 手机端按钮",
     "showTitlebarAppName": "显示标题栏应用名称",
     "view": "查看",
@@ -5515,7 +5516,8 @@
           "fee535205b": "任务",
           "d599269755": "从侧边栏隐藏",
           "artifacts": "工件",
-          "skills": "技能"
+          "skills": "技能",
+          "agentsWorkflows": "工作流"
         },
         "SidebarRepositoryFilterSection": {
           "d3a9c4cea1": "清除",
@@ -6984,7 +6986,8 @@
           "showPinnedWorktreesInGroups": {
             "title": "也在原来的列表中显示已固定的工作树",
             "description": "已固定的工作树会保留在 Pinned 中，同时也显示在全部、项目、状态和 PR 中。"
-          }
+          },
+          "agentsWorkflows": "显示工作流按钮"
         },
         "AutoRenameBranchFromWorkSetting": {
           "1626524572": "Nautilus",
@@ -9448,6 +9451,13 @@
                 "cursor": "cursor"
               },
               "title": "Cursor 用量"
+            },
+            "agentsWorkflows": {
+              "title": "显示工作流按钮",
+              "description": "在左侧边栏顶部显示工作流按钮。",
+              "workflow": "工作流",
+              "agent": "智能体",
+              "chinese": "工作流"
             },
             "zcodeUsageTitle": "Z代码使用",
             "zcodeUsageDescription": "在状态栏中显示 ZCode 编码计划配额使用情况。",
@@ -17911,6 +17921,127 @@
         "a62f9db53d": "Cancel",
         "c77189bc0c": "Update filter",
         "19af906d12": "Save filter"
+      },
+      "agents-workflow": {
+        "newAgent": "新智能体",
+        "newCondition": "新条件",
+        "newLoop": "新循环",
+        "exported": "已复制工作流 JSON。",
+        "exportFailed": "无法复制工作流 JSON。",
+        "imported": "已导入工作流 JSON。",
+        "importFailed": "无法导入工作流 JSON。",
+        "importFile": "导入工作流 JSON 文件",
+        "edge": {
+          "yes": "是",
+          "no": "否",
+          "each": "每轮",
+          "done": "完成"
+        },
+        "inspector": {
+          "runInput": "运行输入",
+          "nodeOutput": "{{title}} 的输出",
+          "loopItem": "{{title}} 的当前项",
+          "loopIndex": "{{title}} 的序号",
+          "loopOutput": "{{title}} 的结果",
+          "empty": "选择节点以编辑其设置。",
+          "title": "标题",
+          "agent": "智能体",
+          "prompt": "提示词",
+          "insertVariable": "插入变量",
+          "extraArgs": "额外智能体参数",
+          "terminal": "终止节点",
+          "input": "输入",
+          "operator": "运算符",
+          "contains": "包含",
+          "notContains": "不包含",
+          "emptyOperator": "为空",
+          "notEmpty": "不为空",
+          "lengthAtLeast": "长度至少为",
+          "operand": "值",
+          "loopMode": "迭代方式",
+          "fixedCount": "固定次数",
+          "jsonList": "JSON 列表",
+          "count": "次数",
+          "items": "列表项",
+          "issues": "问题"
+        },
+        "node": {
+          "start": "开始",
+          "agent": "智能体",
+          "condition": "条件",
+          "loop": "循环"
+        },
+        "topbar": {
+          "valid": "可以保存",
+          "errors": "{{count}} 个问题",
+          "addAgent": "智能体",
+          "addCondition": "条件",
+          "addLoop": "循环",
+          "import": "导入 JSON",
+          "export": "复制 JSON",
+          "run": "运行",
+          "delete": "删除工作流",
+          "saving": "正在保存",
+          "save": "保存",
+          "runInput": "运行输入",
+          "runInputPlaceholder": "手动运行输入",
+          "starting": "正在启动"
+        },
+        "loading": "正在加载工作流…",
+        "createFirst": "创建工作流",
+        "conflict": "此工作流已在其他窗口中更改。请重新加载后再保存。",
+        "reload": "重新加载",
+        "delete": {
+          "title": "删除工作流？",
+          "description": "运行历史会保留，直至被保留策略清理。",
+          "cancel": "取消",
+          "confirm": "删除"
+        },
+        "definition": {
+          "new": "新建工作流",
+          "name": "名称",
+          "enabled": "已启用",
+          "defaultInput": "默认定时运行输入",
+          "schedule": "定时运行",
+          "timezone": "时区",
+          "grace": "错过运行宽限时间（分钟）"
+        },
+        "history": {
+          "title": "运行历史",
+          "empty": "暂无运行记录。",
+          "more": "加载更多",
+          "select": "选择一次运行以查看尝试和输出。",
+          "revision": "定义版本 {{revision}}",
+          "cancel": "取消运行",
+          "skippedActive": "因另一次运行仍在进行而跳过。",
+          "skippedGrace": "因已超过错过运行宽限时间而跳过。",
+          "pending": "等待中",
+          "running": "运行中",
+          "cancelling": "正在取消",
+          "completed": "已完成",
+          "failed": "失败",
+          "cancelled": "已取消",
+          "skipped": "已跳过",
+          "unverifiable": "无法验证",
+          "attemptPending": "等待中",
+          "attemptRunning": "运行中",
+          "attemptCompleted": "已完成",
+          "attemptFailed": "失败",
+          "attemptSkipped": "已跳过",
+          "attemptCancelled": "已取消",
+          "attemptUnverifiable": "无法验证"
+        },
+        "controller": {
+          "loadFailed": "无法加载工作流。",
+          "listFailed": "无法加载工作流列表。",
+          "createFailed": "无法创建工作流。",
+          "saved": "工作流已保存。",
+          "saveFailed": "无法保存工作流。",
+          "deleteFailed": "无法删除工作流。",
+          "runFailed": "无法启动工作流。",
+          "runLoadFailed": "无法加载运行记录。",
+          "newName": "新建工作流"
+        }
       }
     },
     "i18n": {

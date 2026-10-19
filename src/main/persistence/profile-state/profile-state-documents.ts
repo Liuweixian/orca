@@ -23,6 +23,10 @@ import { readProfileStateDocuments } from './profile-state-document-reader'
 
 import { readProfileStateRevision } from './profile-state-revision'
 import { readProfileStateJsonAcceptance } from './legacy-json/profile-state-json-acceptance'
+import {
+  AGENTS_WORKFLOW_RUNS_DOMAIN,
+  replaceProfileStateAgentsWorkflowRuns
+} from './profile-state-agents-workflow-runs'
 
 export {
   readProfileStateJsonAcceptance,
@@ -97,6 +101,7 @@ export function importProfileStateJson(
     readCurrentAutomationRunsState(db, actualRevision)
     const revision = actualRevision + 1
     clearProfileStateAutomationRuns(db)
+    replaceProfileStateAgentsWorkflowRuns(db, null, revision, updatedAt)
     db.exec('DELETE FROM profile_state_documents')
     const automationRuns = entries.find((entry) => entry.domain === 'automationRuns')
     const normalizedRuns =
@@ -123,6 +128,9 @@ export function importProfileStateJson(
         updatedAt,
         hashProfileStatePayload(payload)
       )
+      if (entry.domain === AGENTS_WORKFLOW_RUNS_DOMAIN) {
+        replaceProfileStateAgentsWorkflowRuns(db, entry.payload, revision, updatedAt)
+      }
     }
     db.prepare(
       `INSERT INTO profile_state_meta (key, value) VALUES (?, ?)

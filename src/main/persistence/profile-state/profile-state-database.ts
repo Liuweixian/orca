@@ -22,6 +22,10 @@ import {
   verifyEmptyProfileStateSchema,
   verifyProfileStateSchema
 } from './profile-state-database-validation'
+import {
+  AGENTS_WORKFLOW_RUNS_DOMAIN,
+  replaceProfileStateAgentsWorkflowRuns
+} from './profile-state-agents-workflow-runs'
 
 export const PROFILE_STATE_BUSY_TIMEOUT_MS = 5_000
 
@@ -241,6 +245,21 @@ function migrateProfileStateSchema(
       profileId
     )
     migrateAutomationRunsStorage(db, storedVersion)
+    if (storedVersion < 4) {
+      const row = db
+        .prepare(
+          'SELECT payload, revision, updated_at FROM profile_state_documents WHERE domain = ?'
+        )
+        .get(AGENTS_WORKFLOW_RUNS_DOMAIN)
+      if (
+        row &&
+        typeof row.payload === 'string' &&
+        typeof row.revision === 'number' &&
+        typeof row.updated_at === 'number'
+      ) {
+        replaceProfileStateAgentsWorkflowRuns(db, row.payload, row.revision, row.updated_at)
+      }
+    }
     verifyProfileStateSchema(db, profileId)
     db.pragma(`user_version = ${PROFILE_STATE_DATABASE_SCHEMA_VERSION}`)
   })

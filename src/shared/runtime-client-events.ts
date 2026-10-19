@@ -43,6 +43,10 @@ export type RuntimeClientEvent =
       reason?: 'definition' | 'run' | 'usage'
     }
   | {
+      type: 'agentsWorkflowsChanged'
+      reason?: 'definition' | 'run'
+    }
+  | {
       type: 'linearLinkedIssueUpdated'
       worktreeId: string
       identifier: string
@@ -76,6 +80,12 @@ export type AutomationsChangedEvent = Extract<RuntimeClientEvent, { type: 'autom
 
 /** Publisher payload; `selector` scoping is added by a later host-scope step. */
 export type AutomationsChangedPayload = Omit<AutomationsChangedEvent, 'type'>
+
+export type AgentsWorkflowsChangedEvent = Extract<
+  RuntimeClientEvent,
+  { type: 'agentsWorkflowsChanged' }
+>
+export type AgentsWorkflowsChangedPayload = Omit<AgentsWorkflowsChangedEvent, 'type'>
 
 export type PublishAutomationsChanged = (payload: AutomationsChangedPayload) => void
 
