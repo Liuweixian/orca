@@ -1,9 +1,7 @@
-import { Bot, GitBranch, Play, Repeat2, Save, Trash2 } from 'lucide-react'
+import { Play, Save, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
-
-export type AgentsWorkflowNodeKindToAdd = 'agent' | 'condition' | 'loop'
 
 export function AgentsWorkflowTopBar({
   name,
@@ -12,7 +10,6 @@ export function AgentsWorkflowTopBar({
   saving,
   running,
   runInput,
-  onAddNode,
   onSave,
   onDelete,
   onRunInputChange,
@@ -25,7 +22,6 @@ export function AgentsWorkflowTopBar({
   saving: boolean
   running: boolean
   runInput: string
-  onAddNode: (kind: AgentsWorkflowNodeKindToAdd) => void
   onSave: () => void
   onDelete: () => void
   onRunInputChange: (input: string) => void
@@ -43,20 +39,6 @@ export function AgentsWorkflowTopBar({
                 count: errorCount
               })}
         </div>
-      </div>
-      <div className="flex items-center gap-1">
-        <Button variant="ghost" size="xs" onClick={() => onAddNode('agent')}>
-          <Bot />
-          {translate('auto.components.agents-workflow.topbar.addAgent', 'Agent')}
-        </Button>
-        <Button variant="ghost" size="xs" onClick={() => onAddNode('condition')}>
-          <GitBranch />
-          {translate('auto.components.agents-workflow.topbar.addCondition', 'Condition')}
-        </Button>
-        <Button variant="ghost" size="xs" onClick={() => onAddNode('loop')}>
-          <Repeat2 />
-          {translate('auto.components.agents-workflow.topbar.addLoop', 'Loop')}
-        </Button>
       </div>
       <Button variant="outline" size="xs" onClick={onExport}>
         {translate('auto.components.agents-workflow.topbar.export', 'Copy JSON')}

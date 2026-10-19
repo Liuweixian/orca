@@ -1,27 +1,10 @@
 import React from 'react'
-import {
-  applyNodeChanges,
-  Background,
-  BackgroundVariant,
-  Controls,
-  MiniMap,
-  ReactFlow,
-  type Connection,
-  type EdgeTypes,
-  type NodeChange,
-  type NodeTypes
-} from '@xyflow/react'
 import { toast } from 'sonner'
-import { createBrowserUuid } from '@/lib/browser-uuid'
 import {
   availableVariableRefs,
   validateWorkflowDefinition
 } from '../../../../shared/agents-workflow-graph'
-import type {
-  AgentsWorkflowDefinition,
-  AgentsWorkflowEdge,
-  AgentsWorkflowNode
-} from '../../../../shared/agents-workflow-types'
+import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
 import {
@@ -32,66 +15,12 @@ import {
   DialogHeader,
   DialogTitle
 } from '@/components/ui/dialog'
-import {
-  toAgentsWorkflowCanvasEdges,
-  toAgentsWorkflowCanvasNodes,
-  type AgentsWorkflowCanvasNode
-} from './agents-workflow-canvas-model'
-import { AgentsWorkflowNodeCard } from './agents-workflow-node-card'
-import { AgentsWorkflowEdgeComponent } from './agents-workflow-edge'
+import { AgentsWorkflowCanvas } from './agents-workflow-canvas'
 import { AgentsWorkflowInspector } from './agents-workflow-inspector'
-import { AgentsWorkflowTopBar, type AgentsWorkflowNodeKindToAdd } from './agents-workflow-top-bar'
+import { AgentsWorkflowTopBar } from './agents-workflow-top-bar'
 import { AgentsWorkflowDefinitionPanel } from './agents-workflow-definition-panel'
 import { AgentsWorkflowRunHistory } from './agents-workflow-run-history'
 import type { AgentsWorkflowPageController } from './use-agents-workflow-page-controller'
-import './agents-workflow-xyflow-theme.css'
-
-const NODE_TYPES: NodeTypes = { workflow: AgentsWorkflowNodeCard }
-const EDGE_TYPES: EdgeTypes = { workflow: AgentsWorkflowEdgeComponent }
-
-function isFromPort(value: string | null | undefined): value is AgentsWorkflowEdge['fromPort'] {
-  return (
-    value === 'default' || value === 'yes' || value === 'no' || value === 'each' || value === 'done'
-  )
-}
-
-function isToPort(value: string | null | undefined): value is AgentsWorkflowEdge['toPort'] {
-  return value === 'default' || value === 'aggregate'
-}
-
-function newNode(kind: AgentsWorkflowNodeKindToAdd, index: number): AgentsWorkflowNode {
-  const id = createBrowserUuid()
-  const position = { x: 280 + index * 28, y: 120 + index * 28 }
-  if (kind === 'agent') {
-    return {
-      id,
-      kind,
-      title: translate('auto.components.agents-workflow.newAgent', 'New agent'),
-      position,
-      agentId: 'claude',
-      prompt: { source: '', bindings: {} },
-      terminal: false
-    }
-  }
-  if (kind === 'condition') {
-    return {
-      id,
-      kind,
-      title: translate('auto.components.agents-workflow.newCondition', 'New condition'),
-      position,
-      input: { kind: 'run_input' },
-      operator: 'contains',
-      operand: ''
-    }
-  }
-  return {
-    id,
-    kind,
-    title: translate('auto.components.agents-workflow.newLoop', 'New loop'),
-    position,
-    iteration: { mode: 'fixed', count: 1 }
-  }
-}
 
 export function AgentsWorkflowPageSurface({
   controller
@@ -128,116 +57,19 @@ function AgentsWorkflowLoadedSurface({
   const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
   const issues = React.useMemo(() => validateWorkflowDefinition(definition), [definition])
-  const derivedNodes = React.useMemo(
-    () => toAgentsWorkflowCanvasNodes(definition, issues),
-    [definition, issues]
-  )
-  const [nodes, setNodes] = React.useState(derivedNodes)
-  const [renderedNodes, setRenderedNodes] = React.useState(derivedNodes)
-  if (renderedNodes !== derivedNodes) {
-    setRenderedNodes(derivedNodes)
-    setNodes((current) =>
-      derivedNodes.map((node) => {
-        const existing = current.find((entry) => entry.id === node.id)
-        return existing
-          ? { ...node, measured: existing.measured, width: existing.width, height: existing.height }
-          : node
-      })
-    )
-  }
-  const edges = React.useMemo(() => toAgentsWorkflowCanvasEdges(definition), [definition])
   const selectedNode = definition.nodes.find((node) => node.id === selectedNodeId) ?? null
   const selectedIssues = issues.filter((entry) => entry.nodeId === selectedNodeId)
   const selectedAvailableRefs = selectedNode
     ? availableVariableRefs(definition, selectedNode.id)
     : []
 
-  const onNodesChange = React.useCallback(
-    (changes: NodeChange<AgentsWorkflowCanvasNode>[]) => {
-      setNodes((current) => applyNodeChanges(changes, current))
-      const positions = new Map(
-        changes.flatMap((change) =>
-          change.type === 'position' && change.position && change.dragging !== true
-            ? [[change.id, change.position]]
-            : []
-        )
-      )
-      if (positions.size === 0) {
-        return
-      }
-      onDefinitionChange({
-        ...definition,
-        nodes: definition.nodes.map((node) => {
-          const position = positions.get(node.id)
-          return position ? { ...node, position } : node
-        }),
-        updatedAt: Date.now()
-      })
-    },
-    [definition, onDefinitionChange]
-  )
+  const onSelectNode = React.useCallback((nodeId: string | null) => {
+    setSelectedNodeId(nodeId)
+  }, [])
 
-  const onConnect = React.useCallback(
-    (connection: Connection) => {
-      if (
-        !connection.source ||
-        !connection.target ||
-        !isFromPort(connection.sourceHandle) ||
-        !isToPort(connection.targetHandle)
-      ) {
-        return
-      }
-      onDefinitionChange({
-        ...definition,
-        edges: [
-          ...definition.edges,
-          {
-            id: createBrowserUuid(),
-            fromNodeId: connection.source,
-            toNodeId: connection.target,
-            fromPort: connection.sourceHandle,
-            toPort: connection.targetHandle
-          }
-        ],
-        updatedAt: Date.now()
-      })
-    },
-    [definition, onDefinitionChange]
-  )
-
-  const addNode = React.useCallback(
-    (kind: AgentsWorkflowNodeKindToAdd) => {
-      const created = newNode(kind, definition.nodes.length)
-      onDefinitionChange({
-        ...definition,
-        nodes: [...definition.nodes, created],
-        updatedAt: Date.now()
-      })
-      setSelectedNodeId(created.id)
-    },
-    [definition, onDefinitionChange]
-  )
-
-  const deleteNodes = React.useCallback(
-    (deleted: AgentsWorkflowCanvasNode[]) => {
-      const deletedIds = new Set(
-        deleted.filter((entry) => entry.data.workflowNode.kind !== 'start').map((entry) => entry.id)
-      )
-      if (deletedIds.size === 0) {
-        return
-      }
-      onDefinitionChange({
-        ...definition,
-        nodes: definition.nodes.filter((node) => !deletedIds.has(node.id)),
-        edges: definition.edges.filter(
-          (edge) => !deletedIds.has(edge.fromNodeId) && !deletedIds.has(edge.toNodeId)
-        ),
-        updatedAt: Date.now()
-      })
-      setSelectedNodeId((current) => (current && deletedIds.has(current) ? null : current))
-    },
-    [definition, onDefinitionChange]
-  )
+  const onNodesRemoved = React.useCallback((ids: Set<string>) => {
+    setSelectedNodeId((current) => (current && ids.has(current) ? null : current))
+  }, [])
 
   const exportDefinition = React.useCallback(() => {
     void navigator.clipboard
@@ -263,7 +95,6 @@ function AgentsWorkflowLoadedSurface({
         saving={controller.saving}
         running={controller.running}
         runInput={controller.runInput}
-        onAddNode={addNode}
         onSave={() => void controller.saveWorkflow()}
         onDelete={() => setDeleteOpen(true)}
         onRunInputChange={controller.setRunInput}
@@ -292,47 +123,13 @@ function AgentsWorkflowLoadedSurface({
           onChange={onDefinitionChange}
         />
         <div className="flex min-w-0 flex-1 flex-col">
-          <div className="agents-workflow-canvas min-h-0 flex-1">
-            <ReactFlow
-              nodes={nodes}
-              edges={edges}
-              nodeTypes={NODE_TYPES}
-              edgeTypes={EDGE_TYPES}
-              onNodesChange={onNodesChange}
-              onNodesDelete={deleteNodes}
-              onEdgesDelete={(deleted) =>
-                onDefinitionChange({
-                  ...definition,
-                  edges: definition.edges.filter(
-                    (edge) => !deleted.some((entry) => entry.id === edge.id)
-                  ),
-                  updatedAt: Date.now()
-                })
-              }
-              onConnect={onConnect}
-              onNodeClick={(_event, node) => setSelectedNodeId(node.id)}
-              onPaneClick={() => setSelectedNodeId(null)}
-              isValidConnection={(connection) =>
-                connection.source !== connection.target &&
-                !definition.edges.some(
-                  (edge) =>
-                    edge.fromNodeId === connection.source &&
-                    edge.toNodeId === connection.target &&
-                    edge.fromPort === connection.sourceHandle &&
-                    edge.toPort === connection.targetHandle
-                )
-              }
-              fitView
-              snapToGrid
-              snapGrid={[16, 16]}
-              selectionOnDrag
-            >
-              <Background variant={BackgroundVariant.Dots} gap={16} size={1} />
-              <Controls />
-              {/* Why muted-foreground: --muted is near-invisible against the card minimap background in light mode. */}
-              <MiniMap pannable zoomable nodeColor="var(--muted-foreground)" />
-            </ReactFlow>
-          </div>
+          <AgentsWorkflowCanvas
+            definition={definition}
+            issues={issues}
+            onDefinitionChange={onDefinitionChange}
+            onSelectNode={onSelectNode}
+            onNodesRemoved={onNodesRemoved}
+          />
           <AgentsWorkflowRunHistory
             runs={controller.runs}
             selectedRun={controller.selectedRun}
