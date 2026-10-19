@@ -534,9 +534,7 @@ describe('remote hook service installers', () => {
 
   it('does not overwrite malformed remote Devin JSONC', async () => {
     const original = '{"hooks": }'
-    const { sftp, fs } = createFakeSftp({
-      '/home/dev/.config/devin/config.json': original
-    })
+    const { sftp, fs } = createFakeSftp({ '/home/dev/.config/devin/config.json': original })
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
       const status = await new DevinHookService().installRemote(sftp, '/home/dev')

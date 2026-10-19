@@ -75,6 +75,7 @@ const EXPECTED_LANES: Record<TuiAgent, LaunchedAgentReadinessLane> = {
   'mistral-vibe': 'tui-idle',
   'qwen-code': 'tui-idle',
   rovo: 'tui-idle',
+  codely: 'tui-idle',
   jcode: 'tui-idle'
 }
 

@@ -17,6 +17,7 @@ import { grokHookService } from '../grok/hook-service'
 import { hermesHookService } from '../hermes/hook-service'
 import { jcodeHookService } from '../jcode/hook-service'
 import { kimiHookService } from '../kimi/hook-service'
+import { codelyHookService } from '../codely/hook-service'
 import { kiroHookService } from '../kiro/hook-service'
 import { dshHookService } from '../dsh/hook-service'
 import { museHookService } from '../muse/hook-service'
@@ -87,6 +88,7 @@ const REMOTE_MANAGED_HOOK_INSTALLERS: readonly RemoteManagedHookInstaller[] = [
   ['hermes', (sftp, remoteHome) => hermesHookService.installRemote(sftp, remoteHome)],
   ['devin', (sftp, remoteHome) => devinHookService.installRemote(sftp, remoteHome)],
   ['kimi', (sftp, remoteHome) => kimiHookService.installRemote(sftp, remoteHome)],
+  ['codely', (sftp, remoteHome) => codelyHookService.installRemote(sftp, remoteHome)],
   ['muse', (sftp, remoteHome) => museHookService.installRemote(sftp, remoteHome)],
   ['zcode', (sftp, remoteHome) => zcodeHookService.installRemote(sftp, remoteHome)],
   ['dsh', (sftp, remoteHome) => dshHookService.installRemote(sftp, remoteHome)],

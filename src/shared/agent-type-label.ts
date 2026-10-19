@@ -29,6 +29,7 @@ const WELL_KNOWN_LABELS: Record<string, string> = {
   ante: 'Ante',
   trae: 'Trae',
   kimi: 'Kimi',
+  codely: 'Codely',
   muse: 'Muse',
   zcode: 'ZCode',
   dsh: 'DeepSeek Harness',

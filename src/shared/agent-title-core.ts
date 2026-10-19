@@ -7,6 +7,7 @@ import {
 } from './agent-title-glyphs'
 export {
   CLAUDE_IDLE,
+  CODELY_WAITING,
   GEMINI_WORKING,
   GEMINI_SILENT_WORKING,
   GEMINI_IDLE,

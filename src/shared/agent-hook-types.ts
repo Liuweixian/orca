@@ -22,6 +22,7 @@ export const AGENT_HOOK_TARGETS = [
   'hermes',
   'devin',
   'kimi',
+  'codely',
   'muse',
   'zcode',
   'dsh',

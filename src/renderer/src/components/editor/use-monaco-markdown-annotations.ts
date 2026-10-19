@@ -49,7 +49,6 @@ export function useMonacoMarkdownAnnotations(params: {
   editorContainerRef: MutableRefObject<HTMLDivElement | null>
   relativePath: string
   content: string
-  language: string
   worktreeId: string | undefined
   markdownAnnotationsEnabled: boolean
 }): MonacoMarkdownAnnotations {
@@ -58,7 +57,6 @@ export function useMonacoMarkdownAnnotations(params: {
     editorContainerRef,
     relativePath,
     content,
-    language,
     worktreeId,
     markdownAnnotationsEnabled
   } = params
@@ -87,8 +85,7 @@ export function useMonacoMarkdownAnnotations(params: {
     commentPopoverRef.current = commentPopover
   }, [commentPopover])
 
-  const shouldShowMarkdownAnnotations =
-    markdownAnnotationsEnabled && language === 'markdown' && Boolean(worktreeId)
+  const shouldShowMarkdownAnnotations = markdownAnnotationsEnabled && Boolean(worktreeId)
   // Why: the mount closure installs keydown listeners once, so the shortcut reads current enablement through a ref.
   const shouldShowMarkdownAnnotationsRef = useRef(shouldShowMarkdownAnnotations)
   useEffect(() => {

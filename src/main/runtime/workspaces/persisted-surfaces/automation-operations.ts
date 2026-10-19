@@ -22,7 +22,6 @@ import { getAppEnvironment } from '../../../../shared/app-environment'
 import type { LegacyWorkerTerminalRecoveryPlan } from '../../orchestration/orchestration-legacy-worker-terminal-recovery'
 import type { LegacyWorkerTerminalRecoveryResult } from '../../runtime-legacy-worker-terminal-recovery-types'
 import { makePaneKey } from '../../../../shared/stable-pane-id'
-import { runtimeWorktreeIdsEqual } from '../../runtime-worktree-path-identity'
 import type {
   AgentsWorkflowCreateInput,
   AgentsWorkflowDefinition,
@@ -37,6 +36,7 @@ import { createStructuredAgentsWorkflowExecutionAdapter } from '../../../agents-
 import { createWorkflowStructuredTurnRunner } from '../../../agents-workflow/workflow-structured-turn-runner'
 import { createAgentsWorkflowWorkspaceResolver } from '../../../agents-workflow/workflow-workspace-resolver'
 import type { OrcaRuntimeService } from '../../orca-runtime'
+import { worktreeIdsEqual } from '../../../../shared/worktree/id'
 
 export abstract class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWithPtyForegroundProcessReads {
   private agentsWorkflowRunService: AgentsWorkflowRunService | null = null
@@ -386,7 +386,7 @@ export abstract class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWit
       pty.incarnationId !== expected.incarnationId ||
       pty.tabId !== expected.tabId ||
       pty.paneKey !== makePaneKey(expected.tabId, expected.leafId) ||
-      !runtimeWorktreeIdsEqual(pty.worktreeId, expected.worktreeId) ||
+      !worktreeIdsEqual(pty.worktreeId, expected.worktreeId) ||
       this.handleByPtyId.get(expected.ptyId) !== expected.terminalHandle
     ) {
       return false
@@ -395,11 +395,11 @@ export abstract class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWit
     const leaf = this.leaves.get(this.getLeafKey(expected.tabId, expected.leafId))
     const ptyLeaves = this.getLeavesForPty(expected.ptyId)
     return (
-      Boolean(tab && runtimeWorktreeIdsEqual(tab.worktreeId, expected.worktreeId)) &&
+      Boolean(tab && worktreeIdsEqual(tab.worktreeId, expected.worktreeId)) &&
       Boolean(
         leaf &&
         leaf.ptyId === expected.ptyId &&
-        runtimeWorktreeIdsEqual(leaf.worktreeId, expected.worktreeId)
+        worktreeIdsEqual(leaf.worktreeId, expected.worktreeId)
       ) &&
       ptyLeaves.length === 1 &&
       ptyLeaves[0]?.tabId === expected.tabId &&

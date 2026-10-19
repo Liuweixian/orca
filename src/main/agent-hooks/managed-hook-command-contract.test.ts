@@ -198,6 +198,8 @@ const buildersByAgent = new Map<string, CommandBuilders>([
       remote: (path) => [wrapPosixHookCommand(path)]
     }
   ],
+  // Why: Codely is a Gemini CLI fork — its hook service exercises the same shared wrappers.
+  ['codely', standardCommands],
   [
     'muse',
     {

@@ -201,6 +201,55 @@ describe('installEditorFindShortcut', () => {
     expect(run).toHaveBeenCalledTimes(1)
     dispose()
   })
+
+  it('clears the previous find query before opening a closed widget', () => {
+    const container = document.createElement('div')
+    const input = document.createElement('textarea')
+    const run = vi.fn()
+    const setSearchString = vi.fn()
+    const getContribution = vi.fn(() => ({
+      getState: () => ({ isRevealed: false }),
+      setSearchString
+    }))
+    container.appendChild(input)
+    document.body.appendChild(container)
+    const dispose = installMonacoEditorFindShortcut({
+      getAction: vi.fn((_id: string) => ({ run })),
+      getContainerDomNode: () => container,
+      getContribution
+    })
+
+    dispatchKeyDown(input, { key: 'f', code: 'KeyU', metaKey: true })
+
+    expect(getContribution).toHaveBeenCalledWith('editor.contrib.findController')
+    expect(setSearchString).toHaveBeenCalledWith('')
+    expect(run).toHaveBeenCalledTimes(1)
+    dispose()
+  })
+
+  it('keeps the query while the find widget is already revealed', () => {
+    const container = document.createElement('div')
+    const input = document.createElement('textarea')
+    const run = vi.fn()
+    const setSearchString = vi.fn()
+    const getContribution = vi.fn(() => ({
+      getState: () => ({ isRevealed: true }),
+      setSearchString
+    }))
+    container.appendChild(input)
+    document.body.appendChild(container)
+    const dispose = installMonacoEditorFindShortcut({
+      getAction: vi.fn((_id: string) => ({ run })),
+      getContainerDomNode: () => container,
+      getContribution
+    })
+
+    dispatchKeyDown(input, { key: 'f', code: 'KeyU', metaKey: true })
+
+    expect(setSearchString).not.toHaveBeenCalled()
+    expect(run).toHaveBeenCalledTimes(1)
+    dispose()
+  })
 })
 
 describe('installEditorAddReviewNoteShortcut', () => {

@@ -14,6 +14,7 @@ export const MOBILE_AGENT_ICON_ASSETS: Partial<Record<TuiAgent, ImageSourcePropT
   grok: require('../../../src/shared/agent-icons/grok.png'),
   copilot: require('../../../src/shared/agent-icons/copilot.png'),
   opencode: require('../../../src/shared/agent-icons/opencode.png'),
+  opencode2: require('../../../src/shared/agent-icons/opencode.png'),
   'mimo-code': require('../../../src/shared/agent-icons/mimo-code.png'),
   ante: require('../../../src/shared/agent-icons/ante.png'),
   trae: require('../../../src/shared/agent-icons/trae.png'),
@@ -47,5 +48,6 @@ export const MOBILE_AGENT_ICON_ASSETS: Partial<Record<TuiAgent, ImageSourcePropT
   dsh: require('../../../src/shared/agent-icons/dsh.png'),
   zcode: require('../../../src/shared/agent-icons/zcode.png'),
   openclaw: require('../../../src/shared/agent-icons/openclaw.png'),
+  codely: require('../../../src/shared/agent-icons/codely.png'),
   jcode: require('../../../src/shared/agent-icons/jcode.png')
 }

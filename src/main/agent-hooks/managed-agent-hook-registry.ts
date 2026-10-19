@@ -18,6 +18,7 @@ import { grokHookService } from '../grok/hook-service'
 import { hermesHookService } from '../hermes/hook-service'
 import { jcodeHookService } from '../jcode/hook-service'
 import { kimiHookService } from '../kimi/hook-service'
+import { codelyHookService } from '../codely/hook-service'
 import { kiroHookService } from '../kiro/hook-service'
 import { museHookService } from '../muse/hook-service'
 import { openClaudeHookService } from '../openclaude/hook-service'
@@ -63,6 +64,7 @@ export const MANAGED_AGENT_HOOK_INSTALLERS: readonly ManagedAgentHookInstaller[]
   ['hermes', () => hermesHookService.install()],
   ['devin', () => devinHookService.install()],
   ['kimi', () => kimiHookService.install()],
+  ['codely', () => codelyHookService.install()],
   ['muse', () => museHookService.install()],
   ['zcode', () => zcodeHookService.install()],
   ['dsh', () => dshHookService.install()],
@@ -93,6 +95,7 @@ export const MANAGED_AGENT_HOOK_SCRIPT_REFRESHERS: readonly ManagedAgentHookScri
   ['copilot', () => copilotHookService.refreshManagedScripts()],
   ['devin', () => devinHookService.refreshManagedScripts()],
   ['kimi', () => kimiHookService.refreshManagedScripts()],
+  ['codely', () => codelyHookService.refreshManagedScripts()],
   ['muse', () => museHookService.refreshManagedScripts()],
   ['zcode', () => zcodeHookService.refreshManagedScripts()],
   ['dsh', () => dshHookService.refreshManagedScripts()],
@@ -119,6 +122,7 @@ export const MANAGED_AGENT_HOOK_REMOVERS: readonly ManagedAgentHookRemover[] = [
   ['hermes', () => hermesHookService.remove()],
   ['devin', () => devinHookService.remove()],
   ['kimi', () => kimiHookService.remove()],
+  ['codely', () => codelyHookService.remove()],
   ['muse', () => museHookService.remove()],
   ['zcode', () => zcodeHookService.remove()],
   ['dsh', () => dshHookService.remove()],
@@ -149,6 +153,7 @@ export const MANAGED_AGENT_HOOK_STATUS_READERS: readonly ManagedAgentHookStatusR
   ['hermes', () => hermesHookService.getStatus()],
   ['devin', () => devinHookService.getStatus()],
   ['kimi', () => kimiHookService.getStatus()],
+  ['codely', () => codelyHookService.getStatus()],
   ['muse', () => museHookService.getStatus()],
   ['zcode', () => zcodeHookService.getStatus()],
   ['dsh', () => dshHookService.getStatus()],

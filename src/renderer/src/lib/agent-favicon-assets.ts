@@ -28,6 +28,7 @@ import devinUrl from '../../../shared/agent-icons/devin.png?url'
 import museUrl from '../../../shared/agent-icons/muse.png?url'
 import zcodeUrl from '../../../shared/agent-icons/zcode.png?url'
 import openclawUrl from '../../../shared/agent-icons/openclaw.png?url'
+import codelyUrl from '../../../shared/agent-icons/codely.png?url'
 import dshUrl from '../../../shared/agent-icons/dsh.png?url'
 import jcodeUrl from '../../../shared/agent-icons/jcode.png?url'
 
@@ -70,5 +71,6 @@ export const AGENT_FAVICON_ASSETS: Partial<Record<TuiAgent, string>> = {
   dsh: dshUrl,
   zcode: zcodeUrl,
   openclaw: openclawUrl,
+  codely: codelyUrl,
   jcode: jcodeUrl
 }

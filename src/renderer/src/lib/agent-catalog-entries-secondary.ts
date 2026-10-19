@@ -179,6 +179,13 @@ export function secondaryAgentCatalogEntries(): AgentCatalogEntry[] {
       homepageUrl: 'https://www.codebuddy.ai/cli'
     },
     {
+      id: 'codely',
+      label: translate('auto.lib.agent.catalog.codely_label', 'Codely'),
+      cmd: 'codely',
+      faviconDomain: 'codely-docs.tuanjie.cn',
+      homepageUrl: 'https://codely-docs.tuanjie.cn'
+    },
+    {
       id: 'jcode',
       label: translate('auto.lib.agent.catalog.jcode_label', 'Jcode'),
       cmd: 'jcode',

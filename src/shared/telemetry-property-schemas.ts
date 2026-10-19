@@ -50,6 +50,7 @@ export const AGENT_KIND_VALUES = [
   'ante',
   'jcode',
   'trae',
+  'codely',
   'muse',
   'dsh',
   'zcode',

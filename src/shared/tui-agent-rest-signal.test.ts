@@ -31,6 +31,7 @@ const EXPECTED_REST_SIGNALS: Record<TuiAgent, TuiAgentRestSignal> = {
   openclaw: 'title',
   copilot: 'title',
   grok: 'title',
+  codely: 'title',
   muse: 'ready-body',
   qoder: 'ready-body',
   'qoder-cn': 'ready-body',

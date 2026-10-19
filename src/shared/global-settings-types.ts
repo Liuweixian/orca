@@ -1,5 +1,4 @@
-import type { NativeChatGlobalSettings } from './native-chat-appearance-settings'
-import type { WorktreeDeletionPreferences as DeletePrefs } from './worktree-deletion-preferences'
+import type { GlobalSettingsBase } from './global-settings-base'
 import type { ExecutionHostId } from './execution-host'
 import type { OrcaWorkspaceLayout } from './orca-workspace-layout'
 import type { GitHubProjectSettings } from './github/project-types'
@@ -49,7 +48,8 @@ export type { WorktreeVisibilityDefaults } from './repo-types'
 /** MiniMax account region used to select the quota endpoint. */
 export type MiniMaxEndpoint = 'overseas' | 'cn'
 
-type GlobalSettingsBase = NativeChatGlobalSettings & DeletePrefs
+/** Saved page for one Tasks-page browser tab. */
+export type TaskPageBrowserTab = { id: string; url: string }
 
 export type GlobalSettings = GlobalSettingsBase & {
   workspaceDir: string
@@ -392,6 +392,8 @@ export type GlobalSettings = GlobalSettingsBase & {
   /** Persisted Linear team selection (tasks view). Same nullable-array pattern as
    *  defaultRepoSelection: null = sticky-all, string[] = frozen subset of team IDs. */
   defaultLinearTeamSelection: string[] | null
+  /** Saved pages shown as browser tabs in the Tasks page; each entry renders one tab button. */
+  taskPageBrowserTabs?: TaskPageBrowserTab[]
   /** Session cookie for OpenCode Go rate-limit fetching. Stored encrypted. */
   opencodeSessionCookie: string
   /** Optional OpenCode Go workspace ID override; when set, skips the workspaces lookup and fetches usage directly. */

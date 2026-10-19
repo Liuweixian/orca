@@ -1,9 +1,11 @@
 import type { RuntimeTerminalWait } from '../../../shared/runtime-types'
+import { isTuiAgent } from '../../../shared/tui-agent-config'
+import type { TuiAgent } from '../../../shared/tui-agent'
 import { runtimeTargetForOwnerEnvironment } from '@/runtime/runtime-client-target'
 import type { RuntimeClientTarget } from '../../../shared/runtime-client-target'
 import { useAppStore } from '@/store'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
-import { getRuntimeEnvironmentIdForWorktree } from '@/lib/worktree-runtime-owner'
+import { runtimeEnvironmentIdWithLegacyFallbackUnlessTwin } from '@/lib/worktree-runtime-owner'
 import { findActiveRuntimeTerminal, getActiveTerminalNoteTarget } from './active-agent-note-target'
 import type { ActiveTerminalNoteTarget } from './active-agent-note-target'
 import type { ActiveAgentNotesSendResult } from './active-agent-note-send-result'
@@ -74,7 +76,7 @@ async function sendNotesToActiveAgentSessionInternal({
     return reportNoteSendFailure({ status: 'no-active-terminal', code: 'no-note-target' }, null)
   }
   const runtimeTarget = runtimeTargetForOwnerEnvironment(
-    getRuntimeEnvironmentIdForWorktree(state, worktreeId)
+    runtimeEnvironmentIdWithLegacyFallbackUnlessTwin(state, worktreeId)
   )
   const terminal = await findActiveRuntimeTerminal(
     runtimeTarget,
@@ -90,7 +92,12 @@ async function sendNotesToActiveAgentSessionInternal({
   }
   if (explicitNoteTarget) {
     return reportNoteSendFailure(
-      await sendPromptToExplicitAgentTarget(runtimeTarget, terminal.handle, trimmedPrompt),
+      await sendPromptToExplicitAgentTarget(
+        runtimeTarget,
+        terminal.handle,
+        trimmedPrompt,
+        isTuiAgent(terminal.agentIdentity) ? terminal.agentIdentity : null
+      ),
       noteTarget
     )
   }
@@ -163,7 +170,8 @@ async function sendNotesToActiveAgentSessionInternal({
   if (finalAgentStatus.supportsGuardedSend) {
     return reportNoteSendFailure(
       await sendPromptWithGuardedPasteAndEnter(runtimeTarget, terminal.handle, trimmedPrompt, {
-        allowLegacyFallback: false
+        allowLegacyFallback: false,
+        agent: isTuiAgent(terminal.agentIdentity) ? terminal.agentIdentity : null
       }),
       noteTarget
     )
@@ -178,9 +186,11 @@ async function sendNotesToActiveAgentSessionInternal({
 async function sendPromptToExplicitAgentTarget(
   runtimeTarget: RuntimeClientTarget,
   terminalHandle: string,
-  prompt: string
+  prompt: string,
+  agent?: TuiAgent | null
 ): Promise<ActiveAgentNotesSendResult> {
   return await sendPromptWithGuardedPasteAndEnter(runtimeTarget, terminalHandle, prompt, {
-    allowLegacyFallback: false
+    allowLegacyFallback: false,
+    agent
   })
 }

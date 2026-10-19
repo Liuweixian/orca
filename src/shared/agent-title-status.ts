@@ -4,6 +4,7 @@ import {
   AGY_AGENT_NAME_RE,
   BRAILLE_SPINNER_RE,
   CLAUDE_IDLE,
+  CODELY_WAITING,
   CURSOR_NATIVE_TITLE_LOWER,
   DROID_AGENT_NAME_RE,
   GEMINI_IDLE,
@@ -24,7 +25,8 @@ import {
   isDshTerminalTitle,
   isGeminiTerminalTitle,
   isPiAgentTitle,
-  isPiTerminalTitle
+  isPiTerminalTitle,
+  titleHasAgentName
 } from './agent-title-core'
 import type { AgentStatus } from './agent-title-core'
 import { isOpenCodeNativeTitle } from './opencode-terminal-title'
@@ -65,16 +67,23 @@ export function clearWorkingIndicators(title: string): string {
   return cleaned || title
 }
 
+/** Where a working agent settled: at rest, or on a prompt that needs the user. */
+export type AgentIdleStatus = Exclude<AgentStatus, 'working'>
+
 /**
- * Tracks agent status transitions from terminal title changes.
+ * Tracks agent status transitions. The program's own OSC 7501 activity, while it reports one,
+ * outranks title glyphs; titles classify only programs that report nothing explicit.
  */
 export function createAgentStatusTracker(
-  onBecameIdle: (title: string) => void,
+  onBecameIdle: (title: string, status: AgentIdleStatus) => void,
   onBecameWorking?: () => void,
   onAgentExited?: () => void,
   initialTitle?: string
 ): {
   handleTitle: (title: string) => void
+  handleProgramActivity: (activity: AgentStatus | null) => void
+  /** Adopt replayed activity without edges, as replayed titles move no status. */
+  seedProgramActivity: (activity: AgentStatus | null) => void
   seedTitle: (title: string) => void
   restoreLastExit: (confirmedStatus?: AgentStatus) => AgentStatus | null
   reset: () => void
@@ -84,32 +93,54 @@ export function createAgentStatusTracker(
   let lastStatus: AgentStatus | null =
     initialTitle !== undefined ? detectAgentStatusFromTitle(initialTitle) : null
   let restorableExitStatus: AgentStatus | null = null
+  let programActivity: AgentStatus | null = null
+  let lastTitle = initialTitle ?? ''
+
+  function transition(newStatus: AgentStatus | null, title: string): void {
+    if (newStatus !== null) {
+      restorableExitStatus = null
+    }
+    if (lastStatus === 'working' && newStatus !== null && newStatus !== 'working') {
+      onBecameIdle(title, newStatus)
+    }
+    if (lastStatus !== 'working' && newStatus === 'working') {
+      onBecameWorking?.()
+    }
+    // Why: reverting to a plain shell prompt after idle/permission means the
+    // agent exited; while working it can just be a transient internal title.
+    if (lastStatus !== null && lastStatus !== 'working' && newStatus === null) {
+      restorableExitStatus = lastStatus
+      lastStatus = null
+      onAgentExited?.()
+    }
+    if (newStatus !== null) {
+      lastStatus = newStatus
+    }
+  }
 
   return {
     handleTitle(title: string): void {
-      const newStatus = detectAgentStatusFromTitle(title)
-      if (newStatus !== null) {
+      lastTitle = title
+      transition(programActivity ?? detectAgentStatusFromTitle(title), title)
+    },
+    handleProgramActivity(activity: AgentStatus | null): void {
+      programActivity = activity
+      // Why no transition on null: the program stopped reporting, so the next title decides.
+      if (activity !== null) {
+        transition(activity, lastTitle)
+      }
+    },
+    seedProgramActivity(activity: AgentStatus | null): void {
+      programActivity = activity
+      // The restored state is the baseline later live edges compare against.
+      if (activity !== null) {
+        lastStatus = activity
         restorableExitStatus = null
-      }
-      if (lastStatus === 'working' && newStatus !== null && newStatus !== 'working') {
-        onBecameIdle(title)
-      }
-      if (lastStatus !== 'working' && newStatus === 'working') {
-        onBecameWorking?.()
-      }
-      // Why: reverting to a plain shell prompt after idle/permission means the
-      // agent exited; while working it can just be a transient internal title.
-      if (lastStatus !== null && lastStatus !== 'working' && newStatus === null) {
-        restorableExitStatus = lastStatus
-        lastStatus = null
-        onAgentExited?.()
-      }
-      if (newStatus !== null) {
-        lastStatus = newStatus
       }
     },
     seedTitle(title: string): void {
-      lastStatus = detectAgentStatusFromTitle(title)
+      lastTitle = title
+      lastStatus = programActivity ?? detectAgentStatusFromTitle(title)
       restorableExitStatus = null
     },
     restoreLastExit(confirmedStatus?: AgentStatus): AgentStatus | null {
@@ -123,6 +154,8 @@ export function createAgentStatusTracker(
     reset(): void {
       lastStatus = null
       restorableExitStatus = null
+      programActivity = null
+      lastTitle = ''
     }
   }
 }
@@ -233,6 +266,11 @@ function computeAgentStatusFromTitle(title: string): AgentStatus | null {
     if (title.includes(GEMINI_IDLE)) {
       return 'idle'
     }
+  }
+  // Why: Codely's waiting state only prefixes its base title with ⏸️; gate on the
+  // codely name so an ordinary pause-emoji task title cannot claim permission.
+  if (title.includes(CODELY_WAITING) && titleHasAgentName(title, 'codely')) {
+    return 'permission'
   }
 
   // Why: resolve synthetic Pi/OMP permission/idle labels before the broader

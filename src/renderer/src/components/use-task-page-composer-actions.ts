@@ -1,4 +1,3 @@
-import type { TaskPageJiraListEffectsModel } from './use-task-page-jira-list-effects'
 import { useCallback } from 'react'
 import type { LinearIssue } from '../../../shared/linear/issue-types'
 import type { LinearWorkspaceSelection } from '../../../shared/linear/workspace-types'
@@ -15,7 +14,8 @@ import { shouldHideTaskPageListChrome } from '@/components/task-page-list-chrome
 import { getJiraIssueWorkspaceSeed } from './task-page-source-context'
 import { findJiraIssueDefaultRepo } from '../../../shared/jira-project-reference'
 import { getRepoWorkspaceCreationTargetHint } from '@/lib/project-host-workspace-target'
-export function useTaskPageComposerActions(model: TaskPageJiraListEffectsModel) {
+import type { TaskPageBrowserTabModel } from './use-task-page-browser-tab'
+export function useTaskPageComposerActions(model: TaskPageBrowserTabModel) {
   const {
     setTaskResumeState,
     openModal,

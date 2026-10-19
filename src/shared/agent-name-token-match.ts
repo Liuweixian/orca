@@ -28,6 +28,7 @@ export const AGENT_NAMES = [
   'aider',
   'grok',
   'devin',
+  'codely',
   'zcode',
   'jcode'
 ]

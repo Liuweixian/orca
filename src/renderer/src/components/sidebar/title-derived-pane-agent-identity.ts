@@ -21,7 +21,8 @@ const TITLE_AGENT_LABEL_TO_TYPE: Record<string, AgentType> = {
   Hermes: 'hermes',
   'DeepSeek Build': 'dsb',
   Pi: 'pi',
-  OMP: 'omp'
+  OMP: 'omp',
+  Codely: 'codely'
 }
 
 const CLAUDE_AGENT_TOKEN_RE = /(?<![\w./\\-])claude(?![\w./\\-])/i

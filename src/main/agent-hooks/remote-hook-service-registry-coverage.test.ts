@@ -10,6 +10,7 @@ vi.mock('electron', () => ({
 import { ampHookService } from '../amp/hook-service'
 import { antigravityHookService } from '../antigravity/hook-service'
 import { claudeHookService } from '../claude/hook-service'
+import { codelyHookService } from '../codely/hook-service'
 import { codexHookService } from '../codex/hook-service'
 import { commandCodeHookService } from '../command-code/hook-service'
 import { copilotHookService } from '../copilot/hook-service'
@@ -55,6 +56,7 @@ describe('remote hook service registry coverage', () => {
       ['hermes', hermesHookService],
       ['devin', devinHookService],
       ['kimi', kimiHookService],
+      ['codely', codelyHookService],
       ['muse', museHookService],
       ['qoder', qoderHookService],
       ['qoder-cn', qoderCnHookService],

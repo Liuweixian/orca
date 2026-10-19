@@ -5,7 +5,9 @@ import { normalizeSourceControlViewMode } from '../commit/commit-drafts'
 import type { SourceControlStoreActions } from '../listing/use-store-actions'
 import type { SourceControlWorktreeContext } from '../listing/use-worktree-context'
 
-const DEFAULT_COLLAPSED_SECTIONS = ['history'] as const
+// Why: history and branch-vs-base diffs are review context, secondary to the
+// uncommitted staging workflow, so both start tucked away.
+const DEFAULT_COLLAPSED_SECTIONS = ['branch', 'history'] as const
 
 function createDefaultCollapsedSections(): Set<string> {
   return new Set(DEFAULT_COLLAPSED_SECTIONS)

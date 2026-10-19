@@ -12,6 +12,7 @@ export type DraftPasteMarkerSignal =
   | 'codex-composer-prompt'
   | 'render-cursor-after-bracketed-paste'
   | 'grok-composer-prompt'
+  | 'codely-composer-cursor-after-bracketed-paste'
   | 'dsh-composer-prompt'
   | 'zcode-composer-prompt'
 

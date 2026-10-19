@@ -55,6 +55,7 @@ const TUI_AGENT_KIND_BY_AGENT = {
   devin: 'devin',
   ante: 'ante',
   trae: 'trae',
+  codely: 'codely',
   muse: 'muse',
   zcode: 'zcode',
   dsh: 'dsh',

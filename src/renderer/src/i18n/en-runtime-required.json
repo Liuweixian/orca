@@ -210,6 +210,17 @@
           "markManyUnread_other": "Mark {{count}} Agents Unread"
         }
       },
+      "agents-workflow": {
+        "importFailed": "Could not import workflow JSON.",
+        "importFile": "Import workflow JSON file",
+        "imported": "Workflow JSON imported.",
+        "topbar": {
+          "addAgent": "Agent",
+          "addCondition": "Condition",
+          "addLoop": "Loop",
+          "import": "Import JSON"
+        }
+      },
       "artifacts": {
         "ArtifactsPage": {
           "openArtifact": "Open artifact",
@@ -380,6 +391,10 @@
         "EditorContent": {
           "d07e4b8553": "branch",
           "d16e037f40": "rich"
+        },
+        "EditorPanelMarkdownActionsMenu": {
+          "10c39d58c1": "Hide front matter",
+          "8c8b7f5ff5": "Show front matter"
         },
         "ReviewNotesSendMenuContent": {
           "50f7e753ea": "Sending notes to active agent...",
@@ -2449,11 +2464,17 @@
             "e3ff145b98": "Split Left",
             "f7c3d7d5af": "Split Right"
           },
+          "QuickLaunchButton": {
+            "chatLoading": "Checking chat support…"
+          },
           "SortableTabContextMenu": {
             "0ce4bae39d": "Split Left",
             "21132389e9": "Split Right",
             "591f9b12c1": "Split Up",
             "af80ed83c1": "Split Down"
+          },
+          "TabBar": {
+            "ab589350e5": "Could not build launch command for {{value0}}."
           },
           "TabBarQuickCommandsButton": {
             "c781f992e4": "destructive"
@@ -2888,11 +2909,12 @@
         "imageUnsupported": "Image paste is not supported for this agent."
       },
       "failureWords": {
-        "accountSwitchInProgress": "A Claude account switch is in progress. Try again after it finishes.",
+        "accountSwitchInProgress": "{{agent}}'s setup is changing on this host. Try again after it finishes.",
         "agentCommandNotRunnable": "{{agent}}'s Command in Settings → Agents must be a program path or name Orca can find, with no arguments or variables. Change it or reset it.",
         "agentCommandNotSignedIn": "Sign in to {{agent}} with `{{loginCommand}}` on the computer running this chat.",
         "agentNotSignedIn": "Sign in to {{agent}}.",
         "answerUnconfirmed": "Your answer was recorded but the agent did not confirm it.",
+        "antigravityNotSignedIn": "Antigravity isn't signed in. Sign in under Settings → Accounts → Antigravity.",
         "argumentsMissingValue": "Saved Arguments need a value for {{option}}.",
         "argumentsMultipleValues": "Saved Arguments give {{option}} more than one value.",
         "argumentsPositionalPrompt": "Saved Arguments include a prompt.",
@@ -2928,6 +2950,7 @@
         "commandAfterAnswer": "Answer the agent's question or approval, then run /{{command}}.",
         "commandRefused": "This command didn't run.",
         "commandRefusedTryAgain": "This command didn't run. Try it again.",
+        "commandUnavailable": "This command isn't available in {{agent}} chats, so it was not sent.",
         "compactionFailed": "Compaction failed.",
         "compactionFailedQuoted": "Compaction failed: {{detail}}.",
         "compactionUnconfirmed": "Compaction completion is unconfirmed.",
@@ -2990,6 +3013,10 @@
       "question": {
         "other": "Other…"
       },
+      "queuedMessages": {
+        "imageCount_one": "{{count}} image",
+        "imageCount_other": "{{count}} images"
+      },
       "receipt": {
         "cancelled": "Cancelled",
         "cancelledBy": "Cancelled on {{device}}",
@@ -2997,6 +3024,9 @@
         "resolved": "Resolved",
         "resolver": "Answered on {{device}}",
         "unavailable": "Selected answer unavailable"
+      },
+      "resumeInNewChat": {
+        "cannotResume": "This {{agent}} conversation can't be resumed in a native chat."
       },
       "state": {
         "empty": {
@@ -3147,6 +3177,11 @@
           "reviewStatus": "See issue state, review status, and CI checks on every worktree",
           "startWorkspaceFromIssue": "Start a workspace from any GitHub issue or pull request, prefilled with its title and context"
         }
+      }
+    },
+    "terminalPane": {
+      "TerminalContextMenu": {
+        "sendToAgentSent": "Sent to active agent {{value0}}."
       }
     },
     "workspace": {

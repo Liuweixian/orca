@@ -3,7 +3,7 @@ import type { TerminalAgent } from '../../../shared/terminal-agent'
 import { isTuiAgent } from '../../../shared/tui-agent-config'
 import type { Worktree } from '../../../shared/worktree/types'
 import type { AgentStatusState, AgentType } from '../../../shared/agent-status-types'
-import { tabHasLivePty } from './tab-has-live-pty'
+import { tabHasLivePty } from '../../../shared/tab-has-live-pty'
 import type { WorktreeStatus } from './worktree-status'
 import { tuiAgentToAgentKind } from '../../../shared/agent-kind'
 import type { AgentKind } from '../../../shared/telemetry-events'
@@ -140,6 +140,7 @@ const ICONABLE_AGENT_TYPES: Record<TerminalAgent, true> = {
   devin: true,
   ante: true,
   trae: true,
+  codely: true,
   muse: true,
   zcode: true,
   dsh: true,
