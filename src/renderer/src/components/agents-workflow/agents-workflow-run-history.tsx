@@ -1,3 +1,5 @@
+import { Copy } from 'lucide-react'
+import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import type {
@@ -107,11 +109,16 @@ function RunDetail({
             </div>
           ) : null}
         </div>
-        {active ? (
-          <Button variant="outline" size="xs" onClick={() => onCancel(run.id)}>
-            {translate('auto.components.agents-workflow.history.cancel', 'Cancel run')}
-          </Button>
-        ) : null}
+        <div className="flex items-center gap-1">
+          {run.errorMessage || run.errorCode ? (
+            <CopyErrorButton report={runErrorReport(run)} />
+          ) : null}
+          {active ? (
+            <Button variant="outline" size="xs" onClick={() => onCancel(run.id)}>
+              {translate('auto.components.agents-workflow.history.cancel', 'Cancel run')}
+            </Button>
+          ) : null}
+        </div>
       </div>
       {run.skipReason ? (
         <div className="mb-3 text-xs text-muted-foreground">
@@ -131,7 +138,12 @@ function RunDetail({
           <div key={attempt.id} className="rounded-md border border-border p-3">
             <div className="flex items-center justify-between gap-2 text-xs">
               <span className="font-medium">{attempt.nodeId}</span>
-              <span className="text-muted-foreground">{attemptStatusLabel(attempt.status)}</span>
+              <span className="flex items-center gap-1 text-muted-foreground">
+                {attemptStatusLabel(attempt.status)}
+                {attempt.errorMessage || attempt.errorCode ? (
+                  <CopyErrorButton report={attemptErrorReport(run, attempt)} />
+                ) : null}
+              </span>
             </div>
             {attempt.output ? (
               <pre className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-md bg-muted p-2 font-mono text-xs">
@@ -153,6 +165,77 @@ function RunDetail({
       </div>
     </div>
   )
+}
+
+function CopyErrorButton({ report }: { report: string }): React.JSX.Element {
+  const label = translate('auto.components.agents-workflow.history.copyError', 'Copy error details')
+  return (
+    <Button
+      variant="ghost"
+      size="icon-xs"
+      aria-label={label}
+      title={label}
+      onClick={() => {
+        void window.api.ui
+          .writeClipboardText(report)
+          .then(() =>
+            toast.success(
+              translate('auto.components.agents-workflow.history.copied', 'Error details copied.')
+            )
+          )
+          .catch(() =>
+            toast.error(
+              translate(
+                'auto.components.agents-workflow.history.copyFailed',
+                'Could not copy error details.'
+              )
+            )
+          )
+      }}
+    >
+      <Copy />
+    </Button>
+  )
+}
+
+function runErrorReport(run: AgentsWorkflowRun): string {
+  return [
+    'Agents workflow run failure',
+    `Run: ${run.id}`,
+    `Workflow: ${run.definitionSnapshot.name} (${run.workflowId}, revision ${run.workflowRevision})`,
+    `Trigger: ${run.trigger}`,
+    `Status: ${run.status}`,
+    ...(run.workspaceId
+      ? [`Workspace: ${run.workspaceDisplayName ?? run.workspaceId} (${run.workspaceId})`]
+      : []),
+    ...(run.errorCode ? [`Error code: ${run.errorCode}`] : []),
+    ...(run.errorMessage ? [`Error message: ${run.errorMessage}`] : []),
+    ...(run.skipReason ? [`Skip reason: ${run.skipReason}`] : [])
+  ].join('\n')
+}
+
+function attemptErrorReport(
+  run: AgentsWorkflowRun,
+  attempt: AgentsWorkflowRun['attempts'][number]
+): string {
+  return [
+    'Agents workflow node failure',
+    `Run: ${run.id}`,
+    `Workflow: ${run.definitionSnapshot.name} (${run.workflowId}, revision ${run.workflowRevision})`,
+    `Status: ${run.status}`,
+    ...(run.workspaceId
+      ? [`Workspace: ${run.workspaceDisplayName ?? run.workspaceId} (${run.workspaceId})`]
+      : []),
+    `Node: ${attempt.nodeId}`,
+    `Attempt: ${attempt.id} (${attempt.status})`,
+    ...(attempt.loopNodeId
+      ? [`Loop: ${attempt.loopNodeId} iteration ${attempt.loopIteration ?? 0}`]
+      : []),
+    ...(attempt.startedAt ? [`Started: ${new Date(attempt.startedAt).toISOString()}`] : []),
+    ...(attempt.finishedAt ? [`Finished: ${new Date(attempt.finishedAt).toISOString()}`] : []),
+    ...(attempt.errorCode ? [`Error code: ${attempt.errorCode}`] : []),
+    ...(attempt.errorMessage ? [`Error message: ${attempt.errorMessage}`] : [])
+  ].join('\n')
 }
 
 function runStatusLabel(status: AgentsWorkflowRunStatus): string {
