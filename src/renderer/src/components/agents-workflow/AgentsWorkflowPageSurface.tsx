@@ -72,8 +72,10 @@ function AgentsWorkflowLoadedSurface({
   }, [])
 
   const exportDefinition = React.useCallback(() => {
-    void navigator.clipboard
-      .writeText(JSON.stringify(definition, null, 2))
+    // navigator.clipboard silently rejects in some renderer contexts; the preload bridge
+    // routes through Electron's clipboard (or the web fallback) instead.
+    void window.api.ui
+      .writeClipboardText(JSON.stringify(definition, null, 2))
       .then(() =>
         toast.success(
           translate('auto.components.agents-workflow.exported', 'Workflow JSON copied.')
