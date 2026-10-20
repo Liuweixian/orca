@@ -5,6 +5,7 @@ import { translate } from '@/i18n/i18n'
 
 export function AgentsWorkflowTopBar({
   name,
+  target,
   errorCount,
   dirty,
   saving,
@@ -17,6 +18,7 @@ export function AgentsWorkflowTopBar({
   onExport
 }: {
   name: string
+  target: string
   errorCount: number
   dirty: boolean
   saving: boolean
@@ -31,7 +33,10 @@ export function AgentsWorkflowTopBar({
   return (
     <header className="flex h-12 shrink-0 items-center gap-3 border-b border-border bg-background px-4">
       <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-semibold">{name}</div>
+        <div className="flex min-w-0 items-baseline gap-2">
+          <span className="truncate text-sm font-semibold">{name}</span>
+          {target ? <span className="truncate text-xs text-muted-foreground">{target}</span> : null}
+        </div>
         <div className="text-xs text-muted-foreground">
           {errorCount === 0
             ? translate('auto.components.agents-workflow.topbar.valid', 'Ready to save')

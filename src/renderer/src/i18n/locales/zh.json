@@ -18045,7 +18045,8 @@
           "defaultInput": "默认定时运行输入",
           "schedule": "定时运行",
           "timezone": "时区",
-          "grace": "错过运行宽限时间（分钟）"
+          "grace": "错过运行宽限时间（分钟）",
+          "noProjectSetup": "该项目在所选主机上没有就绪的配置。"
         },
         "history": {
           "title": "运行历史",

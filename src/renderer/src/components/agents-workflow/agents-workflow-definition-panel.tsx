@@ -20,6 +20,7 @@ import { buildAutomationRrule } from '../../../../shared/automation-schedule-occ
 import { tryParseAutomationRrule } from '../../../../shared/automation-schedule-parsing'
 import type { AutomationDraft } from '../automations/AutomationEditorDialog'
 import { AutomationSchedulePicker } from '../automations/AutomationSchedulePicker'
+import { AgentsWorkflowTargetFields } from './agents-workflow-target-fields'
 
 export function AgentsWorkflowDefinitionPanel({
   workflows,
@@ -72,6 +73,7 @@ export function AgentsWorkflowDefinitionPanel({
             }
           />
         </div>
+        <AgentsWorkflowTargetFields definition={definition} onChange={onChange} />
         <div className="flex items-center justify-between gap-3">
           <Label htmlFor="agents-workflow-enabled">
             {translate('auto.components.agents-workflow.definition.enabled', 'Enabled')}

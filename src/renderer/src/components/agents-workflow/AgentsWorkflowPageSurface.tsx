@@ -5,6 +5,7 @@ import {
   validateWorkflowDefinition
 } from '../../../../shared/agents-workflow-graph'
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
+import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
 import {
@@ -20,6 +21,7 @@ import { AgentsWorkflowInspector } from './agents-workflow-inspector'
 import { AgentsWorkflowTopBar } from './agents-workflow-top-bar'
 import { AgentsWorkflowDefinitionPanel } from './agents-workflow-definition-panel'
 import { AgentsWorkflowRunHistory } from './agents-workflow-run-history'
+import { describeAgentsWorkflowTarget } from './agents-workflow-target-summary'
 import type { AgentsWorkflowPageController } from './use-agents-workflow-page-controller'
 
 export function AgentsWorkflowPageSurface({
@@ -54,6 +56,13 @@ function AgentsWorkflowLoadedSurface({
   definition: AgentsWorkflowDefinition
 }): React.JSX.Element {
   const onDefinitionChange = controller.setDefinition
+  const repos = useAppStore((s) => s.repos)
+  const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
+  const targetLabels = React.useMemo(
+    () => describeAgentsWorkflowTarget(definition, repos, worktreesByRepo),
+    [definition, repos, worktreesByRepo]
+  )
+  const target = `${targetLabels.host} · ${targetLabels.project} · ${targetLabels.workspace}`
   const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
   const issues = React.useMemo(() => validateWorkflowDefinition(definition), [definition])
@@ -92,6 +101,7 @@ function AgentsWorkflowLoadedSurface({
     <div className="flex h-full min-h-0 flex-col bg-background">
       <AgentsWorkflowTopBar
         name={definition.name}
+        target={target}
         errorCount={issues.filter((entry) => entry.severity === 'error').length}
         dirty={controller.dirty}
         saving={controller.saving}

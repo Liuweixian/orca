@@ -18294,7 +18294,8 @@
           "defaultInput": "Default scheduled input",
           "schedule": "Scheduled runs",
           "timezone": "Timezone",
-          "grace": "Missed-run grace (minutes)"
+          "grace": "Missed-run grace (minutes)",
+          "noProjectSetup": "This project has no ready setup on the selected host."
         },
         "history": {
           "title": "Run history",
