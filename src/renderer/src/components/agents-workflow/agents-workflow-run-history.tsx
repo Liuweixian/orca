@@ -96,6 +96,16 @@ function RunDetail({
               { revision: run.workflowRevision }
             )}
           </div>
+          {run.errorMessage || run.errorCode ? (
+            <div className="mt-1 space-y-0.5">
+              {run.errorMessage ? (
+                <div className="text-xs text-destructive">{run.errorMessage}</div>
+              ) : null}
+              {run.errorCode ? (
+                <div className="font-mono text-xs text-muted-foreground">{run.errorCode}</div>
+              ) : null}
+            </div>
+          ) : null}
         </div>
         {active ? (
           <Button variant="outline" size="xs" onClick={() => onCancel(run.id)}>
@@ -128,8 +138,15 @@ function RunDetail({
                 {attempt.output.content}
               </pre>
             ) : null}
-            {attempt.errorMessage ? (
-              <div className="mt-2 text-xs text-destructive">{attempt.errorMessage}</div>
+            {attempt.errorMessage || attempt.errorCode ? (
+              <div className="mt-2 space-y-0.5">
+                {attempt.errorMessage ? (
+                  <div className="text-xs text-destructive">{attempt.errorMessage}</div>
+                ) : null}
+                {attempt.errorCode ? (
+                  <div className="font-mono text-xs text-muted-foreground">{attempt.errorCode}</div>
+                ) : null}
+              </div>
             ) : null}
           </div>
         ))}
