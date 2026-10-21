@@ -22,6 +22,7 @@ import {
 } from './appearance-search'
 import { USAGE_PERCENTAGE_DISPLAY_SETTING_ID } from './appearance-usage-percentage-search'
 import { LeftSidebarAppearanceSetting } from './LeftSidebarAppearanceSetting'
+import { AppearanceWorkflowsButtonRow } from './AppearanceWorkflowsButtonRow'
 import {
   getLeftSidebarAppearanceEntry,
   getShowPinnedWorktreesInGroupsEntry,
@@ -286,29 +287,11 @@ export function AppearanceWindowSidebarSection({
                     />
                   </SearchableSetting>
 
-                  <SearchableSetting
-                    title={translate(
-                      'auto.components.settings.AppearancePane.agentsWorkflows',
-                      'Show Workflows Button'
-                    )}
-                    description={sidebarEntries[2]?.description}
-                    keywords={
-                      sidebarEntries[2]?.keywords ?? ['workflow', 'agent', '工作流', 'sidebar']
-                    }
-                  >
-                    <SettingsSwitchRow
-                      label={translate(
-                        'auto.components.settings.AppearancePane.agentsWorkflows',
-                        'Show Workflows Button'
-                      )}
-                      checked={settings.showAgentsWorkflowButton !== false}
-                      onChange={() =>
-                        updateSettings({
-                          showAgentsWorkflowButton: !(settings.showAgentsWorkflowButton !== false)
-                        })
-                      }
-                    />
-                  </SearchableSetting>
+                  <AppearanceWorkflowsButtonRow
+                    settings={settings}
+                    entry={sidebarEntries[2]}
+                    updateSettings={updateSettings}
+                  />
 
                   <SearchableSetting
                     title={translate(
