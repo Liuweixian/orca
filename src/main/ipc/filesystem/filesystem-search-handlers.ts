@@ -1,6 +1,5 @@
 import { ipcMain } from 'electron'
 import { listQuickOpenFiles } from '../filesystem-list-files'
-import { isFileListingCancellation } from '../../../shared/file-listing-cancellation'
 import {
   isFileNameFilterQueryTooLarge,
   pathMatchesFileNameFilterTokens,
@@ -54,14 +53,6 @@ export function registerFilesystemSearchHandlers(context: FilesystemHandlerConte
             : undefined,
           args
         )
-      } catch (error) {
-        // Why: superseding a scan is normal control flow, but Electron logs every rejected
-        // handler — report an empty listing so the log stays truthful. The renderer drops a
-        // cancelled scan on its own, so this never paints a false-empty result.
-        if (!isFileListingCancellation(error)) {
-          throw error
-        }
-        return []
       } finally {
         listFilesCancellations.finish(event, args.requestToken, controller)
       }

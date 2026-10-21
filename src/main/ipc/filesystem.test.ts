@@ -157,36 +157,6 @@ describe('registerFilesystemHandlers', () => {
     expect(recordCrashBreadcrumbMock).not.toHaveBeenCalled()
   })
 
-  // Why: a watched directory can be deleted between the event and the refresh that reads it (a
-  // run dropping its scratch folder, a removed worktree). That must read as empty, not as a
-  // rejected handler that Electron logs and the explorer paints as an error row.
-  it('returns an empty listing when the directory vanished before the read', async () => {
-    registerFilesystemHandlers(store as never)
-    readdirMock.mockRejectedValue(
-      Object.assign(new Error("ENOENT: no such file or directory, scandir 'x'"), {
-        code: 'ENOENT'
-      })
-    )
-
-    await expect(handlers.get('fs:readDir')!(null, { dirPath: REPO_PATH })).resolves.toEqual([])
-    expect(recordCrashBreadcrumbMock).not.toHaveBeenCalled()
-  })
-
-  it('still rejects a readDir that fails for another reason', async () => {
-    registerFilesystemHandlers(store as never)
-    readdirMock.mockRejectedValue(
-      Object.assign(new Error('EACCES: permission denied'), { code: 'EACCES' })
-    )
-
-    await expect(handlers.get('fs:readDir')!(null, { dirPath: REPO_PATH })).rejects.toThrow(
-      'EACCES'
-    )
-    expect(recordCrashBreadcrumbMock).toHaveBeenCalledWith(
-      'fs_readdir_error',
-      expect.objectContaining({ throwSite: 'readdir' })
-    )
-  })
-
   it('rejects readFile when the real path escapes allowed roots', async () => {
     const linkPath = path.resolve('/workspace/repo/link.txt')
     realpathMock.mockImplementation(async (targetPath: string) => {

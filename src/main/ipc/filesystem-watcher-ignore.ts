@@ -11,7 +11,10 @@ export const WATCHER_IGNORE_DIRS: string[] = [
   '.cache',
   'target',
   '.venv',
-  '__pycache__'
+  '__pycache__',
+  // Why: workflow runs create and delete this scratch folder inside the worktree; watching it only
+  // produced "root was deleted" churn when the run cleaned up after itself.
+  '.orca-workflow'
 ]
 
 // Why: macOS FSEventStreamSetExclusionPaths accepts at most 8 paths and fails
