@@ -7,7 +7,6 @@
  * but only after the agent had time to start and only when no shell refused its command.
  */
 import type { AgentStatusIpcPayload } from '../../shared/agent-status-types'
-import type { AutomationRun } from '../../shared/automations-types'
 
 /** Covers agent spin-up over SSH before an idle pane without agent status is believed. */
 export const AGENT_START_GRACE_MS = 2 * 60 * 1000
@@ -31,7 +30,18 @@ export type AutomationRunAgentEvidence = {
     'state' | 'stateStartedAt' | 'sessionBoundary' | 'providerSessionOnly'
   >[]
   /** The names the run's agent command may run under, to tell its refusal from its output. */
-  agentCommandsForRun(run: AutomationRun): readonly string[]
+  agentCommandsForRun(run: RunCompletionSubject): readonly string[]
+}
+
+/**
+ * The run facts a pane's completion verdict needs. An `AutomationRun` is one such subject; a
+ * workflow turn has the same facts without being an automation run (and names no automation).
+ */
+export type RunCompletionSubject = {
+  automationId?: string | null
+  terminalPaneKey: string | null
+  dispatchedAt?: number | null
+  startedAt?: number | null
 }
 
 export type IdleRunVerdict =
@@ -61,7 +71,7 @@ export function findMissingCommandLine(
 
 export function judgeIdleRun(
   evidence: AutomationRunAgentEvidence,
-  run: AutomationRun,
+  run: RunCompletionSubject,
   tail: readonly string[],
   runStartedAt: number,
   now: number

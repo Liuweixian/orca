@@ -325,4 +325,34 @@ describe('executeAgentsWorkflowSchedule', () => {
 
     expect(events.slice(0, 2)).toEqual(['persist:running', 'execute'])
   })
+
+  // Why: a closed pane or a dropped transport made the executor throw, which escaped the
+  // scheduler: the run failed with a generic `workflow_execution_failed` and its attempt stayed
+  // `running` forever.
+  it('settles the attempt when the executor throws', async () => {
+    const workflow = definition(
+      [agent('done', { source: 'work', bindings: {} }, true)],
+      [edge('start-done', 'start', 'done')]
+    )
+
+    const result = await executeAgentsWorkflowSchedule({
+      definition: workflow,
+      runInput: '',
+      executeAgent: async () => {
+        throw new Error('terminal_handle_stale')
+      }
+    })
+
+    expect(result).toMatchObject({ ok: false, code: 'agent_turn_failed' })
+    if (result.ok) {
+      return
+    }
+    expect(result.message).toBe('terminal_handle_stale')
+    expect(result.attempts.at(-1)).toMatchObject({
+      nodeId: 'done',
+      status: 'failed',
+      errorCode: 'agent_turn_failed',
+      errorMessage: 'terminal_handle_stale'
+    })
+  })
 })

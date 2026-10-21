@@ -16,18 +16,19 @@ import {
 import {
   paneTurnRefusal,
   WorkflowPaneTurns,
+  type WorkflowPaneTurn,
   type WorkflowPaneTurnRuntime
 } from './workflow-pane-turn'
 import { ensureAgentsWorkflowRunDirectory } from './workflow-run-scratch'
 
 /**
- * How long a node may take to produce its file. The pane's idle edge is not trusted as a turn
- * boundary here (a fresh pane goes idle long before its agent answers), so the file is the clock's
- * only stop; a run that never writes it is cancelled by the user or ends here.
+ * How long a node may take to produce its file. The file is the value, so this is the clock's only
+ * stop: a turn the agent never reports finishing, and a run that never writes the file, both end
+ * here (or when the user cancels).
  */
 const OUTPUT_FILE_TIMEOUT_MS = 30 * 60 * 1000
 const OUTPUT_FILE_POLL_MS = 500
-/** A settled pane gets this long to flush the file before a missing file is final. */
+/** A turn the agent reported finishing gets this long to flush the file before a miss is final. */
 const OUTPUT_FILE_SETTLE_GRACE_MS = 10_000
 
 export type AgentsWorkflowFileHandoffTurnRunner = {
@@ -103,7 +104,7 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
     if (!launched.ok) {
       return launched
     }
-    return await this.readTurn(input, launched.handle, outputPath)
+    return await this.readTurn(input, launched, outputPath)
   }
 
   async cancel(runId: string): Promise<'stopped' | 'unverifiable'> {
@@ -116,13 +117,13 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
   }
 
   /**
-   * Waits for the file the prompt asked for. A pane that never settles gets the full timeout; once
-   * it settles, the file only gets a short grace period, so an agent that answered without writing
-   * does not idle for half an hour.
+   * Waits for the file the prompt asked for. A turn whose agent never reports completion gets the
+   * full timeout; once the agent reports it, the file only gets a short grace period, so an agent
+   * that answered without writing does not idle for half an hour.
    */
   private async readTurn(
     input: Parameters<AgentsWorkflowStepExecutor>[0],
-    handle: string,
+    turn: WorkflowPaneTurn,
     outputPath: string
   ) {
     const watcher = new AbortController()
@@ -132,13 +133,15 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
     const pane: {
       failure: { ok: false; code: string; message: string; unverifiable?: boolean } | null
       settledAt: number | null
-    } = { failure: null, settledAt: null }
-    void this.panes.settle(handle, watcher.signal).then(
+      failedAt: number | null
+    } = { failure: null, settledAt: null, failedAt: null }
+    void this.panes.settle(turn, watcher.signal).then(
       (result) => {
         if (result.ok) {
           pane.settledAt = this.now()
         } else {
           pane.failure = result
+          pane.failedAt = this.now()
         }
       },
       // The watcher is aborted once the file settled the run; its teardown is not a failure.
@@ -151,9 +154,6 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
       while (true) {
         if (input.signal?.aborted) {
           return paneTurnRefusal('cancelled', 'Workflow run was cancelled.', true)
-        }
-        if (pane.failure !== null) {
-          return pane.failure
         }
         const read = await this.tryReadHandoff(outputPath)
         if (read !== null) {
@@ -178,6 +178,17 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
           }
         }
         const now = this.now()
+        if (pane.failure !== null) {
+          // Why read the file first: a closed pane can still leave the answer it already wrote.
+          // An unverifiable end (a pane closed or reloaded) gets the same short grace as a
+          // finished turn, so a last write can land; anything else is final immediately.
+          const failed = !pane.failure.unverifiable
+          const failedGraceOver =
+            pane.failedAt !== null && now >= pane.failedAt + this.settleGraceMs
+          if (failed || failedGraceOver) {
+            return pane.failure
+          }
+        }
         const graceOver = pane.settledAt !== null && now >= pane.settledAt + this.settleGraceMs
         if (graceOver || now >= deadlineAt) {
           if (pending !== null) {

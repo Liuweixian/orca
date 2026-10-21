@@ -129,9 +129,15 @@ describe('AgentsWorkflowRunService execution guards', () => {
     await vi.waitFor(() => {
       expect(store.showAgentsWorkflowRun(started.id)).toMatchObject({
         status: 'failed',
-        errorCode: 'workflow_execution_failed',
+        // The node's own attempt now carries the throw, so the run names it instead of the
+        // generic run-level code.
+        errorCode: 'agent_turn_failed',
         errorMessage: 'pane exploded'
       })
+    })
+    expect(store.showAgentsWorkflowRun(started.id).attempts.at(-1)).toMatchObject({
+      status: 'failed',
+      errorCode: 'agent_turn_failed'
     })
   })
 

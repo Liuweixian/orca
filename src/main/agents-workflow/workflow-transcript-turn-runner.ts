@@ -84,7 +84,7 @@ export class WorkflowTranscriptTurnRunner implements AgentsWorkflowTranscriptTur
     if (!launched.ok) {
       return launched
     }
-    const settled = await this.panes.settle(launched.handle, input.signal)
+    const settled = await this.panes.settle(launched, input.signal)
     if (!settled.ok) {
       return settled
     }

@@ -58,6 +58,12 @@ export function registerFilesystemReadHandlers(context: FilesystemHandlerContext
         )
         return sortDirEntries(mapped)
       } catch (error: unknown) {
+        // Why: a directory can vanish between a watcher event and the refresh that reads it (a run
+        // deleting its scratch folder, a removed worktree). That is a normal empty listing, not a
+        // handler error — Electron logs every rejection, and the explorer would paint an error row.
+        if (throwSite === 'readdir' && isENOENT(error)) {
+          return []
+        }
         recordCrashBreadcrumb(
           'fs_readdir_error',
           buildReadDirErrorBreadcrumb({

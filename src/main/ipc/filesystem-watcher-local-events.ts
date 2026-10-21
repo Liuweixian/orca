@@ -243,7 +243,10 @@ export async function createLocalWatcher(
       (err, events) => {
         if (err) {
           // Why: treat watcher errors as overflow so the renderer conservatively refreshes rather than trusting possibly-invalid caches (§7.2, §7.3).
-          console.error(`[filesystem-watcher] error for ${rootKey}:`, err)
+          // Why warn for a deleted root: it is the expected teardown when a worktree or a run's
+          // scratch folder is removed under us, not a watcher fault.
+          const log = err.message === 'File watcher root was deleted' ? console.warn : console.error
+          log(`[filesystem-watcher] error for ${rootKey}:`, err)
           notifyLocalWatcherInterrupted(root)
           emitOverflowPayload(root)
           // Why: after an error the native subscription may be invalid (deleted root); tear down the dead watcher so it doesn't dangle (§7.3).

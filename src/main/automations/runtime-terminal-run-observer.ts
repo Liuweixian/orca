@@ -3,8 +3,12 @@ import type {
   AutomationRunCompletionObservation,
   AutomationRunTerminalObserver
 } from './run-completion-watcher'
-import type { AutomationRun, AutomationRunOutputSnapshot } from '../../shared/automations-types'
-import { judgeIdleRun, type AutomationRunAgentEvidence } from './automation-run-agent-evidence'
+import type { AutomationRunOutputSnapshot } from '../../shared/automations-types'
+import {
+  judgeIdleRun,
+  type AutomationRunAgentEvidence,
+  type RunCompletionSubject
+} from './automation-run-agent-evidence'
 
 const TERMINAL_SNAPSHOT_LIMIT = 2_000
 
@@ -55,7 +59,7 @@ function snapshotOf(tail: readonly string[]): AutomationRunOutputSnapshot | null
 async function judgeIdleTail(
   tail: readonly string[],
   evidence: AutomationRunAgentEvidence,
-  run: AutomationRun,
+  run: RunCompletionSubject,
   runStartedAt: number
 ): Promise<AutomationRunCompletionObservation | null> {
   const verdict = judgeIdleRun(evidence, run, tail, runStartedAt, Date.now())
@@ -76,7 +80,7 @@ async function judgeIdleTail(
 async function settleIdlePane(
   runtime: AutomationRunTerminalHost,
   handle: string,
-  judged: { evidence: AutomationRunAgentEvidence; run: AutomationRun },
+  judged: { evidence: AutomationRunAgentEvidence; run: RunCompletionSubject },
   runStartedAt: number,
   signal: AbortSignal,
   deadlineAt: number

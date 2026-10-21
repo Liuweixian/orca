@@ -7,11 +7,13 @@ import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { WorkflowFileHandoffTurnRunner } from './workflow-file-handoff-runner'
 
 const observer = vi.hoisted(() => ({
-  observeCompletion: vi.fn(async () => ({
-    status: 'completed' as const,
-    outputSnapshot: null,
-    error: null
-  }))
+  observeCompletion: vi.fn(
+    async (): Promise<{
+      status: 'completed' | 'dispatch_failed'
+      outputSnapshot: null
+      error: string | null
+    }> => ({ status: 'completed', outputSnapshot: null, error: null })
+  )
 }))
 
 vi.mock('../automations/runtime-terminal-run-observer', () => ({
@@ -152,6 +154,68 @@ describe('WorkflowFileHandoffTurnRunner', () => {
     })
 
     expect(result).toMatchObject({ ok: false, code: 'output_contract_missing' })
+    expect(Date.now() - startedAt).toBeLessThan(5_000)
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('accepts the answer an agent wrote before its pane was lost', async () => {
+    const dir = await workspace()
+    const rig = runtime()
+    // The pane closes right after the agent wrote the file; the file is still the proof.
+    observer.observeCompletion.mockResolvedValue({
+      status: 'dispatch_failed' as const,
+      outputSnapshot: null,
+      error: 'The workflow pane stopped reporting before the agent finished: terminal_handle_stale'
+    })
+    answersWith(rig, 'the answer')
+    const runner = new WorkflowFileHandoffTurnRunner(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the runner reads only the five terminal methods this fixture provides.
+      rig as unknown as OrcaRuntimeService,
+      Date.now,
+      5_000,
+      10,
+      20
+    )
+
+    const result = await runner.run({
+      runId: 'run-1',
+      workspaceId: 'workspace-1',
+      workspacePath: dir,
+      node: node(),
+      prompt: 'work'
+    })
+
+    expect(result).toMatchObject({ ok: true, output: { content: 'the answer' } })
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('reports a lost pane as unverifiable instead of waiting out the file timeout', async () => {
+    const dir = await workspace()
+    const rig = runtime()
+    observer.observeCompletion.mockResolvedValue({
+      status: 'dispatch_failed' as const,
+      outputSnapshot: null,
+      error: 'The workflow pane stopped reporting before the agent finished: terminal_handle_stale'
+    })
+    const runner = new WorkflowFileHandoffTurnRunner(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the runner reads only the five terminal methods this fixture provides.
+      rig as unknown as OrcaRuntimeService,
+      Date.now,
+      60_000,
+      10,
+      20
+    )
+    const startedAt = Date.now()
+
+    const result = await runner.run({
+      runId: 'run-1',
+      workspaceId: 'workspace-1',
+      workspacePath: dir,
+      node: node(),
+      prompt: 'work'
+    })
+
+    expect(result).toMatchObject({ ok: false, unverifiable: true })
     expect(Date.now() - startedAt).toBeLessThan(5_000)
     await rm(dir, { recursive: true, force: true })
   })

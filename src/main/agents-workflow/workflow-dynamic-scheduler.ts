@@ -149,26 +149,44 @@ export async function executeAgentsWorkflowSchedule(input: {
       attempts.push(attempt)
       executionTrace.push(node.id)
       await checkpoint()
-      const result = await input.executeAgent({
-        ...input.executionContext,
-        node,
-        prompt: withAgentsWorkflowUpstream(
-          rendered.value,
-          input.executionContext
-            ? agentsWorkflowUpstreamPrompt({
-                definition: input.definition,
-                nodeId: node.id,
-                runId: input.executionContext.runId,
-                hasValue: (nodeId) =>
-                  values.nodeOutputs.has(nodeId) || values.loopOutputs.has(nodeId),
-                prompt: node.prompt
-              })
-            : null
-        ),
-        loopNodeId: loopContext?.loopNodeId,
-        loopIteration: loopContext?.loopIteration,
-        signal: input.signal
-      })
+      const execution = await input
+        .executeAgent({
+          ...input.executionContext,
+          node,
+          prompt: withAgentsWorkflowUpstream(
+            rendered.value,
+            input.executionContext
+              ? agentsWorkflowUpstreamPrompt({
+                  definition: input.definition,
+                  nodeId: node.id,
+                  runId: input.executionContext.runId,
+                  hasValue: (nodeId) =>
+                    values.nodeOutputs.has(nodeId) || values.loopOutputs.has(nodeId),
+                  prompt: node.prompt
+                })
+              : null
+          ),
+          loopNodeId: loopContext?.loopNodeId,
+          loopIteration: loopContext?.loopIteration,
+          signal: input.signal
+        })
+        .then(
+          (result) => ({ ok: true as const, result }),
+          (error: unknown) => ({ ok: false as const, error })
+        )
+      if (!execution.ok) {
+        // Why: an executor that throws (a pane closed or a transport dropped) must still settle its
+        // attempt. Leaving it `running` made the run's failure unreadable, and the throw escaped to
+        // the run service as a generic `workflow_execution_failed`.
+        attempt.finishedAt = now()
+        attempt.status = 'failed'
+        attempt.errorCode = 'agent_turn_failed'
+        attempt.errorMessage =
+          execution.error instanceof Error ? execution.error.message : 'The agent turn failed.'
+        await checkpoint()
+        return failure(attempt.errorCode, attempt.errorMessage)
+      }
+      const result = execution.result
       attempt.finishedAt = now()
       if (!result.ok) {
         attempt.status = result.unverifiable ? 'unverifiable' : 'failed'

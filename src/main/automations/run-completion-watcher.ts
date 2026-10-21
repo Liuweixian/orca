@@ -5,6 +5,7 @@ import {
   type AutomationRunOutputSnapshot
 } from '../../shared/automations-types'
 import { RetainedRunReconciler } from './retained-run-reconciliation'
+import type { RunCompletionSubject } from './automation-run-agent-evidence'
 
 export type AutomationRunCompletionObservation = {
   status: 'completed' | 'dispatch_failed'
@@ -18,7 +19,7 @@ export type AutomationRunTerminalObserver = {
   resolveRunTerminal: (run: AutomationRun) => string | null
   observeCompletion: (
     handle: string,
-    options: { signal: AbortSignal; run?: AutomationRun }
+    options: { signal: AbortSignal; run?: RunCompletionSubject }
   ) => Promise<AutomationRunCompletionObservation>
 }
 
