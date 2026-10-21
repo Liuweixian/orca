@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { handlers, store, resetFilesystemIpcMocks } from './filesystem-test-harness'
+import { FileListingCancelledError } from '../../shared/file-listing-cancellation'
 
 const { listQuickOpenFilesMock } = vi.hoisted(() => ({ listQuickOpenFilesMock: vi.fn() }))
 
@@ -99,6 +100,15 @@ describe('fs:listFiles local name filter', () => {
     expect(listQuickOpenFilesMock).not.toHaveBeenCalled()
   })
 
+  it('still reports a genuine listing failure', async () => {
+    listQuickOpenFilesMock.mockRejectedValue(new Error('rg exited with code 2'))
+    registerHandlers()
+
+    await expect(handlers.get('fs:listFiles')!(null, { rootPath: '/repo' })).rejects.toThrow(
+      'rg exited with code 2'
+    )
+  })
+
   // Why #7721: a workspace switch must stop the previous workspace's full-tree scan.
   it.each(['cancel', 'did-navigate', 'render-process-gone', 'destroyed'])(
     'aborts an in-flight file listing on %s (#7721)',
@@ -108,7 +118,7 @@ describe('fs:listFiles local name filter', () => {
         (_rootPath: string, _store: unknown, _exclude: unknown, signal?: AbortSignal) =>
           new Promise<string[]>((_resolve, reject) => {
             capturedSignal = signal
-            signal?.addEventListener('abort', () => reject(new Error('listing cancelled')), {
+            signal?.addEventListener('abort', () => reject(new FileListingCancelledError()), {
               once: true
             })
           })
@@ -129,7 +139,9 @@ describe('fs:listFiles local name filter', () => {
         senderEvent.sender.emit(eventName)
       }
       expect(capturedSignal?.aborted).toBe(true)
-      await expect(pending).rejects.toThrow('listing cancelled')
+      // Why an empty result and not a rejection: Electron logs every rejected handler, and the
+      // renderer already discards a listing it cancelled.
+      await expect(pending).resolves.toEqual([])
       expect(senderEvent.sender.eventNames()).toEqual([])
 
       // Unknown or already-settled tokens are a no-op, not an error.
