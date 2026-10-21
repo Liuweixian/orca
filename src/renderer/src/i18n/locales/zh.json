@@ -18098,7 +18098,10 @@
           "deleteFailed": "无法删除工作流。",
           "runFailed": "无法启动工作流。",
           "runLoadFailed": "无法加载运行记录。",
-          "newName": "新建工作流"
+          "newName": "新建工作流",
+          "runsLoadFailed": "无法加载运行历史。",
+          "cancelFailed": "无法取消运行。",
+          "invalid": "保存前请先修复：{{issues}}"
         },
         "canvas": {
           "deleteNode": "删除节点",
