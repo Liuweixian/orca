@@ -17,6 +17,7 @@ export const HOST_OPERATION_OWNERSHIP = {
   agentSession: 'host',
   agentSessionAttachment: 'host',
   agentTeams: 'host',
+  agentsWorkflow: 'host',
   aiVault: 'host',
   artifacts: 'host',
   automation: 'host',
