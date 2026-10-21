@@ -11,13 +11,18 @@ import { isNativeBrowserPopupWindow } from '../browser/native-browser-popup-wind
 import { createAppMenuSelectionItem } from './app-menu-selection-item'
 import { createAppMenuQuitItem } from './app-menu-quit-item'
 import { createAppWindowMenu } from './app-menu-window'
-import {
-  createAppMenuView,
-  type AppearanceMenuKey,
-  type AppearanceMenuState
-} from './app-menu-view'
+import { createAppMenuAppearance } from './app-menu-appearance'
 
-export type { AppearanceMenuKey, AppearanceMenuState }
+export type AppearanceMenuState = {
+  showTasksButton: boolean
+  showAutomationsButton: boolean
+  showAgentsWorkflowButton: boolean
+  showMobileButton: boolean
+  showTitlebarAppName: boolean
+  statusBarVisible: boolean
+}
+
+export type AppearanceMenuKey = keyof AppearanceMenuState
 
 export function getNextDefaultOnAppearanceSettingValue(current: boolean | undefined): boolean {
   return !(current !== false)
@@ -218,17 +223,54 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
     ]
   }
 
-  const viewMenu = createAppMenuView({
+  const appearanceSubmenu = createAppMenuAppearance({
     appearance,
     shortcutLabel,
-    reloadFocusedWindow,
     onToggleLeftSidebar,
     onToggleRightSidebar,
-    onToggleAppearance,
-    onZoomIn,
-    onZoomOut,
-    onZoomReset
+    onToggleAppearance
   })
+
+  const viewMenu: Electron.MenuItemConstructorOptions = {
+    label: translateMain('menu.view', 'View'),
+    submenu: [
+      {
+        label: translateMain('menu.reload', 'Reload'),
+        click: () => reloadFocusedWindow(false)
+      },
+      {
+        label: `${translateMain('menu.forceReload', 'Force Reload')}\t${shortcutLabel('app.forceReload')}`,
+        click: () => reloadFocusedWindow(true)
+      },
+      { role: 'toggleDevTools' },
+      { type: 'separator' },
+      {
+        label: `${translateMain('menu.resetSize', 'Reset Size')}\t${shortcutLabel('zoom.reset')}`,
+        click: () => onZoomReset()
+      },
+      {
+        label: `${translateMain('menu.zoomIn', 'Zoom In')}\t${shortcutLabel('zoom.in')}`,
+        click: () => onZoomIn()
+      },
+      {
+        label: `${translateMain('menu.zoomOut', 'Zoom Out')}\t${shortcutLabel('zoom.out')}`,
+        click: () => onZoomOut()
+      },
+      { type: 'separator' },
+      {
+        // Why: display-only shortcut hint — do NOT set `accelerator` here.
+        // Menu accelerators intercept key events at the main-process level
+        // before the renderer's keydown handler fires. The overlay
+        // mutual-exclusion logic (which runs in the renderer) would be
+        // bypassed if this were a real accelerator binding.
+        label: `${translateMain('menu.openWorktreePalette', 'Open Worktree Palette')}\t${shortcutLabel('worktree.palette')}`
+      },
+      { type: 'separator' },
+      { role: 'togglefullscreen' },
+      { type: 'separator' },
+      appearanceSubmenu
+    ]
+  }
 
   const windowMenu = createAppWindowMenu(translateMain('menu.window', 'Window'), isMac)
 
