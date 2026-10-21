@@ -18,7 +18,7 @@ export type AgentsWorkflowStepExecutor = (input: {
   signal?: AbortSignal
 }) => Promise<
   | { ok: true; output: AgentsWorkflowNodeOutput }
-  | { ok: false; code: string; message: string; unverifiable?: boolean }
+  | { ok: false; code: string; message: string; unverifiable?: boolean; cancelled?: boolean }
 >
 
 export type AgentsWorkflowScheduleCheckpoint = (state: {

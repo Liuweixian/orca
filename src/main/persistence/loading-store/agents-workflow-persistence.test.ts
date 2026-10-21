@@ -41,8 +41,27 @@ function workflowInput(creationKey = 'create-1'): AgentsWorkflowCreateInput {
     schemaVersion: 1,
     creationKey,
     name: 'Review',
-    nodes: [{ id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } }],
-    edges: [],
+    nodes: [
+      { id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } },
+      {
+        id: 'report',
+        kind: 'agent',
+        title: 'Report',
+        position: { x: 1, y: 0 },
+        agentId: 'claude',
+        prompt: { source: 'report', bindings: {} },
+        terminal: true
+      }
+    ],
+    edges: [
+      {
+        id: 'start-report',
+        fromNodeId: 'start',
+        toNodeId: 'report',
+        fromPort: 'default',
+        toPort: 'default'
+      }
+    ],
     runContext: {
       kind: 'workspace-run',
       projectId: 'project-1',
@@ -94,6 +113,54 @@ describe('agent workflow persistence', () => {
     expect(() => store.deleteAgentsWorkflow(created.id, 2)).toThrow(/revision conflict/)
     expect(store.deleteAgentsWorkflow(created.id, 1)).toBe(true)
     expect(store.listAgentsWorkflows()).toEqual([])
+  })
+
+  it('refuses a definition whose graph cannot run', () => {
+    const { store } = createStore()
+    const input = workflowInput('invalid-graph')
+    input.nodes = [{ id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } }]
+    input.edges = []
+
+    // Why refuse the write: a stored definition that cannot compile fails on every scheduled
+    // occurrence, where nobody sees the error.
+    expect(() => store.createAgentsWorkflow(input)).toThrow(/terminal agent/)
+  })
+
+  it('refuses an unparseable schedule instead of letting the ticker throw every minute', () => {
+    const { store } = createStore()
+    const input = workflowInput('invalid-schedule')
+    input.trigger = {
+      manual: true,
+      defaultInput: '',
+      schedule: {
+        timezone: 'Mars/Olympus',
+        rrule: 'NOT-AN-RRULE',
+        dtstart: 1,
+        missedRunGraceMinutes: 5
+      }
+    }
+
+    expect(() => store.createAgentsWorkflow(input)).toThrow(/timezone|recurrence|parse/i)
+  })
+
+  it('does not let a late checkpoint rewrite a finished run', () => {
+    const { store } = createStore()
+    const workflow = store.createAgentsWorkflow(workflowInput('terminal-run'))
+    const created = store.createAgentsWorkflowRun({
+      workflow,
+      runInput: '',
+      requestKey: 'terminal-run',
+      now: 1
+    })
+    store.updateAgentsWorkflowRun(created.run.id, { status: 'cancelled', finishedAt: 2 })
+    store.replaceAgentsWorkflowRunTrace(created.run.id, [], ['stale'])
+    store.updateAgentsWorkflowRun(created.run.id, { status: 'running' })
+
+    expect(store.showAgentsWorkflowRun(created.run.id)).toMatchObject({
+      status: 'cancelled',
+      finishedAt: 2,
+      executionTrace: []
+    })
   })
 
   it('persists runs, deduplicates request keys, locks active workspaces, and recovers safely', () => {
@@ -204,9 +271,13 @@ describe('agent workflow persistence', () => {
     await vi.waitFor(() => {
       expect(store.showAgentsWorkflowRun(started.id)).toMatchObject({
         status: 'completed',
-        executionTrace: ['start', 'agent'],
-        attempts: [{ nodeId: 'agent', status: 'completed' }]
+        executionTrace: ['start', 'agent', 'report']
       })
+      expect(
+        store
+          .showAgentsWorkflowRun(started.id)
+          .attempts.find((attempt) => attempt.nodeId === 'agent')
+      ).toMatchObject({ status: 'completed' })
     })
   })
 

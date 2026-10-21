@@ -61,9 +61,12 @@ export function resolveAgentsWorkflowLoopItems(
   values: AgentsWorkflowRuntimeValues
 ): { ok: true; items: string[] } | { ok: false; code: string; message: string } {
   if (node.iteration.mode === 'fixed') {
+    // Why clamp: the schema already bounds this to 1..20, but a definition loaded from an older
+    // state file never went through it, and one bad count would wedge the run.
+    const count = Math.min(20, Math.max(1, Math.trunc(node.iteration.count)))
     return {
       ok: true,
-      items: Array.from({ length: node.iteration.count }, (_, index) => String(index + 1))
+      items: Array.from({ length: count }, (_, index) => String(index + 1))
     }
   }
   const source = resolveAgentsWorkflowVariable(node.iteration.items, values)

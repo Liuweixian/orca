@@ -1,14 +1,11 @@
 // The bookkeeping that ends a workflow run, kept apart from scheduling it.
 //
 // A run must always leave `running`, whether the engine returned a failure, threw, or never found a
-// workspace. These helpers are the single place that settles the run and drops its answer folder.
+// workspace. These helpers are the single place that settles the run and drops its scratch folder.
 
-import { rm, rmdir } from 'node:fs/promises'
+import { rm } from 'node:fs/promises'
 import type { AgentsWorkflowRun } from '../../shared/agents-workflow-run-types'
-import {
-  agentsWorkflowRunAnswersDirectory,
-  agentsWorkflowRunDirectory
-} from '../../shared/agents-workflow-output-paths'
+import { agentsWorkflowRunDirectory } from '../../shared/agents-workflow-output-paths'
 
 type FinishPersistence = {
   updateAgentsWorkflowRun(runId: string, updates: Partial<AgentsWorkflowRun>): AgentsWorkflowRun
@@ -19,10 +16,15 @@ export type RecoveryPersistence = FinishPersistence & {
   markInterruptedAgentsWorkflowRunsUnverifiable(now: number): AgentsWorkflowRun[]
 }
 
+/** Resolves where a run was actually writing, from the workspace it ran in. */
+export type AgentsWorkflowWorkspacePathResolver = (workspaceId: string) => Promise<string | null>
+
 export type AgentsWorkflowRunLifecycle = {
   persistence: FinishPersistence
   notifyChanged: () => void
   now: () => number
+  /** Absent when the host cannot map a workspace id back to a path. */
+  resolveWorkspacePath?: AgentsWorkflowWorkspacePathResolver
 }
 
 export function isActiveAgentsWorkflowRun(run: AgentsWorkflowRun): boolean {
@@ -45,9 +47,13 @@ export async function recoverInterruptedAgentsWorkflowRuns(
   if (recovered.length === 0) {
     return
   }
-  // A crash leaves the run's answer folder behind; the interrupted run is the one that owns it.
+  // A crash leaves the run's scratch folder behind. Why the workspace id and not the definition's
+  // project path: a `new_per_run` run wrote it inside the worktree it created, not the project.
   for (const run of recovered) {
-    await removeAgentsWorkflowRunAnswers(run.definitionSnapshot.runContext.path, run.id)
+    const workspacePath = await resolveRunWorkspacePath(lifecycle, run)
+    if (workspacePath !== null) {
+      await removeAgentsWorkflowRunScratch(workspacePath, run.id)
+    }
   }
   await flushAgentsWorkflowPersistence(lifecycle.persistence)
   lifecycle.notifyChanged()
@@ -70,20 +76,62 @@ export async function finishAgentsWorkflowRun(
   lifecycle.notifyChanged()
 }
 
-/** Drops the engine's answer cache; a file an agent delivered is kept. */
-export async function removeAgentsWorkflowRunAnswers(
+/**
+ * Drops the run's scratch folder, including the files agents left for the next node. The answers
+ * live on in run history, and the folder is git-ignored while the run is in flight.
+ */
+/** Removes a worktree a run created; a later mixin owns the actual checkout. */
+export type AgentsWorkflowRunWorkspaceReclaimer = (workspaceId: string) => Promise<void>
+
+export async function removeAgentsWorkflowRunScratch(
   workspacePath: string,
   runId: string
 ): Promise<void> {
   try {
-    await rm(agentsWorkflowRunAnswersDirectory(workspacePath, runId), {
-      recursive: true,
-      force: true
-    })
-    // Non-recursive on purpose: a run folder still holding a delivered file is kept.
-    await rmdir(agentsWorkflowRunDirectory(workspacePath, runId))
+    await rm(agentsWorkflowRunDirectory(workspacePath, runId), { recursive: true, force: true })
   } catch {
     // Scratch cleanup never fails a finished run.
+  }
+}
+
+/**
+ * A scheduled run in a `new_per_run` workspace takes its checkout with it: nobody is watching it,
+ * and leaving one per occurrence would grow the repo's workspace list forever. A manual run keeps
+ * its checkout for the user.
+ */
+export async function reclaimScheduledRunWorkspace(
+  reclaim: AgentsWorkflowRunWorkspaceReclaimer | undefined,
+  run: AgentsWorkflowRun,
+  workspaceId: string | null
+): Promise<void> {
+  if (
+    !reclaim ||
+    workspaceId === null ||
+    run.trigger !== 'schedule' ||
+    run.definitionSnapshot.workspace.mode !== 'new_per_run'
+  ) {
+    return
+  }
+  try {
+    await reclaim(workspaceId)
+  } catch (error) {
+    // A checkout that cannot be removed now must not turn a finished run into a failure.
+    console.error('[agents-workflow] Run workspace cleanup failed:', error)
+  }
+}
+
+async function resolveRunWorkspacePath(
+  lifecycle: AgentsWorkflowRunLifecycle,
+  run: AgentsWorkflowRun
+): Promise<string | null> {
+  if (!run.workspaceId || !lifecycle.resolveWorkspacePath) {
+    return null
+  }
+  try {
+    return await lifecycle.resolveWorkspacePath(run.workspaceId)
+  } catch {
+    // A workspace that is already gone has nothing left to clean.
+    return null
   }
 }
 

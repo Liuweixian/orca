@@ -30,6 +30,7 @@ import {
 import { GIT_DIFF_TOO_LARGE_CODE } from '../../../shared/git-diff-transport-budget'
 import { AUTOMATION_OWNER_CONFLICT_CODES } from '../../../shared/automation-owner-conflict'
 import {
+  AGENTS_WORKFLOW_DEFINITION_INVALID,
   AGENTS_WORKFLOW_REVISION_CONFLICT,
   AGENTS_WORKFLOW_RUN_CONFLICT
 } from '../../../shared/agents-workflow-errors'
@@ -113,6 +114,7 @@ const STRUCTURED_RUNTIME_PASSTHROUGH_CODES: ReadonlySet<string> = new Set([
   WORKTREE_CREATE_COLLISION_CODE,
   AGENTS_WORKFLOW_REVISION_CONFLICT,
   AGENTS_WORKFLOW_RUN_CONFLICT,
+  AGENTS_WORKFLOW_DEFINITION_INVALID,
   'worktree_id_requires_full_path',
   'run_not_found',
   'run_required',

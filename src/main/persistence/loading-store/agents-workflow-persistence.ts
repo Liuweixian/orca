@@ -4,24 +4,32 @@ import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowUpdateFields
 } from '../../../shared/agents-workflow-types'
+import { AgentsWorkflowRunConflictError } from '../../../shared/agents-workflow-errors'
 import {
-  AgentsWorkflowRevisionConflictError,
-  AgentsWorkflowRunConflictError
-} from '../../../shared/agents-workflow-errors'
+  createAgentsWorkflowDefinition,
+  deleteAgentsWorkflowDefinition,
+  updateAgentsWorkflowDefinition,
+  type AgentsWorkflowDefinitionStore
+} from './agents-workflow-definition-store'
 import type {
   AgentsWorkflowNodeAttempt,
   AgentsWorkflowRun,
-  AgentsWorkflowRunsPage,
-  AgentsWorkflowRunSummary
+  AgentsWorkflowRunsPage
 } from '../../../shared/agents-workflow-run-types'
+import { agentsWorkflowScheduleRequestKey } from '../../../shared/agents-workflow-run-types'
 import type { StoreRuntimeState } from './store-runtime-state'
 import type { WriteFlushBarrierOperations } from './write-flush-barriers'
+import {
+  isActiveAgentsWorkflowRun,
+  isTerminalAgentsWorkflowRun,
+  pageAgentsWorkflowRuns,
+  retainTerminalAgentsWorkflowRuns
+} from './agents-workflow-run-query'
 
 type AgentsWorkflowPersistenceRuntime = Pick<
   StoreRuntimeState,
   'dirtyProfileStateDomains' | 'state'
 >
-const TERMINAL_RUN_RETENTION_PER_WORKFLOW = 100
 
 const agentsWorkflowPersistenceContext = Symbol('AgentsWorkflowPersistence')
 
@@ -55,27 +63,7 @@ export class AgentsWorkflowPersistence {
   }
 
   createAgentsWorkflow(input: AgentsWorkflowCreateInput): AgentsWorkflowDefinition {
-    if (input.creationKey) {
-      const existing = (
-        this[agentsWorkflowPersistenceContext].runtime.state.agentsWorkflows ?? []
-      ).find((entry) => entry.creationKey === input.creationKey)
-      if (existing) {
-        return existing
-      }
-    }
-    const now = Date.now()
-    const workflow: AgentsWorkflowDefinition = {
-      ...input,
-      id: randomUUID(),
-      revision: 1,
-      schedulerOwner: 'local_host_service',
-      createdAt: now,
-      updatedAt: now
-    }
-    const runtime = this[agentsWorkflowPersistenceContext].runtime
-    runtime.state.agentsWorkflows = [...(runtime.state.agentsWorkflows ?? []), workflow]
-    flushAgentsWorkflowDefinitions(this)
-    return workflow
+    return createAgentsWorkflowDefinition(this.definitionStore(), input)
   }
 
   updateAgentsWorkflow(
@@ -83,38 +71,23 @@ export class AgentsWorkflowPersistence {
     expectedRevision: number,
     updates: AgentsWorkflowUpdateFields
   ): AgentsWorkflowDefinition {
-    const current = this.showAgentsWorkflow(id)
-    assertRevision(current, expectedRevision)
-    const definedUpdates = Object.fromEntries(
-      Object.entries(updates).filter(([, value]) => value !== undefined)
-    )
-    const updated: AgentsWorkflowDefinition = {
-      ...current,
-      ...definedUpdates,
-      id: current.id,
-      revision: current.revision + 1,
-      creationKey: current.creationKey,
-      schedulerOwner: 'local_host_service',
-      createdAt: current.createdAt,
-      updatedAt: Date.now()
-    }
-    const runtime = this[agentsWorkflowPersistenceContext].runtime
-    runtime.state.agentsWorkflows = (runtime.state.agentsWorkflows ?? []).map((entry) =>
-      entry.id === id ? updated : entry
-    )
-    flushAgentsWorkflowDefinitions(this)
-    return updated
+    return updateAgentsWorkflowDefinition(this.definitionStore(), id, expectedRevision, updates)
   }
 
   deleteAgentsWorkflow(id: string, expectedRevision: number): boolean {
-    const current = this.showAgentsWorkflow(id)
-    assertRevision(current, expectedRevision)
-    const runtime = this[agentsWorkflowPersistenceContext].runtime
-    runtime.state.agentsWorkflows = (runtime.state.agentsWorkflows ?? []).filter(
-      (entry) => entry.id !== id
-    )
-    flushAgentsWorkflowDefinitions(this)
-    return true
+    return deleteAgentsWorkflowDefinition(this.definitionStore(), id, expectedRevision)
+  }
+
+  private definitionStore(): AgentsWorkflowDefinitionStore {
+    const context = this[agentsWorkflowPersistenceContext]
+    return {
+      find: (id) => (context.runtime.state.agentsWorkflows ?? []).find((entry) => entry.id === id),
+      all: () => context.runtime.state.agentsWorkflows ?? [],
+      replace: (next) => {
+        context.runtime.state.agentsWorkflows = next
+      },
+      flush: () => flushAgentsWorkflowDefinitions(this)
+    }
   }
 
   listAgentsWorkflowRuns(input: {
@@ -122,19 +95,22 @@ export class AgentsWorkflowPersistence {
     cursor?: string
     limit: number
   }): AgentsWorkflowRunsPage {
-    const runs = [
-      ...(this[agentsWorkflowPersistenceContext].runtime.state.agentsWorkflowRuns ?? [])
-    ]
-      .filter((run) => input.workflowId === undefined || run.workflowId === input.workflowId)
-      .sort((left, right) => right.createdAt - left.createdAt || right.id.localeCompare(left.id))
-    const start = input.cursor
-      ? Math.max(0, runs.findIndex((run) => run.id === input.cursor) + 1)
-      : 0
-    const page = runs.slice(start, start + input.limit)
-    return {
-      runs: page.map(toRunSummary),
-      nextCursor: start + input.limit < runs.length ? (page.at(-1)?.id ?? null) : null
-    }
+    return pageAgentsWorkflowRuns(
+      this[agentsWorkflowPersistenceContext].runtime.state.agentsWorkflowRuns ?? [],
+      input
+    )
+  }
+
+  /** The occurrence a schedule already claimed, looked up exactly instead of by list scan. */
+  findAgentsWorkflowRunByRequestKey(
+    workflowId: string,
+    requestKey: string
+  ): AgentsWorkflowRun | null {
+    return (
+      (this[agentsWorkflowPersistenceContext].runtime.state.agentsWorkflowRuns ?? []).find(
+        (run) => run.workflowId === workflowId && run.requestKey === requestKey
+      ) ?? null
+    )
   }
 
   showAgentsWorkflowRun(runId: string): AgentsWorkflowRun {
@@ -157,6 +133,9 @@ export class AgentsWorkflowPersistence {
   }): { run: AgentsWorkflowRun; created: boolean } {
     const runtime = this[agentsWorkflowPersistenceContext].runtime
     const runs = runtime.state.agentsWorkflowRuns ?? []
+    // Why in memory first: this is the fast path of one desktop process. The SQLite row carries
+    // UNIQUE(workflow_id, request_key) as well, but that only guards the write, not the read-modify
+    // cycle, so a second process mirroring the same profile still relies on its own in-memory view.
     const duplicate = runs.find(
       (run) => run.workflowId === input.workflow.id && run.requestKey === input.requestKey
     )
@@ -167,7 +146,7 @@ export class AgentsWorkflowPersistence {
       input.workflow.workspace.mode === 'existing' ? input.workflow.workspace.workspaceId : null
     const conflict = runs.find(
       (run) =>
-        isActiveRun(run) &&
+        isActiveAgentsWorkflowRun(run) &&
         (run.workflowId === input.workflow.id ||
           (workspaceId !== null && run.workspaceId === workspaceId))
     )
@@ -206,7 +185,7 @@ export class AgentsWorkflowPersistence {
     reason: 'active_run' | 'missed_grace'
   }): AgentsWorkflowRun {
     const runtime = this[agentsWorkflowPersistenceContext].runtime
-    const requestKey = `schedule:${input.scheduledFor}`
+    const requestKey = agentsWorkflowScheduleRequestKey(input.scheduledFor)
     const existing = (runtime.state.agentsWorkflowRuns ?? []).find(
       (run) => run.workflowId === input.workflow.id && run.requestKey === requestKey
     )
@@ -243,7 +222,17 @@ export class AgentsWorkflowPersistence {
   updateAgentsWorkflowRun(runId: string, updates: Partial<AgentsWorkflowRun>): AgentsWorkflowRun {
     const runtime = this[agentsWorkflowPersistenceContext].runtime
     const current = this.showAgentsWorkflowRun(runId)
-    const updated = { ...current, ...updates }
+    // Why pin the status: a checkpoint still in flight after a cancel must not rewrite the run
+    // back to `running`. A finished run's outcome is final.
+    const status =
+      updates.status !== undefined && isTerminalAgentsWorkflowRun(current)
+        ? current.status
+        : updates.status
+    const updated: AgentsWorkflowRun = {
+      ...current,
+      ...updates,
+      ...(status === undefined ? {} : { status })
+    }
     runtime.state.agentsWorkflowRuns = (runtime.state.agentsWorkflowRuns ?? []).map((run) =>
       run.id === runId ? updated : run
     )
@@ -257,6 +246,10 @@ export class AgentsWorkflowPersistence {
     attempts: readonly AgentsWorkflowNodeAttempt[],
     executionTrace: readonly string[]
   ): AgentsWorkflowRun {
+    // A run that already ended keeps the attempts it ended with; late checkpoints are noise.
+    if (isTerminalAgentsWorkflowRun(this.showAgentsWorkflowRun(runId))) {
+      return this.showAgentsWorkflowRun(runId)
+    }
     return this.updateAgentsWorkflowRun(runId, {
       attempts: attempts.map((attempt) => ({ ...attempt })),
       executionTrace: [...executionTrace]
@@ -265,7 +258,7 @@ export class AgentsWorkflowPersistence {
 
   markInterruptedAgentsWorkflowRunsUnverifiable(now: number): AgentsWorkflowRun[] {
     const runtime = this[agentsWorkflowPersistenceContext].runtime
-    const interrupted = (runtime.state.agentsWorkflowRuns ?? []).filter(isActiveRun)
+    const interrupted = (runtime.state.agentsWorkflowRuns ?? []).filter(isActiveAgentsWorkflowRun)
     if (interrupted.length === 0) {
       return []
     }
@@ -303,48 +296,9 @@ function flushAgentsWorkflowRuns(owner: AgentsWorkflowPersistence): void {
   context.flushBarriers.flush()
 }
 
-function isActiveRun(run: AgentsWorkflowRun): boolean {
-  return run.status === 'pending' || run.status === 'running' || run.status === 'cancel_requested'
-}
-
 function pruneTerminalRuns(runtime: AgentsWorkflowPersistenceRuntime, workflowId: string): void {
-  const runs = runtime.state.agentsWorkflowRuns ?? []
-  const retainedTerminalIds = new Set(
-    runs
-      .filter((run) => run.workflowId === workflowId && isPrunableTerminalRun(run))
-      .sort((left, right) => right.createdAt - left.createdAt || right.id.localeCompare(left.id))
-      .slice(0, TERMINAL_RUN_RETENTION_PER_WORKFLOW)
-      .map((run) => run.id)
+  runtime.state.agentsWorkflowRuns = retainTerminalAgentsWorkflowRuns(
+    runtime.state.agentsWorkflowRuns ?? [],
+    workflowId
   )
-  runtime.state.agentsWorkflowRuns = runs.filter(
-    (run) =>
-      run.workflowId !== workflowId ||
-      !isPrunableTerminalRun(run) ||
-      retainedTerminalIds.has(run.id)
-  )
-}
-
-function isPrunableTerminalRun(run: AgentsWorkflowRun): boolean {
-  return (
-    run.status === 'completed' ||
-    run.status === 'failed' ||
-    run.status === 'cancelled' ||
-    run.status === 'skipped'
-  )
-}
-
-function toRunSummary(run: AgentsWorkflowRun): AgentsWorkflowRunSummary {
-  const {
-    definitionSnapshot: _definitionSnapshot,
-    attempts: _attempts,
-    executionTrace: _executionTrace,
-    ...summary
-  } = run
-  return summary
-}
-
-function assertRevision(workflow: AgentsWorkflowDefinition, expectedRevision: number): void {
-  if (workflow.revision !== expectedRevision) {
-    throw new AgentsWorkflowRevisionConflictError(expectedRevision, workflow.revision)
-  }
 }

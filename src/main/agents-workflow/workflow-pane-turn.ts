@@ -4,6 +4,10 @@
 // own transcript — so the lifecycle they share lives here once.
 
 import type { TuiAgent } from '../../shared/tui-agent'
+import {
+  agentsWorkflowAgentSettlement,
+  type AgentsWorkflowTurnSettlement
+} from '../../shared/agents-workflow-agent-channels'
 import { getTuiAgentDetectCommands, TUI_AGENT_CONFIG } from '../../shared/tui-agent-config'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { createRuntimeAutomationRunTerminalObserver } from '../automations/runtime-terminal-run-observer'
@@ -122,7 +126,7 @@ export class WorkflowPaneTurns {
   async settle(
     turn: WorkflowPaneTurn,
     signal?: AbortSignal
-  ): Promise<{ ok: true } | WorkflowPaneTurnRefusal> {
+  ): Promise<{ ok: true; settlement: AgentsWorkflowTurnSettlement } | WorkflowPaneTurnRefusal> {
     const evidence = this.completionEvidence(turn)
     try {
       const observation = await createRuntimeAutomationRunTerminalObserver(
@@ -141,7 +145,7 @@ export class WorkflowPaneTurns {
           : {})
       })
       if (signal?.aborted) {
-        return paneTurnRefusal('cancelled', 'Workflow run was cancelled.', true)
+        return paneTurnRefusal('cancelled', 'Workflow run was cancelled.')
       }
       if (observation.status !== 'completed') {
         return paneTurnRefusal(
@@ -150,7 +154,12 @@ export class WorkflowPaneTurns {
           true
         )
       }
-      return { ok: true }
+      return {
+        ok: true,
+        // Why report it: a weak settlement (no hooks, no title) is an idle guess, so a channel
+        // that waits on an artifact must not treat it as a final "turn is over" edge.
+        settlement: agentsWorkflowAgentSettlement(turn.agent)
+      }
     } catch (error) {
       // Why: a pane closed, reloaded, or lost its handle ends the wait without proving anything
       // about the agent. Report that as unverifiable instead of throwing: a throw used to escape

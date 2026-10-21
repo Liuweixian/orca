@@ -36,10 +36,13 @@ type TranscriptReader = (input: {
   prompt: string
   startedAt: number
   signal?: AbortSignal
+  claimedSessionPaths?: readonly string[]
 }) => Promise<WorkflowTranscriptTurn>
 
 export class WorkflowTranscriptTurnRunner implements AgentsWorkflowTranscriptTurnRunner {
   private readonly panes: WorkflowPaneTurns
+  /** Transcript files already consumed by this run: a repeated prompt must not read one twice. */
+  private readonly claimedSessionsByRunId = new Map<string, Set<string>>()
 
   constructor(
     runtime: WorkflowPaneTurnRuntime,
@@ -89,19 +92,23 @@ export class WorkflowTranscriptTurnRunner implements AgentsWorkflowTranscriptTur
       return settled
     }
 
+    const claimed = this.claimedSessionsByRunId.get(runId) ?? new Set<string>()
     const read = await this.readTurn({
       agent: source,
       workspacePath,
       prompt: input.prompt,
       startedAt,
+      claimedSessionPaths: [...claimed],
       ...(input.signal ? { signal: input.signal } : {})
     })
     if (!read.ok) {
       if (input.signal?.aborted) {
-        return paneTurnRefusal('cancelled', 'Workflow run was cancelled.', true)
+        return paneTurnRefusal('cancelled', 'Workflow run was cancelled.')
       }
       return paneTurnRefusal('transcript_turn_unavailable', read.message)
     }
+    claimed.add(read.sessionPath)
+    this.claimedSessionsByRunId.set(runId, claimed)
     return {
       ok: true as const,
       output: {
@@ -115,10 +122,12 @@ export class WorkflowTranscriptTurnRunner implements AgentsWorkflowTranscriptTur
   }
 
   async cancel(runId: string): Promise<'stopped' | 'unverifiable'> {
+    this.claimedSessionsByRunId.delete(runId)
     return await this.panes.cancel(runId)
   }
 
   async release(runId: string, options: { reclaim: boolean }): Promise<void> {
+    this.claimedSessionsByRunId.delete(runId)
     await this.panes.release(runId, options)
   }
 }

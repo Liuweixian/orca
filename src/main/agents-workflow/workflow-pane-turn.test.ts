@@ -85,7 +85,7 @@ describe('WorkflowPaneTurns', () => {
       rows.push(statusRow('done', Date.now()))
       await vi.advanceTimersByTimeAsync(2_000)
 
-      await expect(pending).resolves.toEqual({ ok: true })
+      await expect(pending).resolves.toMatchObject({ ok: true })
     } finally {
       vi.useRealTimers()
     }

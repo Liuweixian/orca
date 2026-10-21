@@ -2,7 +2,8 @@
 //
 // It lives in the user's checkout, so it must never show up as untracked work: the folder gets its
 // own `.gitignore` the moment it is created, and nothing inside it may be committed by accident.
-// Only the engine's answer cache is disposable; files an agent delivered are kept.
+// The whole folder is scratch: the run removes it when it ends, and every value it held is already
+// in run history.
 
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'

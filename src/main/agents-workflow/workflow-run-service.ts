@@ -3,6 +3,7 @@ import type {
   AgentsWorkflowRun,
   AgentsWorkflowRunsPage
 } from '../../shared/agents-workflow-run-types'
+import { agentsWorkflowScheduleRequestKey } from '../../shared/agents-workflow-run-types'
 import { AgentsWorkflowRunConflictError } from '../../shared/agents-workflow-errors'
 import {
   createProductionAgentsWorkflowExecutionAdapter,
@@ -15,8 +16,11 @@ import {
   flushAgentsWorkflowPersistence,
   isActiveAgentsWorkflowRun,
   recoverInterruptedAgentsWorkflowRuns,
-  removeAgentsWorkflowRunAnswers,
+  reclaimScheduledRunWorkspace,
+  removeAgentsWorkflowRunScratch,
   type AgentsWorkflowRunLifecycle,
+  type AgentsWorkflowRunWorkspaceReclaimer,
+  type AgentsWorkflowWorkspacePathResolver,
   type RecoveryPersistence
 } from './workflow-run-lifecycle'
 
@@ -69,11 +73,23 @@ export class AgentsWorkflowRunService {
     private readonly notifyChanged: () => void,
     private readonly adapter: AgentsWorkflowExecutionAdapter = createProductionAgentsWorkflowExecutionAdapter(),
     private readonly resolveWorkspace: AgentsWorkflowWorkspaceResolver = failClosedAgentsWorkflowWorkspaceResolver,
-    private readonly now: () => number = Date.now
+    private readonly now: () => number = Date.now,
+    private readonly resolveWorkspacePath: AgentsWorkflowWorkspacePathResolver = async () => null,
+    /**
+     * Removes a worktree this run created. Only scheduled `new_per_run` runs reclaim it: nobody is
+     * watching them, so leaving one per occurrence would grow the repo's workspace list forever.
+     * A manual run keeps its checkout for the user.
+     */
+    private readonly reclaimCreatedWorkspace?: AgentsWorkflowRunWorkspaceReclaimer
   ) {}
 
   private get lifecycle(): AgentsWorkflowRunLifecycle & { persistence: RecoveryPersistence } {
-    return { persistence: this.persistence, notifyChanged: this.notifyChanged, now: this.now }
+    return {
+      persistence: this.persistence,
+      notifyChanged: this.notifyChanged,
+      now: this.now,
+      resolveWorkspacePath: this.resolveWorkspacePath
+    }
   }
 
   async runNow(input: {
@@ -92,7 +108,7 @@ export class AgentsWorkflowRunService {
     if (!created.created) {
       return created.run
     }
-    await this.flush()
+    await flushAgentsWorkflowPersistence(this.persistence)
     this.notifyChanged()
     void this.execute(created.run).catch((error: unknown) => {
       console.error('[agents-workflow] Run execution failed:', error)
@@ -110,7 +126,7 @@ export class AgentsWorkflowRunService {
       created = this.persistence.createAgentsWorkflowRun({
         workflow,
         runInput: workflow.trigger.defaultInput,
-        requestKey: `schedule:${scheduledFor}`,
+        requestKey: agentsWorkflowScheduleRequestKey(scheduledFor),
         now: this.now(),
         trigger: 'schedule',
         scheduledFor
@@ -124,7 +140,7 @@ export class AgentsWorkflowRunService {
     if (!created.created) {
       return created.run
     }
-    await this.flush()
+    await flushAgentsWorkflowPersistence(this.persistence)
     this.notifyChanged()
     void this.execute(created.run).catch((error: unknown) => {
       console.error('[agents-workflow] Scheduled run execution failed:', error)
@@ -143,7 +159,7 @@ export class AgentsWorkflowRunService {
       now: this.now(),
       reason
     })
-    await this.flush()
+    await flushAgentsWorkflowPersistence(this.persistence)
     this.notifyChanged()
     return run
   }
@@ -155,7 +171,7 @@ export class AgentsWorkflowRunService {
       return run
     }
     this.persistence.updateAgentsWorkflowRun(runId, { status: 'cancel_requested' })
-    await this.flush()
+    await flushAgentsWorkflowPersistence(this.persistence)
     this.notifyChanged()
     this.abortByRunId.get(runId)?.abort()
     const stopped = await this.adapter.cancel(runId)
@@ -176,7 +192,7 @@ export class AgentsWorkflowRunService {
           }
         : {})
     })
-    await this.flush()
+    await flushAgentsWorkflowPersistence(this.persistence)
     this.notifyChanged()
     return updated
   }
@@ -199,6 +215,7 @@ export class AgentsWorkflowRunService {
     const controller = new AbortController()
     this.abortByRunId.set(initial.id, controller)
     let workspacePath: string | null = null
+    let workspaceId: string | null = null
     try {
       const workspace = await this.resolveWorkspace(initial.definitionSnapshot, initial.id)
       if (!workspace.ok) {
@@ -212,6 +229,7 @@ export class AgentsWorkflowRunService {
         return
       }
       workspacePath = workspace.workspacePath
+      workspaceId = workspace.workspaceId
       if (!isActiveAgentsWorkflowRun(this.persistence.showAgentsWorkflowRun(initial.id))) {
         return
       }
@@ -221,7 +239,7 @@ export class AgentsWorkflowRunService {
         workspaceId: workspace.workspaceId,
         workspaceDisplayName: workspace.displayName
       })
-      await this.flush()
+      await flushAgentsWorkflowPersistence(this.persistence)
       this.notifyChanged()
       let result: Awaited<ReturnType<typeof executeAgentsWorkflowSchedule>>
       try {
@@ -238,7 +256,7 @@ export class AgentsWorkflowRunService {
           },
           checkpoint: async ({ attempts, executionTrace }) => {
             this.persistence.replaceAgentsWorkflowRunTrace(initial.id, attempts, executionTrace)
-            await this.flush()
+            await flushAgentsWorkflowPersistence(this.persistence)
             this.notifyChanged()
           }
         })
@@ -269,10 +287,11 @@ export class AgentsWorkflowRunService {
         await finishAgentsWorkflowRun(this.lifecycle, initial.id, 'completed')
         return
       }
-      const status = result.unverifiable
-        ? 'unverifiable'
-        : result.cancelled
-          ? 'cancelled'
+      // Why cancelled first: the user's intent is the outcome; unverifiable would blame the host.
+      const status = result.cancelled
+        ? 'cancelled'
+        : result.unverifiable
+          ? 'unverifiable'
           : 'failed'
       await finishAgentsWorkflowRun(this.lifecycle, initial.id, status, result.code, result.message)
     } catch (error) {
@@ -287,11 +306,10 @@ export class AgentsWorkflowRunService {
       )
     } finally {
       this.abortByRunId.delete(initial.id)
-      // Only once the run is genuinely over: drop the engine's answer cache. Anything an agent
-      // delivered stays where the user can pick it up.
       if (workspacePath !== null) {
-        await removeAgentsWorkflowRunAnswers(workspacePath, initial.id)
+        await removeAgentsWorkflowRunScratch(workspacePath, initial.id)
       }
+      await reclaimScheduledRunWorkspace(this.reclaimCreatedWorkspace, initial, workspaceId)
     }
   }
 
@@ -301,9 +319,5 @@ export class AgentsWorkflowRunService {
     }
     this.recovered = true
     await recoverInterruptedAgentsWorkflowRuns(this.lifecycle)
-  }
-
-  private async flush(): Promise<void> {
-    await flushAgentsWorkflowPersistence(this.persistence)
   }
 }

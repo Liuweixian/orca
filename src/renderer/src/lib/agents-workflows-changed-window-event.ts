@@ -26,8 +26,8 @@ function isDetail(value: unknown): value is AgentsWorkflowsChangedWindowDetail {
   if (typeof value !== 'object' || value === null) {
     return false
   }
-  const reason = Reflect.get(value, 'reason')
-  const environmentId = Reflect.get(value, 'environmentId')
+  const reason = 'reason' in value ? value.reason : undefined
+  const environmentId = 'environmentId' in value ? value.environmentId : undefined
   return (
     (reason === undefined || reason === 'definition' || reason === 'run') &&
     (environmentId === undefined || typeof environmentId === 'string')

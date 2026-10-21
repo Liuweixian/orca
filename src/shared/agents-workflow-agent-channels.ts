@@ -45,7 +45,7 @@ export type AgentsWorkflowAgentChannelPlan = {
 
 // Why explicit, not derived: ai-vault membership says a session can be listed, not that the
 // transcript carries a turn's assistant message, and structured support is version-gated per
-// agent. Each row is a reviewed claim; `agents-workflow-agent-channels.spec.ts` pins protocol and
+// agent. Each row is a reviewed claim; `agents-workflow-agent-channels.test.ts` pins protocol and
 // transcript against the rosters that implement them, so a new agent cannot be forgotten silently.
 export const AGENTS_WORKFLOW_AGENT_CHANNEL_PLANS = {
   claude: {

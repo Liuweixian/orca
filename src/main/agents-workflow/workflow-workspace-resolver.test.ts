@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentsWorkflowDefinition } from '../../shared/agents-workflow-types'
+import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-managed-worktree-create-types'
 import { createAgentsWorkflowWorkspaceResolver } from './workflow-workspace-resolver'
 
 function workflow(workspace: AgentsWorkflowDefinition['workspace']): AgentsWorkflowDefinition {
@@ -53,7 +54,7 @@ describe('createAgentsWorkflowWorkspaceResolver', () => {
   })
 
   it('creates an agent-first background workspace without a terminal agent', async () => {
-    const createManagedWorktree = vi.fn(async (_input: object) => ({
+    const createManagedWorktree = vi.fn(async (_input: RuntimeManagedWorktreeCreateArgs) => ({
       worktree: { id: 'workspace-2', path: '/repo/workspace-2', displayName: 'Review run-1' },
       setupReceipt: { state: 'not_configured' }
     }))

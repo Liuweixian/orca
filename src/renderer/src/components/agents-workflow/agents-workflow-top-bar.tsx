@@ -62,7 +62,7 @@ export function AgentsWorkflowTopBar({
       >
         <Trash2 />
       </Button>
-      <Button size="xs" disabled={!dirty || saving} onClick={onSave}>
+      <Button size="xs" disabled={!dirty || saving || errorCount > 0} onClick={onSave}>
         <Save />
         {saving
           ? translate('auto.components.agents-workflow.topbar.saving', 'Saving')

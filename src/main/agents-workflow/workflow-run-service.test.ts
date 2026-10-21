@@ -141,6 +141,111 @@ describe('AgentsWorkflowRunService execution guards', () => {
     })
   })
 
+  it('records a cancelled run as cancelled even when the channel also doubts the stop', async () => {
+    const store = persistence()
+    const service = new AgentsWorkflowRunService(
+      store,
+      vi.fn(),
+      {
+        execute: async () => ({
+          ok: false,
+          code: 'cancelled',
+          message: 'Workflow run was cancelled.',
+          cancelled: true,
+          unverifiable: true
+        }),
+        cancel: async () => 'stopped'
+      },
+      workspace,
+      () => 10
+    )
+
+    const started = await service.runNow({ workflowId: 'workflow-1', input: '', requestKey: 'r1' })
+    await vi.waitFor(() => {
+      // Why cancelled first: the user asked for this; unverifiable would blame the host.
+      expect(store.showAgentsWorkflowRun(started.id)).toMatchObject({
+        status: 'cancelled',
+        errorCode: 'cancelled'
+      })
+    })
+  })
+
+  it('removes the checkout a scheduled new_per_run run created', async () => {
+    const store = persistence()
+    const reclaim = vi.fn(async () => undefined)
+    const scheduled = {
+      ...definition(),
+      workspace: { mode: 'new_per_run' as const, baseBranch: null, setupDecision: 'skip' as const }
+    }
+    const service = new AgentsWorkflowRunService(
+      store,
+      vi.fn(),
+      {
+        execute: async () => ({
+          ok: true,
+          output: {
+            format: 'plain_text',
+            content: 'done',
+            capturedAt: 10,
+            truncated: false,
+            source: 'structured_assistant_message'
+          }
+        }),
+        cancel: async () => 'stopped'
+      },
+      workspace,
+      () => 10,
+      async () => '/repo/workspace-1',
+      reclaim
+    )
+
+    const started = await service.runScheduled(scheduled, 1_000)
+    await vi.waitFor(() => {
+      expect(store.showAgentsWorkflowRun(started.id)).toMatchObject({ status: 'completed' })
+    })
+    // Why: one checkout per occurrence would grow the repo's workspace list forever.
+    expect(reclaim).toHaveBeenCalledWith('workspace-1')
+  })
+
+  it('keeps the checkout a manual new_per_run run created', async () => {
+    const store = persistence()
+    const reclaim = vi.fn(async () => undefined)
+    const manual = {
+      ...definition(),
+      workspace: { mode: 'new_per_run' as const, baseBranch: null, setupDecision: 'skip' as const }
+    }
+    const service = new AgentsWorkflowRunService(
+      {
+        ...store,
+        showAgentsWorkflow: () => manual
+      },
+      vi.fn(),
+      {
+        execute: async () => ({
+          ok: true,
+          output: {
+            format: 'plain_text',
+            content: 'done',
+            capturedAt: 10,
+            truncated: false,
+            source: 'structured_assistant_message'
+          }
+        }),
+        cancel: async () => 'stopped'
+      },
+      workspace,
+      () => 10,
+      async () => '/repo/workspace-1',
+      reclaim
+    )
+
+    const started = await service.runNow({ workflowId: 'workflow-1', input: '', requestKey: 'r1' })
+    await vi.waitFor(() => {
+      expect(store.showAgentsWorkflowRun(started.id)).toMatchObject({ status: 'completed' })
+    })
+    expect(reclaim).not.toHaveBeenCalled()
+  })
+
   it('keeps the schedule result when reclaiming panes throws', async () => {
     const store = persistence()
     const service = new AgentsWorkflowRunService(

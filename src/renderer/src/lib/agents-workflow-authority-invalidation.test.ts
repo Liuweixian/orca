@@ -19,9 +19,10 @@ describe('agent workflow authority invalidation', () => {
     await Promise.resolve()
 
     expect(invalidate.mock.calls).toEqual([
-      [{ kind: 'desktop' }],
-      [{ kind: 'runtime', environmentId: 'remote-1' }],
-      [{ kind: 'runtime', environmentId: 'remote-2' }]
+      // A definition change inside the same burst wins: it implies a list refresh as well.
+      [{ authority: { kind: 'desktop' }, reason: 'definition' }],
+      [{ authority: { kind: 'runtime', environmentId: 'remote-1' }, reason: undefined }],
+      [{ authority: { kind: 'runtime', environmentId: 'remote-2' }, reason: undefined }]
     ])
     unsubscribe()
   })

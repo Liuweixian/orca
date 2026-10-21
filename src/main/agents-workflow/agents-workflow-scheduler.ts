@@ -1,4 +1,3 @@
-import type { AgentsWorkflowRunSummary } from '../../shared/agents-workflow-run-types'
 import type { AgentsWorkflowDefinition } from '../../shared/agents-workflow-types'
 import { latestAgentsWorkflowOccurrence } from './agents-workflow-schedule-occurrence'
 
@@ -7,7 +6,8 @@ const MINUTE_MS = 60_000
 
 export type AgentsWorkflowSchedulerDependencies = {
   listWorkflows: () => AgentsWorkflowDefinition[]
-  listRuns: (workflowId: string) => AgentsWorkflowRunSummary[]
+  /** Whether an occurrence already claimed its run. Exact lookup, never a bounded list scan. */
+  hasScheduledRun: (workflowId: string, scheduledFor: number) => boolean
   runScheduled: (workflow: AgentsWorkflowDefinition, scheduledFor: number) => Promise<unknown>
   recordSkipped: (
     workflow: AgentsWorkflowDefinition,
@@ -72,10 +72,7 @@ export class AgentsWorkflowScheduler {
       return
     }
     const scheduledFor = latestAgentsWorkflowOccurrence(schedule, now)
-    if (
-      scheduledFor === null ||
-      this.dependencies.listRuns(workflow.id).some((run) => run.scheduledFor === scheduledFor)
-    ) {
+    if (scheduledFor === null || this.dependencies.hasScheduledRun(workflow.id, scheduledFor)) {
       return
     }
     if (now - scheduledFor > schedule.missedRunGraceMinutes * MINUTE_MS) {

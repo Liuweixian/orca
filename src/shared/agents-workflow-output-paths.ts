@@ -2,7 +2,7 @@
 //
 // The folder lives inside the worktree so a sandboxed agent may write it, and so a downstream
 // prompt can point at a file relative to the agent's own working directory. It belongs to one run
-// and is removed when that run ends; the collected values stay in run history.
+// and the whole folder is removed when that run ends; the collected values stay in run history.
 
 import { join } from 'node:path'
 

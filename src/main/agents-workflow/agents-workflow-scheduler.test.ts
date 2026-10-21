@@ -58,7 +58,7 @@ describe('AgentsWorkflowScheduler', () => {
     const scheduler = new AgentsWorkflowScheduler(
       {
         listWorkflows: () => [definition],
-        listRuns: () => [],
+        hasScheduledRun: () => false,
         runScheduled,
         recordSkipped: vi.fn(async () => undefined)
       },
@@ -68,6 +68,35 @@ describe('AgentsWorkflowScheduler', () => {
 
     await scheduler.evaluateDueRuns()
     expect(runScheduled).toHaveBeenCalledWith(definition, now)
+  })
+
+  it('does not start an occurrence that already claimed a run', async () => {
+    const now = Date.UTC(2026, 0, 5, 9)
+    const definition = workflow({
+      timezone: 'UTC',
+      rrule: 'FREQ=DAILY;BYHOUR=9;BYMINUTE=0',
+      dtstart: Date.UTC(2026, 0, 1),
+      missedRunGraceMinutes: 60
+    })
+    const runScheduled = vi.fn(async () => undefined)
+    const hasScheduledRun = vi.fn(() => true)
+    const scheduler = new AgentsWorkflowScheduler(
+      {
+        listWorkflows: () => [definition],
+        hasScheduledRun,
+        runScheduled,
+        recordSkipped: vi.fn(async () => undefined)
+      },
+      60_000,
+      () => now
+    )
+
+    await scheduler.evaluateDueRuns()
+
+    // Why the exact lookup: the run may already be outside the retained page, and a list scan
+    // would then start the same occurrence twice.
+    expect(hasScheduledRun).toHaveBeenCalledWith('workflow-1', now)
+    expect(runScheduled).not.toHaveBeenCalled()
   })
 
   it('persists an occurrence skipped beyond grace', async () => {
@@ -83,7 +112,7 @@ describe('AgentsWorkflowScheduler', () => {
     const scheduler = new AgentsWorkflowScheduler(
       {
         listWorkflows: () => [definition],
-        listRuns: () => [],
+        hasScheduledRun: () => false,
         runScheduled: vi.fn(async () => undefined),
         recordSkipped
       },

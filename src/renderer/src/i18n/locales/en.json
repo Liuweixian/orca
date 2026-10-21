@@ -18347,7 +18347,10 @@
           "deleteFailed": "Could not delete the workflow.",
           "runFailed": "Could not start the workflow.",
           "runLoadFailed": "Could not load the run.",
-          "newName": "New workflow"
+          "newName": "New workflow",
+          "runsLoadFailed": "Could not load the run history.",
+          "cancelFailed": "Could not cancel the run.",
+          "invalid": "Fix these before saving: {{issues}}"
         },
         "canvas": {
           "deleteNode": "Delete node",

@@ -1,6 +1,5 @@
 import type { AutomationsChangedPayload } from '../../../../shared/runtime-client-events'
 import type { ResolvedWorktree } from '../../runtime-worktree-path-identity'
-import { OrcaRuntimeWithPtyForegroundProcessReads } from '../../client/runtime-client-state'
 import type {
   AutomationOwnerPrecondition,
   AutomationDestination
@@ -22,31 +21,10 @@ import { getAppEnvironment } from '../../../../shared/app-environment'
 import type { LegacyWorkerTerminalRecoveryPlan } from '../../orchestration/orchestration-legacy-worker-terminal-recovery'
 import type { LegacyWorkerTerminalRecoveryResult } from '../../runtime-legacy-worker-terminal-recovery-types'
 import { makePaneKey } from '../../../../shared/stable-pane-id'
-import type {
-  AgentsWorkflowCreateInput,
-  AgentsWorkflowDefinition,
-  AgentsWorkflowUpdateFields
-} from '../../../../shared/agents-workflow-types'
-import {
-  agentsWorkflowAgentChannelPlanEntries,
-  type AgentsWorkflowAgentChannelEntry
-} from '../../../../shared/agents-workflow-agent-channels'
-import type {
-  AgentsWorkflowRun,
-  AgentsWorkflowRunsPage
-} from '../../../../shared/agents-workflow-run-types'
-import { AgentsWorkflowRunService } from '../../../agents-workflow/workflow-run-service'
-import { createAgentsWorkflowExecutionAdapter } from '../../../agents-workflow/workflow-agent-execution-adapter'
-import { createWorkflowStructuredTurnRunner } from '../../../agents-workflow/workflow-structured-turn-runner'
-import { createWorkflowFileHandoffTurnRunner } from '../../../agents-workflow/workflow-file-handoff-runner'
-import { createWorkflowTranscriptTurnRunner } from '../../../agents-workflow/workflow-transcript-turn-runner'
-import { createWorkflowReportTurnRunner } from '../../../agents-workflow/workflow-report-turn-runner'
-import { createAgentsWorkflowWorkspaceResolver } from '../../../agents-workflow/workflow-workspace-resolver'
-import type { OrcaRuntimeService } from '../../orca-runtime'
 import { worktreeIdsEqual } from '../../../../shared/worktree/id'
+import { OrcaRuntimeWithAgentsWorkflowOperations } from './agents-workflow-operations'
 
-export abstract class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWithPtyForegroundProcessReads {
-  private agentsWorkflowRunService: AgentsWorkflowRunService | null = null
+export abstract class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWithAgentsWorkflowOperations {
   abstract notifyAutomationsChanged(payload?: AutomationsChangedPayload): void
   abstract ensureOrchestrationFederationRelay(runId?: string): void
   protected abstract scheduleRestoredMessageRepoints(): void
@@ -165,149 +143,6 @@ export abstract class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWit
   automationOwnerPrecondition(id: string): AutomationOwnerPrecondition | null {
     return this.automation.ownerPrecondition(id)
   }
-
-  listAgentsWorkflows(): AgentsWorkflowDefinition[] {
-    if (!this.store?.listAgentsWorkflows) {
-      throw new Error('runtime_unavailable')
-    }
-    return this.store.listAgentsWorkflows()
-  }
-
-  /** Every agent a workflow may reference, with the channels this host can run it through. */
-  listAgentsWorkflowAgentChannels(): AgentsWorkflowAgentChannelEntry[] {
-    return [...agentsWorkflowAgentChannelPlanEntries()]
-  }
-
-  showAgentsWorkflow(id: string): AgentsWorkflowDefinition {
-    if (!this.store?.showAgentsWorkflow) {
-      throw new Error('runtime_unavailable')
-    }
-    return this.store.showAgentsWorkflow(id)
-  }
-
-  async createAgentsWorkflow(input: AgentsWorkflowCreateInput): Promise<AgentsWorkflowDefinition> {
-    if (!this.store?.createAgentsWorkflow) {
-      throw new Error('runtime_unavailable')
-    }
-    const workflow = this.store.createAgentsWorkflow(input)
-    await this.store.flushPendingOrThrowAsync?.({ drainToStableGeneration: false })
-    this.notifyAgentsWorkflowsChanged({ reason: 'definition' })
-    return workflow
-  }
-
-  async updateAgentsWorkflow(
-    id: string,
-    expectedRevision: number,
-    updates: AgentsWorkflowUpdateFields
-  ): Promise<AgentsWorkflowDefinition> {
-    if (!this.store?.updateAgentsWorkflow) {
-      throw new Error('runtime_unavailable')
-    }
-    const workflow = this.store.updateAgentsWorkflow(id, expectedRevision, updates)
-    await this.store.flushPendingOrThrowAsync?.({ drainToStableGeneration: false })
-    this.notifyAgentsWorkflowsChanged({ reason: 'definition' })
-    return workflow
-  }
-
-  async deleteAgentsWorkflow(id: string, expectedRevision: number): Promise<{ removed: true }> {
-    if (!this.store?.deleteAgentsWorkflow) {
-      throw new Error('runtime_unavailable')
-    }
-    this.store.deleteAgentsWorkflow(id, expectedRevision)
-    await this.store.flushPendingOrThrowAsync?.({ drainToStableGeneration: false })
-    this.notifyAgentsWorkflowsChanged({ reason: 'definition' })
-    return { removed: true }
-  }
-
-  runAgentsWorkflowNow(input: {
-    workflowId: string
-    input: string
-    requestKey: string
-  }): Promise<AgentsWorkflowRun> {
-    return this.getAgentsWorkflowRunService().runNow(input)
-  }
-
-  runScheduledAgentsWorkflow(
-    workflow: AgentsWorkflowDefinition,
-    scheduledFor: number
-  ): Promise<AgentsWorkflowRun> {
-    return this.getAgentsWorkflowRunService().runScheduled(workflow, scheduledFor)
-  }
-
-  recordSkippedAgentsWorkflowOccurrence(
-    workflow: AgentsWorkflowDefinition,
-    scheduledFor: number,
-    reason: 'missed_grace'
-  ): Promise<AgentsWorkflowRun> {
-    return this.getAgentsWorkflowRunService().recordSkippedOccurrence(
-      workflow,
-      scheduledFor,
-      reason
-    )
-  }
-
-  cancelAgentsWorkflowRun(runId: string): Promise<AgentsWorkflowRun> {
-    return this.getAgentsWorkflowRunService().cancelRun(runId)
-  }
-
-  listAgentsWorkflowRuns(input: {
-    workflowId?: string
-    cursor?: string
-    limit: number
-  }): Promise<AgentsWorkflowRunsPage> {
-    return this.getAgentsWorkflowRunService().runs(input)
-  }
-
-  showAgentsWorkflowRun(runId: string): Promise<AgentsWorkflowRun> {
-    return this.getAgentsWorkflowRunService().showRun(runId)
-  }
-
-  private getAgentsWorkflowRunService(): AgentsWorkflowRunService {
-    if (this.agentsWorkflowRunService) {
-      return this.agentsWorkflowRunService
-    }
-    const store = this.store
-    if (
-      !store?.showAgentsWorkflow ||
-      !store.createAgentsWorkflowRun ||
-      !store.createSkippedAgentsWorkflowOccurrence ||
-      !store.updateAgentsWorkflowRun ||
-      !store.replaceAgentsWorkflowRunTrace ||
-      !store.showAgentsWorkflowRun ||
-      !store.listAgentsWorkflowRuns ||
-      !store.markInterruptedAgentsWorkflowRunsUnverifiable
-    ) {
-      throw new Error('runtime_unavailable')
-    }
-    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Runtime mixins are assembled into OrcaRuntimeService; this layer cannot statically see later mixins.
-    const runtime = this as OrcaRuntimeService
-    this.agentsWorkflowRunService = new AgentsWorkflowRunService(
-      {
-        showAgentsWorkflow: store.showAgentsWorkflow.bind(store),
-        createAgentsWorkflowRun: store.createAgentsWorkflowRun.bind(store),
-        createSkippedAgentsWorkflowOccurrence:
-          store.createSkippedAgentsWorkflowOccurrence.bind(store),
-        updateAgentsWorkflowRun: store.updateAgentsWorkflowRun.bind(store),
-        replaceAgentsWorkflowRunTrace: store.replaceAgentsWorkflowRunTrace.bind(store),
-        showAgentsWorkflowRun: store.showAgentsWorkflowRun.bind(store),
-        listAgentsWorkflowRuns: store.listAgentsWorkflowRuns.bind(store),
-        markInterruptedAgentsWorkflowRunsUnverifiable:
-          store.markInterruptedAgentsWorkflowRunsUnverifiable.bind(store),
-        flushPendingOrThrowAsync: store.flushPendingOrThrowAsync?.bind(store)
-      },
-      () => this.notifyAgentsWorkflowsChanged({ reason: 'run' }),
-      createAgentsWorkflowExecutionAdapter(
-        createWorkflowStructuredTurnRunner(runtime),
-        createWorkflowFileHandoffTurnRunner(runtime),
-        createWorkflowTranscriptTurnRunner(runtime),
-        createWorkflowReportTurnRunner(runtime)
-      ),
-      createAgentsWorkflowWorkspaceResolver(runtime)
-    )
-    return this.agentsWorkflowRunService
-  }
-
-  abstract notifyAgentsWorkflowsChanged(payload?: { reason?: 'definition' | 'run' }): void
 
   // Why: lazy initialization — the DB path depends on Electron's userData
   // which may not be finalized until after app.ready. Also allows unit tests

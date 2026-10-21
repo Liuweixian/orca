@@ -38,7 +38,12 @@ function normalizeAgentsWorkflows(value: unknown): PersistedState['agentsWorkflo
   }
   return value.flatMap((entry) => {
     const parsed = AgentsWorkflowDefinitionSchema.safeParse(entry)
-    return parsed.success ? [parsed.data] : []
+    if (!parsed.success) {
+      // Why log: silently dropping a workflow looks like data loss to the user.
+      console.warn('[agents-workflow] Dropped an unreadable workflow definition:', parsed.error)
+      return []
+    }
+    return [parsed.data]
   })
 }
 
@@ -53,6 +58,7 @@ function normalizeAgentsWorkflowRuns(
   return value.flatMap((entry) => {
     const parsed = AgentsWorkflowRunSchema.safeParse(entry)
     if (!parsed.success) {
+      console.warn('[agents-workflow] Dropped an unreadable workflow run:', parsed.error)
       return []
     }
     if (

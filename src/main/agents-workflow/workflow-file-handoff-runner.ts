@@ -4,9 +4,10 @@
 // file the agent wrote, and a missing file is a failure rather than a guess. The pane's own text is
 // never read for the value.
 
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { randomUUID } from 'node:crypto'
 import type { AgentsWorkflowNodeOutput } from '../../shared/agents-workflow-run-types'
+import type { AgentsWorkflowTurnSettlement } from '../../shared/agents-workflow-agent-channels'
 import type { AgentsWorkflowStepExecutor } from './workflow-dynamic-scheduler'
 import {
   agentsWorkflowHandoffPath,
@@ -30,6 +31,11 @@ const OUTPUT_FILE_TIMEOUT_MS = 30 * 60 * 1000
 const OUTPUT_FILE_POLL_MS = 500
 /** A turn the agent reported finishing gets this long to flush the file before a miss is final. */
 const OUTPUT_FILE_SETTLE_GRACE_MS = 10_000
+/**
+ * The file must stop changing before it is the value. An agent that writes a skeleton first and
+ * fills it in later must not hand its first draft downstream.
+ */
+const OUTPUT_FILE_STABILITY_MS = 2_000
 
 export type AgentsWorkflowFileHandoffTurnRunner = {
   run(
@@ -55,7 +61,8 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
     private readonly now: () => number = Date.now,
     private readonly timeoutMs: number = OUTPUT_FILE_TIMEOUT_MS,
     private readonly pollMs: number = OUTPUT_FILE_POLL_MS,
-    private readonly settleGraceMs: number = OUTPUT_FILE_SETTLE_GRACE_MS
+    private readonly settleGraceMs: number = OUTPUT_FILE_SETTLE_GRACE_MS,
+    private readonly stabilityMs: number = OUTPUT_FILE_STABILITY_MS
   ) {
     this.panes = new WorkflowPaneTurns(runtime)
   }
@@ -111,7 +118,7 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
     return await this.panes.cancel(runId)
   }
 
-  /** Closes panes on a scheduled run; the files an agent delivered stay where they are. */
+  /** Closes panes on a scheduled run; the run's scratch folder is removed when it ends. */
   async release(runId: string, options: { reclaim: boolean }): Promise<void> {
     await this.panes.release(runId, options)
   }
@@ -120,6 +127,9 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
    * Waits for the file the prompt asked for. A turn whose agent never reports completion gets the
    * full timeout; once the agent reports it, the file only gets a short grace period, so an agent
    * that answered without writing does not idle for half an hour.
+   *
+   * Two rules keep a half-written answer from becoming the node's value: the pane must have
+   * settled before the file is read, and the file must have stopped changing for `stabilityMs`.
    */
   private async readTurn(
     input: Parameters<AgentsWorkflowStepExecutor>[0],
@@ -134,11 +144,13 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
       failure: { ok: false; code: string; message: string; unverifiable?: boolean } | null
       settledAt: number | null
       failedAt: number | null
-    } = { failure: null, settledAt: null, failedAt: null }
+      settlement: AgentsWorkflowTurnSettlement | null
+    } = { failure: null, settledAt: null, failedAt: null, settlement: null }
     void this.panes.settle(turn, watcher.signal).then(
       (result) => {
         if (result.ok) {
           pane.settledAt = this.now()
+          pane.settlement = result.settlement
         } else {
           pane.failure = result
           pane.failedAt = this.now()
@@ -150,46 +162,59 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
 
     const deadlineAt = this.now() + this.timeoutMs
     let pending: { code: 'output_contract_empty'; message: string } | null = null
+    let lastSignature: string | null = null
+    let stableSince: number | null = null
     try {
       while (true) {
         if (input.signal?.aborted) {
-          return paneTurnRefusal('cancelled', 'Workflow run was cancelled.', true)
+          return paneTurnRefusal('cancelled', 'Workflow run was cancelled.')
         }
-        const read = await this.tryReadHandoff(outputPath)
-        if (read !== null) {
-          if (read.ok) {
-            return {
-              ok: true as const,
-              output: {
-                format: 'plain_text' as const,
-                content: read.content,
-                capturedAt: this.now(),
-                truncated: false,
-                source: 'agent_file_handoff' as const
-              }
-            }
+        const observation = await this.tryReadHandoff(outputPath)
+        const now = this.now()
+        if (observation !== null) {
+          if (observation.signature !== lastSignature) {
+            lastSignature = observation.signature
+            stableSince = now
           }
-          if (read.code === 'output_contract_too_large') {
+          const read = observation.read
+          if (!read.ok && read.code === 'output_contract_too_large') {
             return paneTurnRefusal(read.code, read.message)
           }
-          // A half-written answer is empty; only the state at the deadline is final.
-          if (read.code === 'output_contract_empty') {
+          if (read.ok) {
+            // Why both conditions: a file written early is still the agent's scratch work, and a
+            // file still growing is not its answer yet.
+            const paneSettled = pane.settledAt !== null || pane.failure !== null
+            const stable = stableSince !== null && now - stableSince >= this.stabilityMs
+            if (paneSettled && stable) {
+              return {
+                ok: true as const,
+                output: {
+                  format: 'plain_text' as const,
+                  content: read.content,
+                  capturedAt: now,
+                  truncated: false,
+                  source: 'agent_file_handoff' as const
+                }
+              }
+            }
+          } else if (read.code === 'output_contract_empty') {
+            // A half-written answer is empty; only the state at the deadline is final.
             pending = { code: read.code, message: read.message }
           }
         }
-        const now = this.now()
+
         if (pane.failure !== null) {
-          // Why read the file first: a closed pane can still leave the answer it already wrote.
+          // Why wait past the read: a closed pane can still leave the answer it already wrote.
           // An unverifiable end (a pane closed or reloaded) gets the same short grace as a
-          // finished turn, so a last write can land; anything else is final immediately.
-          const failed = !pane.failure.unverifiable
+          // finished turn, so a last write can land.
           const failedGraceOver =
-            pane.failedAt !== null && now >= pane.failedAt + this.settleGraceMs
-          if (failed || failedGraceOver) {
+            pane.failedAt !== null && now >= pane.failedAt + this.settleGrace(pane.settlement)
+          if (!pane.failure.unverifiable || failedGraceOver) {
             return pane.failure
           }
         }
-        const graceOver = pane.settledAt !== null && now >= pane.settledAt + this.settleGraceMs
+        const graceOver =
+          pane.settledAt !== null && now >= pane.settledAt + this.settleGrace(pane.settlement)
         if (graceOver || now >= deadlineAt) {
           if (pending !== null) {
             return paneTurnRefusal(pending.code, pending.message)
@@ -210,15 +235,33 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
     }
   }
 
+  /**
+   * How long the file may still appear after the pane settled. A weak settlement is an idle
+   * guess, not the agent saying "done", so an agent with no completion signal keeps the full
+   * timeout instead of being failed ten seconds into a healthy three-minute task.
+   */
+  private settleGrace(settlement: AgentsWorkflowTurnSettlement | null): number {
+    return settlement === 'idle-weak' ? this.timeoutMs : this.settleGraceMs
+  }
+
   /** Null while the file is not there yet. */
-  private async tryReadHandoff(outputPath: string) {
+  private async tryReadHandoff(
+    outputPath: string
+  ): Promise<{ read: ReturnType<typeof parseAgentsWorkflowHandoff>; signature: string } | null> {
+    let signature: string
+    try {
+      const stats = await stat(outputPath)
+      signature = `${stats.size}:${stats.mtimeMs}`
+    } catch {
+      return null
+    }
     let raw: string
     try {
       raw = await readFile(outputPath, 'utf8')
     } catch {
       return null
     }
-    return parseAgentsWorkflowHandoff(raw)
+    return { read: parseAgentsWorkflowHandoff(raw), signature }
   }
 }
 

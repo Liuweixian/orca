@@ -1,6 +1,7 @@
 import type { AutomationService } from '../automations/service'
 import { createRuntimeAutomationService } from '../automations/runtime-automation-service'
 import { AgentsWorkflowScheduler } from '../agents-workflow/agents-workflow-scheduler'
+import { agentsWorkflowScheduleRequestKey } from '../../shared/agents-workflow-run-types'
 import { mainProcessState as state } from './main-process-state'
 
 export function initializeMainProcessAutomations(): AutomationService {
@@ -24,7 +25,13 @@ export function initializeMainProcessAutomations(): AutomationService {
       service,
       new AgentsWorkflowScheduler({
         listWorkflows: () => store.listAgentsWorkflows(),
-        listRuns: (workflowId) => store.listAgentsWorkflowRuns({ workflowId, limit: 100 }).runs,
+        // Why the exact key: scanning the newest runs missed an occurrence whose run had already
+        // been pruned, and the run retention limit (100) silently decided how far the scan reached.
+        hasScheduledRun: (workflowId, scheduledFor) =>
+          store.findAgentsWorkflowRunByRequestKey(
+            workflowId,
+            agentsWorkflowScheduleRequestKey(scheduledFor)
+          ) !== null,
         runScheduled: (workflow, scheduledFor) =>
           runtime.runScheduledAgentsWorkflow(workflow, scheduledFor),
         recordSkipped: (workflow, scheduledFor, reason) =>

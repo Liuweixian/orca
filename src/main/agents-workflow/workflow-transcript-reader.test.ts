@@ -83,7 +83,7 @@ describe('readWorkflowTranscriptTurn', () => {
         prompt: 'review the diff',
         startedAt: STARTED_AT
       })
-    ).resolves.toEqual({ ok: true, content: 'looks good' })
+    ).resolves.toMatchObject({ ok: true, content: 'looks good' })
   })
 
   it('returns the full answer instead of the scanner preview', async () => {
@@ -113,7 +113,7 @@ describe('readWorkflowTranscriptTurn', () => {
         prompt: 'review the diff',
         startedAt: STARTED_AT
       })
-    ).resolves.toEqual({ ok: true, content: long })
+    ).resolves.toMatchObject({ ok: true, content: long })
   })
 
   it('ignores a session in another working directory', async () => {
@@ -169,7 +169,7 @@ describe('readWorkflowTranscriptTurn', () => {
         prompt: 'review the diff',
         startedAt: STARTED_AT
       })
-    ).resolves.toEqual({ ok: true, content: 'ok' })
+    ).resolves.toMatchObject({ ok: true, content: 'ok' })
   })
 
   it('refuses when the matched session has no assistant answer yet', async () => {
@@ -208,6 +208,38 @@ describe('readWorkflowTranscriptTurn', () => {
         startedAt: STARTED_AT
       })
     ).resolves.toMatchObject({ ok: false, message: expect.stringContaining('assistant') })
+  })
+
+  it('never reuses a session another turn of this run already consumed', async () => {
+    const older = session({
+      id: 'session-old',
+      filePath: '/home/.gemini/session-old.json',
+      lastUserPrompt: 'review the diff',
+      modifiedAt: '2026-10-20T10:00:03.000Z'
+    })
+    const newest = session({
+      id: 'session-new',
+      filePath: '/home/.gemini/session-new.json',
+      lastUserPrompt: 'review the diff',
+      modifiedAt: '2026-10-20T10:00:05.000Z'
+    })
+    scanner.scanAiVaultSessions.mockResolvedValue(scanResult([older, newest]))
+    parser.parseAgentSessionFile.mockImplementation(
+      transcript([
+        { role: 'assistant', text: 'second answer', timestamp: '2026-10-20T10:00:04.000Z' }
+      ])
+    )
+
+    await expect(
+      readWorkflowTranscriptTurn({
+        agent: 'gemini',
+        workspacePath: '/repo/worktree',
+        prompt: 'review the diff',
+        startedAt: STARTED_AT,
+        // A loop iteration repeating the prompt must read the next session, not the same one.
+        claimedSessionPaths: ['/home/.gemini/session-new.json']
+      })
+    ).resolves.toMatchObject({ ok: true, content: 'second answer', sessionPath: older.filePath })
   })
 
   it('refuses when the scan itself fails', async () => {

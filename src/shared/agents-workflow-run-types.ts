@@ -83,6 +83,14 @@ export const AgentsWorkflowRunSummarySchema = AgentsWorkflowRunSchema.omit({
   executionTrace: true
 })
 
+/**
+ * The idempotency key of one schedule occurrence: one occurrence may only ever produce one run.
+ * Shared so the writer, the scheduler and the runtime all name it identically.
+ */
+export function agentsWorkflowScheduleRequestKey(scheduledFor: number): string {
+  return `schedule:${scheduledFor}`
+}
+
 export const AgentsWorkflowRunsPageSchema = z.strictObject({
   runs: z.array(AgentsWorkflowRunSummarySchema),
   nextCursor: z.string().nullable()

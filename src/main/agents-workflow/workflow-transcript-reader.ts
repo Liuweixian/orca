@@ -18,7 +18,13 @@ const TRANSCRIPT_CLOCK_SLACK_MS = 60_000
 const TRANSCRIPT_SCAN_LIMIT = 20
 const TRANSCRIPT_SCAN_LIMIT_PER_AGENT = 4
 
-export type WorkflowTranscriptTurn = { ok: true; content: string } | { ok: false; message: string }
+export type WorkflowTranscriptTurn =
+  | {
+      ok: true
+      content: string
+      /** The session this turn consumed; never matched again. */ sessionPath: string
+    }
+  | { ok: false; message: string }
 
 function comparablePath(path: string | null): string | null {
   if (!path) {
@@ -39,10 +45,15 @@ function pickSession(
   sessions: readonly AiVaultSession[],
   workspacePath: string,
   prompt: string,
-  startedAt: number
+  startedAt: number,
+  claimedSessionPaths: ReadonlySet<string>
 ): AiVaultSession | null {
   const cwd = comparablePath(workspacePath)
-  const inWorkspace = sessions.filter((session) => comparablePath(session.cwd) === cwd)
+  const inWorkspace = sessions.filter(
+    (session) =>
+      comparablePath(session.cwd) === cwd &&
+      !claimedSessionPaths.has(comparablePath(session.filePath) ?? '')
+  )
   if (inWorkspace.length === 0) {
     return null
   }
@@ -51,11 +62,14 @@ function pickSession(
   // Why no time-based fallback: another session in this workspace (the user's own chat, or a
   // parallel node of this workflow) would be indistinguishable, and handing its answer downstream
   // is worse than falling through to the file contract. Only an exact prompt match counts; the
-  // time bound keeps an older run of the same prompt from answering this one.
+  // time bound keeps an older run of the same prompt from answering this one. The newest match
+  // wins, because a loop iteration repeating the same prompt leaves the earlier session in range.
   return (
-    inWorkspace.find(
-      (session) => session.lastUserPrompt?.trim() === target && modifiedAtMs(session) >= since
-    ) ?? null
+    inWorkspace
+      .filter(
+        (session) => session.lastUserPrompt?.trim() === target && modifiedAtMs(session) >= since
+      )
+      .sort((left, right) => modifiedAtMs(right) - modifiedAtMs(left))[0] ?? null
   )
 }
 
@@ -126,6 +140,8 @@ export async function readWorkflowTranscriptTurn(input: {
   prompt: string
   startedAt: number
   signal?: AbortSignal
+  /** Sessions another turn of this run already consumed. */
+  claimedSessionPaths?: readonly string[]
 }): Promise<WorkflowTranscriptTurn> {
   let result: Awaited<ReturnType<typeof scanAiVaultSessions>>
   try {
@@ -146,7 +162,8 @@ export async function readWorkflowTranscriptTurn(input: {
     result.sessions.filter((candidate) => candidate.agent === input.agent),
     input.workspacePath,
     input.prompt,
-    input.startedAt
+    input.startedAt,
+    new Set((input.claimedSessionPaths ?? []).map((path) => comparablePath(path) ?? ''))
   )
   if (!session) {
     return { ok: false, message: 'No transcript session matched this turn.' }
@@ -170,5 +187,5 @@ export async function readWorkflowTranscriptTurn(input: {
   if (Buffer.byteLength(content, 'utf8') > AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES) {
     return { ok: false, message: 'The transcript answer is larger than a workflow value may be.' }
   }
-  return { ok: true, content }
+  return { ok: true, content, sessionPath: session.filePath }
 }

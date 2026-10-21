@@ -11,17 +11,13 @@ import { isNativeBrowserPopupWindow } from '../browser/native-browser-popup-wind
 import { createAppMenuSelectionItem } from './app-menu-selection-item'
 import { createAppMenuQuitItem } from './app-menu-quit-item'
 import { createAppWindowMenu } from './app-menu-window'
+import {
+  createAppMenuView,
+  type AppearanceMenuKey,
+  type AppearanceMenuState
+} from './app-menu-view'
 
-export type AppearanceMenuState = {
-  showTasksButton: boolean
-  showAutomationsButton: boolean
-  showAgentsWorkflowButton: boolean
-  showMobileButton: boolean
-  showTitlebarAppName: boolean
-  statusBarVisible: boolean
-}
-
-export type AppearanceMenuKey = keyof AppearanceMenuState
+export type { AppearanceMenuKey, AppearanceMenuState }
 
 export function getNextDefaultOnAppearanceSettingValue(current: boolean | undefined): boolean {
   return !(current !== false)
@@ -222,111 +218,17 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
     ]
   }
 
-  // Why: mirror VS Code's View > Appearance submenu so users can toggle
-  // sidebar/status-bar/tasks-button/titlebar-activity from the menu bar as
-  // well as from the settings pane. Electron doesn't reactively update
-  // menu items when the backing state changes, so rebuildAppMenu() must be
-  // called after every settings update — each build reads current
-  // appearance state through getAppearanceState() and produces a fresh
-  // template with accurate `checked` values.
-  const appearanceSubmenu: Electron.MenuItemConstructorOptions = {
-    label: translateMain('menu.appearance', 'Appearance'),
-    submenu: [
-      {
-        // Why: display-only shortcut hint — not a real accelerator. Cmd/Ctrl+B
-        // is intercepted in createMainWindow.ts's before-input-event handler
-        // with a TipTap-bold carve-out for markdown editors. Binding the
-        // accelerator here would steal the chord before that carve-out can
-        // fire. Sidebar open/closed lives in the renderer store (non-persisted),
-        // so we forward a toggle request rather than mirroring state in main.
-        label: `${translateMain('menu.toggleLeftSidebar', 'Toggle Left Sidebar')}\t${shortcutLabel('sidebar.left.toggle')}`,
-        click: () => onToggleLeftSidebar()
-      },
-      {
-        // Why: display-only shortcut hint for the same reason as above.
-        label: `${translateMain('menu.toggleRightSidebar', 'Toggle Right Sidebar')}\t${shortcutLabel('sidebar.right.toggle')}`,
-        click: () => onToggleRightSidebar()
-      },
-      {
-        label: translateMain('menu.showStatusBar', 'Show Status Bar'),
-        type: 'checkbox',
-        checked: appearance.statusBarVisible,
-        click: () => onToggleAppearance('statusBarVisible')
-      },
-      { type: 'separator' },
-      {
-        label: translateMain('menu.showTasksButton', 'Show Tasks Button'),
-        type: 'checkbox',
-        checked: appearance.showTasksButton,
-        click: () => onToggleAppearance('showTasksButton')
-      },
-      {
-        label: translateMain('menu.showAutomationsButton', 'Show Automations Button'),
-        type: 'checkbox',
-        checked: appearance.showAutomationsButton,
-        click: () => onToggleAppearance('showAutomationsButton')
-      },
-      {
-        label: translateMain('menu.showAgentsWorkflowButton', 'Show Workflows Button'),
-        type: 'checkbox',
-        checked: appearance.showAgentsWorkflowButton,
-        click: () => onToggleAppearance('showAgentsWorkflowButton')
-      },
-      {
-        label: translateMain('menu.showMobileButton', 'Show Orca Mobile Button'),
-        type: 'checkbox',
-        checked: appearance.showMobileButton,
-        click: () => onToggleAppearance('showMobileButton')
-      },
-      {
-        label: translateMain('menu.showTitlebarAppName', 'Show Titlebar App Name'),
-        type: 'checkbox',
-        checked: appearance.showTitlebarAppName,
-        click: () => onToggleAppearance('showTitlebarAppName')
-      }
-    ]
-  }
-
-  const viewMenu: Electron.MenuItemConstructorOptions = {
-    label: translateMain('menu.view', 'View'),
-    submenu: [
-      {
-        label: translateMain('menu.reload', 'Reload'),
-        click: () => reloadFocusedWindow(false)
-      },
-      {
-        label: `${translateMain('menu.forceReload', 'Force Reload')}\t${shortcutLabel('app.forceReload')}`,
-        click: () => reloadFocusedWindow(true)
-      },
-      { role: 'toggleDevTools' },
-      { type: 'separator' },
-      {
-        label: `${translateMain('menu.resetSize', 'Reset Size')}\t${shortcutLabel('zoom.reset')}`,
-        click: () => onZoomReset()
-      },
-      {
-        label: `${translateMain('menu.zoomIn', 'Zoom In')}\t${shortcutLabel('zoom.in')}`,
-        click: () => onZoomIn()
-      },
-      {
-        label: `${translateMain('menu.zoomOut', 'Zoom Out')}\t${shortcutLabel('zoom.out')}`,
-        click: () => onZoomOut()
-      },
-      { type: 'separator' },
-      {
-        // Why: display-only shortcut hint — do NOT set `accelerator` here.
-        // Menu accelerators intercept key events at the main-process level
-        // before the renderer's keydown handler fires. The overlay
-        // mutual-exclusion logic (which runs in the renderer) would be
-        // bypassed if this were a real accelerator binding.
-        label: `${translateMain('menu.openWorktreePalette', 'Open Worktree Palette')}\t${shortcutLabel('worktree.palette')}`
-      },
-      { type: 'separator' },
-      { role: 'togglefullscreen' },
-      { type: 'separator' },
-      appearanceSubmenu
-    ]
-  }
+  const viewMenu = createAppMenuView({
+    appearance,
+    shortcutLabel,
+    reloadFocusedWindow,
+    onToggleLeftSidebar,
+    onToggleRightSidebar,
+    onToggleAppearance,
+    onZoomIn,
+    onZoomOut,
+    onZoomReset
+  })
 
   const windowMenu = createAppWindowMenu(translateMain('menu.window', 'Window'), isMac)
 

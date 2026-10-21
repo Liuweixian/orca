@@ -67,7 +67,11 @@ beforeEach(() => {
 describe('WorkflowTranscriptTurnRunner', () => {
   it('sends the prompt unmodified and reads the answer from the transcript', async () => {
     const rig = runtime()
-    const readTurn = vi.fn(async () => ({ ok: true as const, content: 'the answer' }))
+    const readTurn = vi.fn(async () => ({
+      ok: true as const,
+      content: 'the answer',
+      sessionPath: '/home/.gemini/session-1.json'
+    }))
     const runner = new WorkflowTranscriptTurnRunner(asRuntime(rig), readTurn)
 
     const result = await runner.run({

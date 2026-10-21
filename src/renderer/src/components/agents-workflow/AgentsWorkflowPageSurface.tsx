@@ -4,6 +4,7 @@ import {
   availableVariableRefs,
   validateWorkflowDefinition
 } from '../../../../shared/agents-workflow-graph'
+import { agentsWorkflowScheduleIssues } from '../../../../shared/agents-workflow-definition-check'
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
@@ -65,7 +66,15 @@ function AgentsWorkflowLoadedSurface({
   const target = `${targetLabels.host} · ${targetLabels.project} · ${targetLabels.workspace}`
   const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
-  const issues = React.useMemo(() => validateWorkflowDefinition(definition), [definition])
+  const issues = React.useMemo(
+    // Why include the schedule: the host refuses an unparseable schedule, so the Save button must
+    // already be disabled rather than failing after the click.
+    () => [
+      ...validateWorkflowDefinition(definition),
+      ...agentsWorkflowScheduleIssues(definition.trigger.schedule)
+    ],
+    [definition]
+  )
   const selectedNode = definition.nodes.find((node) => node.id === selectedNodeId) ?? null
   const selectedIssues = issues.filter((entry) => entry.nodeId === selectedNodeId)
   const selectedAvailableRefs = selectedNode

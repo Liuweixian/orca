@@ -174,7 +174,8 @@ describe('WorkflowFileHandoffTurnRunner', () => {
       Date.now,
       5_000,
       10,
-      20
+      200,
+      10
     )
 
     const result = await runner.run({
@@ -286,6 +287,77 @@ describe('WorkflowFileHandoffTurnRunner', () => {
     })
 
     expect(result).toMatchObject({ ok: true, output: { content: 'late but real' } })
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('does not hand a half-written answer downstream', async () => {
+    const dir = await workspace()
+    const rig = runtime()
+    // The agent writes a skeleton first and the real answer a moment later.
+    rig.launchAgentTerminal.mockImplementation(async (_selector, options) => {
+      const path = options.prompt.split('\n').find((line) => line.includes('.orca-workflow'))
+      if (path) {
+        await writeFile(path, 'draft')
+        setTimeout(() => void writeFile(path, 'the final answer'), 50)
+      }
+      return { handle: 'handle-1', paneKey: 'pane-1', worktreeId: 'workspace-1' }
+    })
+    const runner = new WorkflowFileHandoffTurnRunner(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the runner reads only the five terminal methods this fixture provides.
+      rig as unknown as OrcaRuntimeService,
+      Date.now,
+      5_000,
+      10,
+      1_000,
+      150
+    )
+
+    const result = await runner.run({
+      runId: 'run-1',
+      workspaceId: 'workspace-1',
+      workspacePath: dir,
+      node: node(),
+      prompt: 'work'
+    })
+
+    expect(result).toMatchObject({ ok: true, output: { content: 'the final answer' } })
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('waits for the pane to settle before accepting a file', async () => {
+    const dir = await workspace()
+    const rig = runtime()
+    answersWith(rig, 'written early')
+    let settle: () => void = () => undefined
+    observer.observeCompletion.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          settle = () =>
+            resolve({ status: 'completed' as const, outputSnapshot: null, error: null })
+        })
+    )
+    const runner = new WorkflowFileHandoffTurnRunner(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the runner reads only the five terminal methods this fixture provides.
+      rig as unknown as OrcaRuntimeService,
+      Date.now,
+      5_000,
+      10,
+      20,
+      10
+    )
+
+    const running = runner.run({
+      runId: 'run-1',
+      workspaceId: 'workspace-1',
+      workspacePath: dir,
+      node: node(),
+      prompt: 'work'
+    })
+    await vi.waitFor(() => expect(rig.launchAgentTerminal).toHaveBeenCalledOnce())
+    await new Promise((resolve) => setTimeout(resolve, 100))
+    settle()
+
+    await expect(running).resolves.toMatchObject({ ok: true })
     await rm(dir, { recursive: true, force: true })
   })
 
