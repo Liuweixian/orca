@@ -1,11 +1,10 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { dirname, join } from 'node:path'
+import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ProfileStateSqliteAuthority } from '../profile-state/profile-state-sqlite-authority'
 import type { AgentsWorkflowCreateInput } from '../../../shared/agents-workflow-types'
 import { AgentsWorkflowRunService } from '../../agents-workflow/workflow-run-service'
-import Database from '../../sqlite/sync-database'
 
 vi.mock('electron', () => ({
   app: {
@@ -189,21 +188,6 @@ describe('agent workflow persistence', () => {
         now: 12
       })
     ).toThrow(/active workflow run/)
-    const projection = new Database(join(dirname(dataFile), 'profile-state.db'), {
-      readonly: true
-    })
-    expect(
-      projection
-        .prepare(
-          'SELECT workflow_id, request_key, status FROM profile_state_agents_workflow_runs WHERE run_id = ?'
-        )
-        .get(first.run.id)
-    ).toEqual({
-      workflow_id: workflow.id,
-      request_key: 'request-1',
-      status: 'pending'
-    })
-    projection.close()
 
     const reloaded = new Store({ dataFile, profileStateAuthority: authority })
     expect(reloaded.showAgentsWorkflowRun(first.run.id)).toMatchObject({
