@@ -26,6 +26,7 @@ export function buildWindowApi(args: {
     api: {
       repos: { onChanged: () => () => {} },
       automations: { onChanged: () => () => {} },
+      agentsWorkflows: { onChanged: () => () => {} },
       worktrees: {
         onChanged: () => () => {},
         onBaseStatus: () => () => {},

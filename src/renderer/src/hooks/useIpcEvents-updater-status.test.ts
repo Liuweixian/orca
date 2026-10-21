@@ -90,6 +90,7 @@ describe('useIpcEvents updater integration', () => {
       api: {
         repos: { onChanged: () => () => {} },
         automations: { onChanged: () => () => {} },
+        agentsWorkflows: { onChanged: () => () => {} },
         worktrees: {
           onChanged: () => () => {},
           onBaseStatus: () => () => {},
@@ -296,6 +297,7 @@ describe('useIpcEvents updater integration', () => {
       api: {
         repos: makeEvents(),
         automations: makeEvents(),
+        agentsWorkflows: makeEvents(),
         worktrees: makeEvents(),
         keybindings: makeEvents(),
         settings: makeEvents(),

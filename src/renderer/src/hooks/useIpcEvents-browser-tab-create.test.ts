@@ -138,6 +138,7 @@ describe('useIpcEvents browser tab create routing', () => {
       api: {
         repos: { onChanged: () => () => {} },
         automations: { onChanged: () => () => {} },
+        agentsWorkflows: { onChanged: () => () => {} },
         worktrees: {
           onChanged: () => () => {},
           onGitStatusMetadataChanged: () => () => {},

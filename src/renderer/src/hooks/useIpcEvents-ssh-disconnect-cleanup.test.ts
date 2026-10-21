@@ -123,6 +123,7 @@ describe('useIpcEvents updater integration', () => {
       api: {
         repos: { onChanged: () => () => {} },
         automations: { onChanged: () => () => {} },
+        agentsWorkflows: { onChanged: () => () => {} },
         worktrees: {
           onChanged: () => () => {},
           onBaseStatus: () => () => {},
