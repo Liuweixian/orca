@@ -27,7 +27,17 @@ export const AgentsWorkflowNodeOutputSchema = z.strictObject({
   content: z.string(),
   capturedAt: z.number().int(),
   truncated: z.boolean(),
-  source: z.enum(['structured_assistant_message', 'terminal_snapshot'])
+  // `unknown` is a compatibility sink, not a producer value: a newer host may publish a source an
+  // older client does not know, and dropping the whole run record is worse than losing the label.
+  source: z
+    .enum([
+      'structured_assistant_message',
+      'agent_transcript',
+      'agent_file_handoff',
+      'terminal_snapshot',
+      'unknown'
+    ])
+    .catch('unknown')
 })
 
 export const AgentsWorkflowNodeAttemptSchema = z.strictObject({

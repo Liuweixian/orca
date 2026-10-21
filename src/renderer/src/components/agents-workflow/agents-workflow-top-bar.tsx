@@ -7,6 +7,7 @@ export function AgentsWorkflowTopBar({
   name,
   target,
   errorCount,
+  warningCount,
   dirty,
   saving,
   running,
@@ -20,6 +21,7 @@ export function AgentsWorkflowTopBar({
   name: string
   target: string
   errorCount: number
+  warningCount: number
   dirty: boolean
   saving: boolean
   running: boolean
@@ -38,11 +40,15 @@ export function AgentsWorkflowTopBar({
           {target ? <span className="truncate text-xs text-muted-foreground">{target}</span> : null}
         </div>
         <div className="text-xs text-muted-foreground">
-          {errorCount === 0
-            ? translate('auto.components.agents-workflow.topbar.valid', 'Ready to save')
-            : translate('auto.components.agents-workflow.topbar.errors', '{{count}} issues', {
+          {errorCount > 0
+            ? translate('auto.components.agents-workflow.topbar.errors', '{{count}} issues', {
                 count: errorCount
-              })}
+              })
+            : warningCount > 0
+              ? translate('auto.components.agents-workflow.topbar.warnings', '{{count}} warnings', {
+                  count: warningCount
+                })
+              : translate('auto.components.agents-workflow.topbar.valid', 'Ready to save')}
         </div>
       </div>
       <Button variant="outline" size="xs" onClick={onExport}>

@@ -18237,7 +18237,6 @@
           "title": "Title",
           "agent": "Agent",
           "prompt": "Prompt",
-          "insertVariable": "Insert variable",
           "extraArgs": "Extra agent arguments",
           "terminal": "Terminal node",
           "input": "Input",
@@ -18253,7 +18252,15 @@
           "jsonList": "JSON list",
           "count": "Count",
           "items": "Items",
-          "issues": "Issues"
+          "issues": "Issues",
+          "channelProtocol": "This host runs the node in a structured session and passes its answer downstream.",
+          "channelTranscript": "This host reads the answer back from the agent transcript.",
+          "channelFile": "This host asks the agent to write its answer to a workflow file.",
+          "channelWeakSettlement": "The agent only reports a quiet pane, so the value comes from the output file.",
+          "upstreamNote": "The previous node’s answer is saved to a file, and this prompt names that file so the agent reads it first.",
+          "insertVariable": "Insert variable",
+          "channelSnapshot": "This node ends the branch: the run only keeps what its pane printed, and nothing downstream binds it.",
+          "channelNone": "This host has no output channel for {{agent}}."
         },
         "node": {
           "start": "Start",
@@ -18263,6 +18270,7 @@
         },
         "topbar": {
           "valid": "Ready to save",
+          "warnings": "{{count}} warnings",
           "errors": "{{count}} issues",
           "addAgent": "Agent",
           "addCondition": "Condition",
@@ -18273,9 +18281,9 @@
           "delete": "Delete workflow",
           "saving": "Saving",
           "save": "Save",
+          "starting": "Starting",
           "runInput": "Run input",
-          "runInputPlaceholder": "Manual run input",
-          "starting": "Starting"
+          "runInputPlaceholder": "Manual run input"
         },
         "loading": "Loading workflows…",
         "createFirst": "Create workflow",
@@ -18291,11 +18299,11 @@
           "new": "New workflow",
           "name": "Name",
           "enabled": "Enabled",
-          "defaultInput": "Default scheduled input",
           "schedule": "Scheduled runs",
           "timezone": "Timezone",
           "grace": "Missed-run grace (minutes)",
-          "noProjectSetup": "This project has no ready setup on the selected host."
+          "noProjectSetup": "This project has no ready setup on the selected host.",
+          "defaultInput": "Default scheduled input"
         },
         "history": {
           "title": "Run history",
@@ -18323,7 +18331,12 @@
           "attemptFailed": "Failed",
           "attemptSkipped": "Skipped",
           "attemptCancelled": "Cancelled",
-          "attemptUnverifiable": "Unverifiable"
+          "attemptUnverifiable": "Unverifiable",
+          "outputStructured": "Structured answer",
+          "outputTranscript": "Answer read from the agent transcript",
+          "outputFile": "Answer written to the workflow output file",
+          "outputTerminal": "Terminal output (not passed downstream)",
+          "outputUnknown": "Answer from an unrecognised source"
         },
         "controller": {
           "loadFailed": "Could not load the workflow.",

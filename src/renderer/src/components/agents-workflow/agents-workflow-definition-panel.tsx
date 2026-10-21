@@ -74,18 +74,6 @@ export function AgentsWorkflowDefinitionPanel({
           />
         </div>
         <AgentsWorkflowTargetFields definition={definition} onChange={onChange} />
-        <div className="flex items-center justify-between gap-3">
-          <Label htmlFor="agents-workflow-enabled">
-            {translate('auto.components.agents-workflow.definition.enabled', 'Enabled')}
-          </Label>
-          <Switch
-            id="agents-workflow-enabled"
-            checked={definition.enabled}
-            onCheckedChange={(enabled) =>
-              onChange({ ...definition, enabled, updatedAt: Date.now() })
-            }
-          />
-        </div>
         <div className="space-y-2">
           <Label htmlFor="agents-workflow-default-input">
             {translate(
@@ -102,6 +90,18 @@ export function AgentsWorkflowDefinitionPanel({
                 trigger: { ...definition.trigger, defaultInput: event.target.value },
                 updatedAt: Date.now()
               })
+            }
+          />
+        </div>
+        <div className="flex items-center justify-between gap-3">
+          <Label htmlFor="agents-workflow-enabled">
+            {translate('auto.components.agents-workflow.definition.enabled', 'Enabled')}
+          </Label>
+          <Switch
+            id="agents-workflow-enabled"
+            checked={definition.enabled}
+            onCheckedChange={(enabled) =>
+              onChange({ ...definition, enabled, updatedAt: Date.now() })
             }
           />
         </div>

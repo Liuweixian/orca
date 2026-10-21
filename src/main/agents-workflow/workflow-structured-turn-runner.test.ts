@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { AgentSessionTurnCompletionEvent } from '../../shared/agent-session-turn-completion-wire'
 import type { AgentJournalRenderItem } from '../../shared/agent-session-journal-types'
 import { WorkflowStructuredTurnRunner } from './workflow-structured-turn-runner'
@@ -29,6 +29,24 @@ function turnItem(): AgentJournalRenderItem {
     sequence: 1,
     observedAt: 1,
     body: { kind: 'turn', turnId: 'provider-turn-1', state: 'completed', outcome: 'success' }
+  }
+}
+
+function completion(): AgentSessionTurnCompletionEvent {
+  return {
+    type: 'completion',
+    completion: {
+      scope: {
+        workspaceId: 'workspace-1',
+        executionHostId: 'local',
+        workspaceKind: 'git-worktree',
+        wslDistro: null
+      },
+      sessionId: 'session-1',
+      turnId: 'provider-turn-1',
+      outcome: 'success',
+      completedAt: 9
+    }
   }
 }
 
@@ -100,6 +118,10 @@ function harness() {
 }
 
 describe('WorkflowStructuredTurnRunner', () => {
+  beforeEach(() => {
+    lifecycle.close.mockClear()
+  })
+
   it('creates a hidden session and captures the completed provider turn', async () => {
     const rig = harness()
     const running = rig.runner.run(agentInput())
@@ -129,6 +151,58 @@ describe('WorkflowStructuredTurnRunner', () => {
     expect(rig.createSession).toHaveBeenCalledWith(
       expect.objectContaining({ caller: { callerKey: 'agents-workflow:run-1' } })
     )
+  })
+
+  it('gives each node its own chat and leaves both on screen', async () => {
+    const rig = harness()
+    const first = rig.runner.run(agentInput())
+    await vi.waitFor(() => expect(rig.host.send).toHaveBeenCalledTimes(1))
+    rig.getEmit()(completion())
+    await expect(first).resolves.toMatchObject({ ok: true })
+
+    const second = rig.runner.run({
+      ...agentInput(),
+      node: { ...agentInput().node, id: 'agent-2' }
+    })
+    await vi.waitFor(() => expect(rig.createSession).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(rig.host.send).toHaveBeenCalledTimes(2))
+    rig.getEmit()(completion())
+    await expect(second).resolves.toMatchObject({ ok: true })
+
+    // The chats belong to the run, not to the turn that opened them.
+    expect(lifecycle.close).not.toHaveBeenCalled()
+  })
+
+  it('continues the same chat when the same node runs again', async () => {
+    const rig = harness()
+    const first = rig.runner.run(agentInput())
+    await vi.waitFor(() => expect(rig.host.send).toHaveBeenCalledTimes(1))
+    rig.getEmit()(completion())
+    await first
+
+    const retry = rig.runner.run(agentInput())
+    await vi.waitFor(() => expect(rig.host.send).toHaveBeenCalledTimes(2))
+    expect(rig.createSession).toHaveBeenCalledOnce()
+    rig.getEmit()(completion())
+    await expect(retry).resolves.toMatchObject({ ok: true })
+  })
+
+  it('reclaims a scheduled run but leaves a manual run on screen', async () => {
+    const manual = harness()
+    const manualRun = manual.runner.run(agentInput())
+    await vi.waitFor(() => expect(manual.host.send).toHaveBeenCalledTimes(1))
+    manual.getEmit()(completion())
+    await manualRun
+    await manual.runner.release('run-1', { reclaim: false })
+    expect(lifecycle.close).not.toHaveBeenCalled()
+
+    const scheduled = harness()
+    const scheduledRun = scheduled.runner.run(agentInput())
+    await vi.waitFor(() => expect(scheduled.host.send).toHaveBeenCalledTimes(1))
+    scheduled.getEmit()(completion())
+    await scheduledRun
+    await scheduled.runner.release('run-1', { reclaim: true })
+    expect(lifecycle.close).toHaveBeenCalledOnce()
   })
 
   it('reports stopped only when cancellation observes an exited child', async () => {

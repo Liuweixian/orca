@@ -7,9 +7,19 @@ import type {
   AgentsWorkflowRun,
   AgentsWorkflowRunsPage
 } from '../../../../shared/agents-workflow-run-types'
+import type { AgentsWorkflowAgentChannelEntry } from '../../../../shared/agents-workflow-agent-channels'
 import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
 
 const LOCAL_TARGET = { kind: 'local' } as const
+
+export type AgentsWorkflowAgentChannelView = AgentsWorkflowAgentChannelEntry
+
+export async function listAgentsWorkflowAgentChannels(): Promise<AgentsWorkflowAgentChannelView[]> {
+  const result = await callRuntimeRpc<{
+    agentChannels: AgentsWorkflowAgentChannelEntry[]
+  }>(LOCAL_TARGET, 'agentsWorkflow.capabilities', {})
+  return result.agentChannels
+}
 
 export async function listAgentsWorkflows(): Promise<AgentsWorkflowDefinition[]> {
   const result = await callRuntimeRpc<{ workflows: AgentsWorkflowDefinition[] }>(

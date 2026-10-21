@@ -187,7 +187,12 @@ describe('agent workflow persistence', () => {
         }),
         cancel: async () => 'stopped'
       },
-      async () => ({ ok: true, workspaceId: 'workspace-1', displayName: 'Workspace' }),
+      async () => ({
+        ok: true,
+        workspaceId: 'workspace-1',
+        workspacePath: '/repo/workspace-1',
+        displayName: 'Workspace'
+      }),
       () => 30
     )
 

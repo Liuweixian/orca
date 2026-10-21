@@ -17979,7 +17979,6 @@
           "done": "完成"
         },
         "inspector": {
-          "runInput": "运行输入",
           "nodeOutput": "{{title}} 的输出",
           "loopItem": "{{title}} 的当前项",
           "loopIndex": "{{title}} 的序号",
@@ -17988,7 +17987,6 @@
           "title": "标题",
           "agent": "智能体",
           "prompt": "提示词",
-          "insertVariable": "插入变量",
           "extraArgs": "额外智能体参数",
           "terminal": "终止节点",
           "input": "输入",
@@ -18004,7 +18002,16 @@
           "jsonList": "JSON 列表",
           "count": "次数",
           "items": "列表项",
-          "issues": "问题"
+          "issues": "问题",
+          "channelProtocol": "本机通过结构化会话运行该节点，并把回答传给下游。",
+          "channelTranscript": "本机从智能体的对话记录中读取该回合的回答。",
+          "channelFile": "本机会要求智能体把回答写入工作流结果文件。",
+          "channelWeakSettlement": "该智能体只能报告面板空闲，因此取值以结果文件为准。",
+          "upstreamNote": "上一个节点的输出会保存成文件，这段 prompt 开头会要求智能体先读取它。",
+          "insertVariable": "插入变量",
+          "runInput": "运行输入",
+          "channelSnapshot": "该节点终止分支：运行记录只保留面板输出，不会传给下游。",
+          "channelNone": "本机没有可为 {{agent}} 提供输出的通道。"
         },
         "node": {
           "start": "开始",
@@ -18014,6 +18021,7 @@
         },
         "topbar": {
           "valid": "可以保存",
+          "warnings": "{{count}} 个警告",
           "errors": "{{count}} 个问题",
           "addAgent": "智能体",
           "addCondition": "条件",
@@ -18024,9 +18032,9 @@
           "delete": "删除工作流",
           "saving": "正在保存",
           "save": "保存",
+          "starting": "正在启动",
           "runInput": "运行输入",
-          "runInputPlaceholder": "手动运行输入",
-          "starting": "正在启动"
+          "runInputPlaceholder": "手动运行输入"
         },
         "loading": "正在加载工作流…",
         "createFirst": "创建工作流",
@@ -18042,11 +18050,11 @@
           "new": "新建工作流",
           "name": "名称",
           "enabled": "已启用",
-          "defaultInput": "默认定时运行输入",
           "schedule": "定时运行",
           "timezone": "时区",
           "grace": "错过运行宽限时间（分钟）",
-          "noProjectSetup": "该项目在所选主机上没有就绪的配置。"
+          "noProjectSetup": "该项目在所选主机上没有就绪的配置。",
+          "defaultInput": "默认定时运行输入"
         },
         "history": {
           "title": "运行历史",
@@ -18074,7 +18082,12 @@
           "attemptFailed": "失败",
           "attemptSkipped": "已跳过",
           "attemptCancelled": "已取消",
-          "attemptUnverifiable": "无法验证"
+          "attemptUnverifiable": "无法验证",
+          "outputStructured": "结构化回答",
+          "outputTranscript": "从智能体对话记录读取的回答",
+          "outputFile": "写入工作流结果文件的回答",
+          "outputTerminal": "终端输出（不会传给下游）",
+          "outputUnknown": "来源无法识别"
         },
         "controller": {
           "loadFailed": "无法加载工作流。",

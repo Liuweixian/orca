@@ -14,6 +14,10 @@ import type {
   AgentsWorkflowRunSummary
 } from '../../../../shared/agents-workflow-run-types'
 import { subscribeAgentsWorkflowAuthorityInvalidation } from '@/lib/agents-workflow-authority-invalidation'
+import {
+  useAgentsWorkflowAgentChannels,
+  type AgentsWorkflowAgentChannelMap
+} from './use-agents-workflow-agent-channels'
 import { createAgentsWorkflowPageFixture } from './agents-workflow-page-fixtures'
 import {
   cancelAgentsWorkflowRun,
@@ -40,6 +44,8 @@ export type AgentsWorkflowPageController = {
   running: boolean
   dirty: boolean
   conflict: boolean
+  /** What this host can do per agent, or null while it is unknown. */
+  agentChannels: AgentsWorkflowAgentChannelMap | null
   runInput: string
   setDefinition: (definition: AgentsWorkflowDefinition) => void
   setRunInput: (input: string) => void
@@ -68,6 +74,7 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
   const [running, setRunning] = React.useState(false)
   const [conflict, setConflict] = React.useState(false)
   const [runInput, setRunInput] = React.useState('')
+  const agentChannels = useAgentsWorkflowAgentChannels()
 
   const refreshRuns = React.useCallback(async (workflowId: string) => {
     const page = await listAgentsWorkflowRuns({ workflowId, limit: RUN_PAGE_SIZE })
@@ -267,7 +274,11 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
     }
     setRunning(true)
     try {
-      const run = await runAgentsWorkflow(savedDefinition.id, runInput, createBrowserUuid())
+      const run = await runAgentsWorkflow(
+        savedDefinition.id,
+        runInput || savedDefinition.trigger.defaultInput,
+        createBrowserUuid()
+      )
       await refreshRuns(savedDefinition.id)
       setSelectedRun(run)
     } catch {
@@ -340,6 +351,7 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
       JSON.stringify(definition) !== JSON.stringify(savedDefinition)
     ),
     conflict,
+    agentChannels,
     runInput,
     setDefinition: setDefinitionState,
     setRunInput,

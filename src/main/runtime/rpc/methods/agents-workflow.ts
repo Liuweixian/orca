@@ -1,4 +1,5 @@
 import {
+  AgentsWorkflowCapabilities,
   AgentsWorkflowCreate,
   AgentsWorkflowCancelRun,
   AgentsWorkflowDelete,
@@ -23,6 +24,14 @@ export const AGENTS_WORKFLOW_METHODS = [
     permission: 'workspace',
     params: AgentsWorkflowId,
     handler: (params, { runtime }) => ({ workflow: runtime.showAgentsWorkflow(params.id) })
+  }),
+  defineMethod({
+    name: 'agentsWorkflow.capabilities',
+    permission: 'workspace',
+    params: AgentsWorkflowCapabilities,
+    handler: (_params, { runtime }) => ({
+      agentChannels: runtime.listAgentsWorkflowAgentChannels()
+    })
   }),
   defineMethod({
     name: 'agentsWorkflow.create',

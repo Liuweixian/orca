@@ -1,70 +1,43 @@
 import { compileWorkflowGraph, renderPrompt } from '../../shared/agents-workflow-graph'
+import {
+  agentsWorkflowUpstreamPrompt,
+  withAgentsWorkflowUpstream
+} from '../../shared/agents-workflow-upstream-prompt'
+import {
+  agentsWorkflowOutputIsValue,
+  agentsWorkflowPromptValues,
+  saveAgentsWorkflowNodeAnswer
+} from './workflow-node-answer'
 import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowEdge,
   AgentsWorkflowNode
 } from '../../shared/agents-workflow-types'
-import type {
-  AgentsWorkflowNodeAttempt,
-  AgentsWorkflowNodeOutput
-} from '../../shared/agents-workflow-run-types'
+import type { AgentsWorkflowNodeAttempt } from '../../shared/agents-workflow-run-types'
 import {
   evaluateAgentsWorkflowCondition,
   resolveAgentsWorkflowLoopItems,
   resolveAgentsWorkflowVariable,
   type AgentsWorkflowRuntimeValues
 } from './workflow-runtime-values'
+import { nextAgentsWorkflowAttempt } from './workflow-node-attempt'
+import type {
+  AgentsWorkflowScheduleCheckpoint,
+  AgentsWorkflowScheduleResult,
+  AgentsWorkflowStepExecutor
+} from './workflow-schedule-types'
 import { AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES } from './structured-agent-output-capture'
 
 const AGENTS_WORKFLOW_RUN_OUTPUT_LIMIT_BYTES = 20 * 1024 * 1024
 
-export type AgentsWorkflowStepExecutor = (input: {
-  runId?: string
-  workspaceId?: string
-  node: Extract<AgentsWorkflowNode, { kind: 'agent' }>
-  prompt: string
-  loopNodeId?: string
-  loopIteration?: number
-  signal?: AbortSignal
-}) => Promise<
-  | { ok: true; output: AgentsWorkflowNodeOutput }
-  | { ok: false; code: string; message: string; unverifiable?: boolean }
->
-
-export type AgentsWorkflowScheduleCheckpoint = (state: {
-  attempts: readonly AgentsWorkflowNodeAttempt[]
-  executionTrace: readonly string[]
-}) => Promise<void>
-
-export type AgentsWorkflowScheduleResult =
-  | {
-      ok: true
-      attempts: AgentsWorkflowNodeAttempt[]
-      executionTrace: string[]
-      outputs: ReadonlyMap<string, string>
-    }
-  | {
-      ok: false
-      code: string
-      message: string
-      cancelled?: boolean
-      unverifiable?: boolean
-      attempts: AgentsWorkflowNodeAttempt[]
-      executionTrace: string[]
-    }
+export type {
+  AgentsWorkflowScheduleCheckpoint,
+  AgentsWorkflowScheduleResult,
+  AgentsWorkflowStepExecutor
+}
 
 type ExecutionFailure = Extract<AgentsWorkflowScheduleResult, { ok: false }>
 type EdgeState = 'pending' | 'active' | 'inactive'
-
-function promptValues(values: AgentsWorkflowRuntimeValues) {
-  return {
-    runInput: values.runInput,
-    nodeOutputs: Object.fromEntries(values.nodeOutputs),
-    loopItems: Object.fromEntries(values.loopItems),
-    loopIndexes: Object.fromEntries(values.loopIndexes),
-    loopOutputs: Object.fromEntries(values.loopOutputs)
-  }
-}
 
 export async function executeAgentsWorkflowSchedule(input: {
   definition: AgentsWorkflowDefinition
@@ -72,7 +45,7 @@ export async function executeAgentsWorkflowSchedule(input: {
   executeAgent: AgentsWorkflowStepExecutor
   now?: () => number
   signal?: AbortSignal
-  executionContext?: { runId: string; workspaceId: string }
+  executionContext?: { runId: string; workspaceId: string; workspacePath: string }
   checkpoint?: AgentsWorkflowScheduleCheckpoint
 }): Promise<AgentsWorkflowScheduleResult> {
   const compiled = compileWorkflowGraph(input.definition)
@@ -121,16 +94,8 @@ export async function executeAgentsWorkflowSchedule(input: {
     status: AgentsWorkflowNodeAttempt['status'],
     loopNodeId?: string,
     loopIteration?: number
-  ): AgentsWorkflowNodeAttempt => ({
-    id: `${nodeId}:${attempts.length + 1}`,
-    nodeId,
-    status,
-    ...(loopNodeId === undefined ? {} : { loopNodeId }),
-    ...(loopIteration === undefined ? {} : { loopIteration }),
-    startedAt: status === 'skipped' ? null : now(),
-    finishedAt: status === 'running' || status === 'pending' ? null : now(),
-    output: null
-  })
+  ): AgentsWorkflowNodeAttempt =>
+    nextAgentsWorkflowAttempt(attempts, nodeId, status, now(), loopNodeId, loopIteration)
 
   const runRegion = async (
     allowedNodeIds: ReadonlySet<string>,
@@ -168,7 +133,7 @@ export async function executeAgentsWorkflowSchedule(input: {
     const runAgent = async (
       node: Extract<AgentsWorkflowNode, { kind: 'agent' }>
     ): Promise<ExecutionFailure | null> => {
-      const rendered = renderPrompt(node.prompt, promptValues(values))
+      const rendered = renderPrompt(node.prompt, agentsWorkflowPromptValues(values))
       if (!rendered.ok) {
         return failure(
           'prompt_render_failed',
@@ -187,7 +152,19 @@ export async function executeAgentsWorkflowSchedule(input: {
       const result = await input.executeAgent({
         ...input.executionContext,
         node,
-        prompt: rendered.value,
+        prompt: withAgentsWorkflowUpstream(
+          rendered.value,
+          input.executionContext
+            ? agentsWorkflowUpstreamPrompt({
+                definition: input.definition,
+                nodeId: node.id,
+                runId: input.executionContext.runId,
+                hasValue: (nodeId) =>
+                  values.nodeOutputs.has(nodeId) || values.loopOutputs.has(nodeId),
+                prompt: node.prompt
+              })
+            : null
+        ),
         loopNodeId: loopContext?.loopNodeId,
         loopIteration: loopContext?.loopIteration,
         signal: input.signal
@@ -213,15 +190,34 @@ export async function executeAgentsWorkflowSchedule(input: {
         await checkpoint()
         return failure(attempt.errorCode, attempt.errorMessage)
       }
-      if (result.output.truncated || result.output.source !== 'structured_assistant_message') {
+      if (node.terminal) {
+        // A terminal node ends its branch: its output is run-history evidence, so no value rule
+        // applies and a pane snapshot is a perfectly good record.
+        attempt.status = 'completed'
+        await checkpoint()
+        return null
+      }
+      if (!agentsWorkflowOutputIsValue(result.output)) {
         attempt.status = 'failed'
         attempt.errorCode = 'output_untrusted'
-        attempt.errorMessage = 'The agent did not produce a complete structured output.'
+        attempt.errorMessage = 'The agent did not produce a complete, trustworthy output.'
         await checkpoint()
         return failure(attempt.errorCode, attempt.errorMessage)
       }
       attempt.status = 'completed'
       values.nodeOutputs.set(node.id, result.output.content)
+      const saved = await saveAgentsWorkflowNodeAnswer(
+        input.executionContext,
+        node.id,
+        result.output.content
+      )
+      if (saved !== null) {
+        attempt.status = 'failed'
+        attempt.errorCode = saved.code
+        attempt.errorMessage = saved.message
+        await checkpoint()
+        return failure(saved.code, saved.message)
+      }
       await checkpoint()
       return null
     }
@@ -260,7 +256,12 @@ export async function executeAgentsWorkflowSchedule(input: {
       }
       values.loopItems.delete(node.id)
       values.loopIndexes.delete(node.id)
-      values.loopOutputs.set(node.id, JSON.stringify(outputs))
+      const aggregate = JSON.stringify(outputs)
+      values.loopOutputs.set(node.id, aggregate)
+      const saved = await saveAgentsWorkflowNodeAnswer(input.executionContext, node.id, aggregate)
+      if (saved !== null) {
+        return failure(saved.code, saved.message)
+      }
       return null
     }
 

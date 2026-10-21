@@ -16,6 +16,12 @@ import {
   agentsWorkflowVariableRefKey,
   type AgentsWorkflowValidationIssue
 } from '../../../../shared/agents-workflow-graph'
+import {
+  AgentsWorkflowVariableSelect,
+  agentsWorkflowVariableLabel
+} from './agents-workflow-variable-picker'
+import type { AgentsWorkflowAgentChannelView } from './agents-workflow-rpc-client'
+import { AgentsWorkflowAgentChannelHint } from './agents-workflow-agent-channel-hint'
 import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowNode,
@@ -39,89 +45,20 @@ function nextBindingKey(ref: AgentsWorkflowVariableRef, prompt: AgentsWorkflowPr
   return candidate
 }
 
-function refLabel(ref: AgentsWorkflowVariableRef, definition: AgentsWorkflowDefinition): string {
-  if (ref.kind === 'run_input') {
-    return translate('auto.components.agents-workflow.inspector.runInput', 'Run input')
-  }
-  const nodeId = ref.kind === 'node_output' ? ref.nodeId : ref.loopNodeId
-  const title = definition.nodes.find((node) => node.id === nodeId)?.title ?? nodeId
-  switch (ref.kind) {
-    case 'node_output':
-      return translate('auto.components.agents-workflow.inspector.nodeOutput', '{{title}} output', {
-        title
-      })
-    case 'loop_item':
-      return translate('auto.components.agents-workflow.inspector.loopItem', '{{title}} item', {
-        title
-      })
-    case 'loop_index':
-      return translate('auto.components.agents-workflow.inspector.loopIndex', '{{title}} index', {
-        title
-      })
-    case 'loop_output':
-      return translate(
-        'auto.components.agents-workflow.inspector.loopOutput',
-        '{{title}} results',
-        {
-          title
-        }
-      )
-  }
-}
-
-function VariableSelect({
-  value,
-  options,
-  definition,
-  onChange
-}: {
-  value: AgentsWorkflowVariableRef
-  options: AgentsWorkflowVariableRef[]
-  definition: AgentsWorkflowDefinition
-  onChange: (value: AgentsWorkflowVariableRef) => void
-}): React.JSX.Element {
-  const selectedKey = agentsWorkflowVariableRefKey(value)
-  const choices = options.some((ref) => agentsWorkflowVariableRefKey(ref) === selectedKey)
-    ? options
-    : [value, ...options]
-  return (
-    <Select
-      value={selectedKey}
-      onValueChange={(key) => {
-        const selected = choices.find((ref) => agentsWorkflowVariableRefKey(ref) === key)
-        if (selected) {
-          onChange(selected)
-        }
-      }}
-    >
-      <SelectTrigger className="w-full">
-        <SelectValue />
-      </SelectTrigger>
-      <SelectContent>
-        {choices.map((ref) => {
-          const key = agentsWorkflowVariableRefKey(ref)
-          return (
-            <SelectItem key={key} value={key}>
-              {refLabel(ref, definition)}
-            </SelectItem>
-          )
-        })}
-      </SelectContent>
-    </Select>
-  )
-}
-
 export function AgentsWorkflowInspector({
   node,
   issues,
   definition,
   availableRefs,
+  agentChannel,
   onChange
 }: {
   node: AgentsWorkflowNode | null
   issues: AgentsWorkflowValidationIssue[]
   definition: AgentsWorkflowDefinition
   availableRefs: AgentsWorkflowVariableRef[]
+  /** What this host can do for the node's agent; null while it is unknown. */
+  agentChannel: AgentsWorkflowAgentChannelView | null
   onChange: (node: AgentsWorkflowNode) => void
 }): React.JSX.Element {
   if (!node) {
@@ -158,6 +95,7 @@ export function AgentsWorkflowInspector({
                 allowNarrowTrigger
                 triggerClassName="w-full min-w-0"
               />
+              <AgentsWorkflowAgentChannelHint channel={agentChannel} terminal={node.terminal} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="agents-workflow-node-prompt">
@@ -206,12 +144,18 @@ export function AgentsWorkflowInspector({
                     const key = agentsWorkflowVariableRefKey(ref)
                     return (
                       <SelectItem key={key} value={key}>
-                        {refLabel(ref, definition)}
+                        {agentsWorkflowVariableLabel(ref, definition)}
                       </SelectItem>
                     )
                   })}
                 </SelectContent>
               </Select>
+              <p className="text-xs text-muted-foreground">
+                {translate(
+                  'auto.components.agents-workflow.inspector.upstreamNote',
+                  'The previous node\u2019s answer is saved to a file, and this prompt names that file so the agent reads it first.'
+                )}
+              </p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="agents-workflow-node-args">
@@ -244,7 +188,7 @@ export function AgentsWorkflowInspector({
           <>
             <div className="space-y-2">
               <Label>{translate('auto.components.agents-workflow.inspector.input', 'Input')}</Label>
-              <VariableSelect
+              <AgentsWorkflowVariableSelect
                 value={node.input}
                 options={availableRefs}
                 definition={definition}
@@ -378,7 +322,7 @@ export function AgentsWorkflowInspector({
                 <Label>
                   {translate('auto.components.agents-workflow.inspector.items', 'Items')}
                 </Label>
-                <VariableSelect
+                <AgentsWorkflowVariableSelect
                   value={node.iteration.items}
                   options={availableRefs}
                   definition={definition}

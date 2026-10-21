@@ -7,10 +7,10 @@ const STRUCTURED_SETUP_WAIT_TIMEOUT_MS = 60_000
 
 type WorkflowWorkspaceRuntime = {
   showRepo?(selector: string): Promise<{ kind?: 'git' | 'folder' }>
-  showManagedWorktree(selector: string): Promise<{ id: string; displayName: string }>
+  showManagedWorktree(selector: string): Promise<{ id: string; path: string; displayName: string }>
   waitForSetupTerminalCompletion?(handle: string, signal: AbortSignal): Promise<unknown>
   createManagedWorktree(input: RuntimeManagedWorktreeCreateArgs): Promise<{
-    worktree: { id: string; displayName: string }
+    worktree: { id: string; path: string; displayName: string }
     setupReceipt?: { state: string }
     warning?: string
   }>
@@ -60,6 +60,7 @@ export function createAgentsWorkflowWorkspaceResolver(
         return {
           ok: true,
           workspaceId: workspace.id,
+          workspacePath: workspace.path,
           displayName: workspace.displayName
         }
       }
@@ -98,6 +99,7 @@ export function createAgentsWorkflowWorkspaceResolver(
       return {
         ok: true,
         workspaceId: created.worktree.id,
+        workspacePath: created.worktree.path,
         displayName: created.worktree.displayName
       }
     } catch (error) {

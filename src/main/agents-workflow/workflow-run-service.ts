@@ -9,6 +9,16 @@ import {
   type AgentsWorkflowExecutionAdapter
 } from './workflow-agent-execution-adapter'
 import { executeAgentsWorkflowSchedule } from './workflow-dynamic-scheduler'
+import {
+  failClosedAgentsWorkflowWorkspaceResolver,
+  finishAgentsWorkflowRun,
+  flushAgentsWorkflowPersistence,
+  isActiveAgentsWorkflowRun,
+  recoverInterruptedAgentsWorkflowRuns,
+  removeAgentsWorkflowRunAnswers,
+  type AgentsWorkflowRunLifecycle,
+  type RecoveryPersistence
+} from './workflow-run-lifecycle'
 
 export type AgentsWorkflowRunPersistence = {
   showAgentsWorkflow(id: string): AgentsWorkflowDefinition
@@ -46,7 +56,7 @@ export type AgentsWorkflowWorkspaceResolver = (
   workflow: AgentsWorkflowDefinition,
   runId: string
 ) => Promise<
-  | { ok: true; workspaceId: string; displayName: string }
+  | { ok: true; workspaceId: string; workspacePath: string; displayName: string }
   | { ok: false; code: string; message: string }
 >
 
@@ -58,9 +68,13 @@ export class AgentsWorkflowRunService {
     private readonly persistence: AgentsWorkflowRunPersistence,
     private readonly notifyChanged: () => void,
     private readonly adapter: AgentsWorkflowExecutionAdapter = createProductionAgentsWorkflowExecutionAdapter(),
-    private readonly resolveWorkspace: AgentsWorkflowWorkspaceResolver = failClosedWorkspaceResolver,
+    private readonly resolveWorkspace: AgentsWorkflowWorkspaceResolver = failClosedAgentsWorkflowWorkspaceResolver,
     private readonly now: () => number = Date.now
   ) {}
+
+  private get lifecycle(): AgentsWorkflowRunLifecycle & { persistence: RecoveryPersistence } {
+    return { persistence: this.persistence, notifyChanged: this.notifyChanged, now: this.now }
+  }
 
   async runNow(input: {
     workflowId: string
@@ -137,7 +151,7 @@ export class AgentsWorkflowRunService {
   async cancelRun(runId: string): Promise<AgentsWorkflowRun> {
     await this.recoverInterrupted()
     const run = this.persistence.showAgentsWorkflowRun(runId)
-    if (!isActive(run)) {
+    if (!isActiveAgentsWorkflowRun(run)) {
       return run
     }
     this.persistence.updateAgentsWorkflowRun(runId, { status: 'cancel_requested' })
@@ -184,63 +198,101 @@ export class AgentsWorkflowRunService {
   private async execute(initial: AgentsWorkflowRun): Promise<void> {
     const controller = new AbortController()
     this.abortByRunId.set(initial.id, controller)
-    const workspace = await this.resolveWorkspace(initial.definitionSnapshot, initial.id)
-    if (!workspace.ok) {
-      this.abortByRunId.delete(initial.id)
-      await this.finish(initial.id, 'failed', workspace.code, workspace.message)
-      return
-    }
-    if (!isActive(this.persistence.showAgentsWorkflowRun(initial.id))) {
-      this.abortByRunId.delete(initial.id)
-      return
-    }
-    this.persistence.updateAgentsWorkflowRun(initial.id, {
-      status: 'running',
-      startedAt: this.now(),
-      workspaceId: workspace.workspaceId,
-      workspaceDisplayName: workspace.displayName
-    })
-    await this.flush()
-    this.notifyChanged()
-    const result = await executeAgentsWorkflowSchedule({
-      definition: initial.definitionSnapshot,
-      runInput: initial.input,
-      executeAgent: this.adapter.execute,
-      signal: controller.signal,
-      now: this.now,
-      executionContext: { runId: initial.id, workspaceId: workspace.workspaceId },
-      checkpoint: async ({ attempts, executionTrace }) => {
-        this.persistence.replaceAgentsWorkflowRunTrace(initial.id, attempts, executionTrace)
-        await this.flush()
-        this.notifyChanged()
+    let workspacePath: string | null = null
+    try {
+      const workspace = await this.resolveWorkspace(initial.definitionSnapshot, initial.id)
+      if (!workspace.ok) {
+        await finishAgentsWorkflowRun(
+          this.lifecycle,
+          initial.id,
+          'failed',
+          workspace.code,
+          workspace.message
+        )
+        return
       }
-    })
-    this.abortByRunId.delete(initial.id)
-    if (!isActive(this.persistence.showAgentsWorkflowRun(initial.id))) {
-      return
+      workspacePath = workspace.workspacePath
+      if (!isActiveAgentsWorkflowRun(this.persistence.showAgentsWorkflowRun(initial.id))) {
+        return
+      }
+      this.persistence.updateAgentsWorkflowRun(initial.id, {
+        status: 'running',
+        startedAt: this.now(),
+        workspaceId: workspace.workspaceId,
+        workspaceDisplayName: workspace.displayName
+      })
+      await this.flush()
+      this.notifyChanged()
+      let result: Awaited<ReturnType<typeof executeAgentsWorkflowSchedule>>
+      try {
+        result = await executeAgentsWorkflowSchedule({
+          definition: initial.definitionSnapshot,
+          runInput: initial.input,
+          executeAgent: this.adapter.execute,
+          signal: controller.signal,
+          now: this.now,
+          executionContext: {
+            runId: initial.id,
+            workspaceId: workspace.workspaceId,
+            workspacePath: workspace.workspacePath
+          },
+          checkpoint: async ({ attempts, executionTrace }) => {
+            this.persistence.replaceAgentsWorkflowRunTrace(initial.id, attempts, executionTrace)
+            await this.flush()
+            this.notifyChanged()
+          }
+        })
+      } catch (error) {
+        // The scheduler threw instead of returning a failure: the run must not stay `running`.
+        await finishAgentsWorkflowRun(
+          this.lifecycle,
+          initial.id,
+          'failed',
+          'workflow_execution_failed',
+          error instanceof Error ? error.message : String(error)
+        )
+        return
+      } finally {
+        // Nobody watches a scheduled run, so it takes its chats and panes with it; a manual run
+        // leaves them on screen for the user to follow.
+        try {
+          await this.adapter.release?.(initial.id, { reclaim: initial.trigger === 'schedule' })
+        } catch (error) {
+          // A reclaim failure must not mask the schedule's result.
+          console.error('[agents-workflow] Run release failed:', error)
+        }
+      }
+      if (!isActiveAgentsWorkflowRun(this.persistence.showAgentsWorkflowRun(initial.id))) {
+        return
+      }
+      if (result.ok) {
+        await finishAgentsWorkflowRun(this.lifecycle, initial.id, 'completed')
+        return
+      }
+      const status = result.unverifiable
+        ? 'unverifiable'
+        : result.cancelled
+          ? 'cancelled'
+          : 'failed'
+      await finishAgentsWorkflowRun(this.lifecycle, initial.id, status, result.code, result.message)
+    } catch (error) {
+      // Resolving the workspace or persisting a checkpoint failed. Match the scheduler's guard:
+      // an active run never stays running because bookkeeping threw.
+      await finishAgentsWorkflowRun(
+        this.lifecycle,
+        initial.id,
+        'failed',
+        'workflow_execution_failed',
+        error instanceof Error ? error.message : String(error)
+      )
+    } finally {
+      this.abortByRunId.delete(initial.id)
+      // Only once the run is genuinely over: drop the engine's answer cache. Anything an agent
+      // delivered stays where the user can pick it up.
+      if (workspacePath !== null) {
+        await removeAgentsWorkflowRunAnswers(workspacePath, initial.id)
+      }
     }
-    if (result.ok) {
-      await this.finish(initial.id, 'completed')
-      return
-    }
-    const status = result.unverifiable ? 'unverifiable' : result.cancelled ? 'cancelled' : 'failed'
-    await this.finish(initial.id, status, result.code, result.message)
-  }
-
-  private async finish(
-    runId: string,
-    status: 'completed' | 'failed' | 'cancelled' | 'unverifiable',
-    errorCode?: string,
-    errorMessage?: string
-  ): Promise<void> {
-    this.persistence.updateAgentsWorkflowRun(runId, {
-      status,
-      finishedAt: this.now(),
-      ...(errorCode === undefined ? {} : { errorCode }),
-      ...(errorMessage === undefined ? {} : { errorMessage })
-    })
-    await this.flush()
-    this.notifyChanged()
   }
 
   private async recoverInterrupted(): Promise<void> {
@@ -248,26 +300,10 @@ export class AgentsWorkflowRunService {
       return
     }
     this.recovered = true
-    const recovered = this.persistence.markInterruptedAgentsWorkflowRunsUnverifiable(this.now())
-    if (recovered.length > 0) {
-      await this.flush()
-      this.notifyChanged()
-    }
+    await recoverInterruptedAgentsWorkflowRuns(this.lifecycle)
   }
 
   private async flush(): Promise<void> {
-    await this.persistence.flushPendingOrThrowAsync?.({ drainToStableGeneration: false })
-  }
-}
-
-function isActive(run: AgentsWorkflowRun): boolean {
-  return run.status === 'pending' || run.status === 'running' || run.status === 'cancel_requested'
-}
-
-const failClosedWorkspaceResolver: AgentsWorkflowWorkspaceResolver = async () => {
-  return {
-    ok: false,
-    code: 'workflow_workspace_adapter_unavailable',
-    message: 'The workflow workspace launch adapter is unavailable on this build.'
+    await flushAgentsWorkflowPersistence(this.persistence)
   }
 }

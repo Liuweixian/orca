@@ -9,6 +9,8 @@ const Revision = z.number().int().positive()
 
 export const AgentsWorkflowList = z.object({})
 
+export const AgentsWorkflowCapabilities = z.object({})
+
 export const AgentsWorkflowId = z.object({
   id: requiredString('Missing agent workflow id')
 })

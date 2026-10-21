@@ -34,6 +34,7 @@ describe('agent workflow RPC methods', () => {
       getRuntimeId: () => 'runtime-1',
       listAgentsWorkflows: vi.fn(() => []),
       showAgentsWorkflow: vi.fn(() => ({ id: 'workflow-1' })),
+      listAgentsWorkflowAgentChannels: vi.fn(() => []),
       createAgentsWorkflow: vi.fn(async () => ({ id: 'workflow-1' })),
       updateAgentsWorkflow: vi.fn(async () => ({ id: 'workflow-1', revision: 2 })),
       deleteAgentsWorkflow: vi.fn(async () => ({ removed: true })),
@@ -48,6 +49,7 @@ describe('agent workflow RPC methods', () => {
 
     await dispatcher.dispatch(request('agentsWorkflow.list', {}))
     await dispatcher.dispatch(request('agentsWorkflow.show', { id: 'workflow-1' }))
+    await dispatcher.dispatch(request('agentsWorkflow.capabilities', {}))
     await dispatcher.dispatch(request('agentsWorkflow.create', { workflow }))
     await dispatcher.dispatch(
       request('agentsWorkflow.update', {
@@ -74,6 +76,7 @@ describe('agent workflow RPC methods', () => {
 
     expect(methods.listAgentsWorkflows).toHaveBeenCalledOnce()
     expect(methods.showAgentsWorkflow).toHaveBeenCalledWith('workflow-1')
+    expect(methods.listAgentsWorkflowAgentChannels).toHaveBeenCalledOnce()
     expect(methods.createAgentsWorkflow).toHaveBeenCalledWith(workflow)
     expect(methods.updateAgentsWorkflow).toHaveBeenCalledWith('workflow-1', 1, {
       name: 'Updated'

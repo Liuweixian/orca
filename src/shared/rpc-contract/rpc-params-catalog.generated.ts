@@ -64,6 +64,7 @@ import { CreateAgentSessionParams, EnsureAgentSessionParams } from './agent-sess
 import { ReadVisualParams } from './agent-session-visual-params'
 import {
   AgentsWorkflowCancelRun,
+  AgentsWorkflowCapabilities,
   AgentsWorkflowCreate,
   AgentsWorkflowDelete,
   AgentsWorkflowId,
@@ -740,6 +741,7 @@ export const RPC_PARAMS_BY_METHOD = {
   'agentTeams.prepareLaunch': AgentTeamsPrepareLaunch,
   'agentTeams.tmuxCompat': AgentTeamsTmuxCompat,
   'agentsWorkflow.cancelRun': AgentsWorkflowCancelRun,
+  'agentsWorkflow.capabilities': AgentsWorkflowCapabilities,
   'agentsWorkflow.create': AgentsWorkflowCreate,
   'agentsWorkflow.delete': AgentsWorkflowDelete,
   'agentsWorkflow.list': AgentsWorkflowList,

@@ -184,3 +184,6 @@ ci-shards/
 /.build/windows-native-benchmark/
 
 .local/static-analysis-research/
+
+# Workflow run scratch (answers cached for chained nodes)
+/.orca-workflow/

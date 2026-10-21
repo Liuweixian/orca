@@ -31,6 +31,7 @@ describe('createAgentsWorkflowWorkspaceResolver', () => {
   it('validates and returns an existing managed workspace', async () => {
     const showManagedWorktree = vi.fn(async () => ({
       id: 'workspace-1',
+      path: '/repo/workspace-1',
       displayName: 'Existing'
     }))
     const createManagedWorktree = vi.fn()
@@ -44,6 +45,7 @@ describe('createAgentsWorkflowWorkspaceResolver', () => {
     ).resolves.toEqual({
       ok: true,
       workspaceId: 'workspace-1',
+      workspacePath: '/repo/workspace-1',
       displayName: 'Existing'
     })
     expect(showManagedWorktree).toHaveBeenCalledWith('id:workspace-1')
@@ -52,7 +54,7 @@ describe('createAgentsWorkflowWorkspaceResolver', () => {
 
   it('creates an agent-first background workspace without a terminal agent', async () => {
     const createManagedWorktree = vi.fn(async (_input: object) => ({
-      worktree: { id: 'workspace-2', displayName: 'Review run-1' },
+      worktree: { id: 'workspace-2', path: '/repo/workspace-2', displayName: 'Review run-1' },
       setupReceipt: { state: 'not_configured' }
     }))
     const resolve = createAgentsWorkflowWorkspaceResolver({

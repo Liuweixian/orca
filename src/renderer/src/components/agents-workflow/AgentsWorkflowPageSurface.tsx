@@ -103,6 +103,7 @@ function AgentsWorkflowLoadedSurface({
         name={definition.name}
         target={target}
         errorCount={issues.filter((entry) => entry.severity === 'error').length}
+        warningCount={issues.filter((entry) => entry.severity === 'warning').length}
         dirty={controller.dirty}
         saving={controller.saving}
         running={controller.running}
@@ -156,6 +157,11 @@ function AgentsWorkflowLoadedSurface({
           issues={selectedIssues}
           definition={definition}
           availableRefs={selectedAvailableRefs}
+          agentChannel={
+            selectedNode?.kind === 'agent'
+              ? (controller.agentChannels?.get(selectedNode.agentId) ?? null)
+              : null
+          }
           onChange={(updated) =>
             onDefinitionChange({
               ...definition,

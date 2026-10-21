@@ -1,0 +1,41 @@
+// Where a run keeps the answers its nodes produced.
+//
+// The folder lives inside the worktree so a sandboxed agent may write it, and so a downstream
+// prompt can point at a file relative to the agent's own working directory. It belongs to one run
+// and is removed when that run ends; the collected values stay in run history.
+
+import { join } from 'node:path'
+
+export const AGENTS_WORKFLOW_OUTPUT_DIR = '.orca-workflow'
+
+/** The engine's own copy of each answer, safe to delete once the run is over. */
+export const AGENTS_WORKFLOW_ANSWERS_DIR = 'answers'
+
+/** A path segment safe on every platform; ids come from user-authored graph nodes. */
+export function agentsWorkflowPathSegment(value: string): string {
+  const cleaned = value.replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 64)
+  return cleaned.length > 0 ? cleaned : 'unnamed'
+}
+
+/** Absolute folder holding one run's answers. */
+export function agentsWorkflowRunDirectory(workspacePath: string, runId: string): string {
+  return join(workspacePath, AGENTS_WORKFLOW_OUTPUT_DIR, agentsWorkflowPathSegment(runId))
+}
+
+/** The answers folder of one run, absolute. Only this folder is ever removed. */
+export function agentsWorkflowRunAnswersDirectory(workspacePath: string, runId: string): string {
+  return join(agentsWorkflowRunDirectory(workspacePath, runId), AGENTS_WORKFLOW_ANSWERS_DIR)
+}
+
+/**
+ * The answer file for one node, relative to the worktree the agent runs in. Forward slashes on
+ * purpose: the value goes into a prompt, and agents read `/` on every platform.
+ */
+export function agentsWorkflowUpstreamRelativePath(runId: string, nodeId: string): string {
+  return [
+    AGENTS_WORKFLOW_OUTPUT_DIR,
+    agentsWorkflowPathSegment(runId),
+    AGENTS_WORKFLOW_ANSWERS_DIR,
+    `${agentsWorkflowPathSegment(nodeId)}.md`
+  ].join('/')
+}

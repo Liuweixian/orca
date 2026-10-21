@@ -46,6 +46,8 @@ type ActiveSession = {
   fence: number
   host: WorkflowStructuredHost
   caller: { callerKey: string }
+  workspaceId: string
+  agent: string
 }
 
 function refusal(code: string, message: string, unverifiable = false) {
@@ -53,7 +55,8 @@ function refusal(code: string, message: string, unverifiable = false) {
 }
 
 export class WorkflowStructuredTurnRunner implements AgentsWorkflowStructuredTurnRunner {
-  private readonly activeByRunId = new Map<string, ActiveSession>()
+  /** Chats this run opened, per node: a retried node continues its own chat and nothing else. */
+  private readonly sessionsByRunId = new Map<string, Map<string, ActiveSession>>()
 
   constructor(
     private readonly runtime: StructuredWorkflowRuntime,
@@ -91,7 +94,26 @@ export class WorkflowStructuredTurnRunner implements AgentsWorkflowStructuredTur
       )
     }
 
-    const selector = `id:${input.workspaceId}`
+    const runId = input.runId
+    const workspaceId = input.workspaceId
+    const nodeId = input.node.id
+    const sessions = this.sessionsByRunId.get(runId)
+    const tracked = sessions?.get(nodeId)
+    // Why a node keeps its own chat: a retry should continue where that node left off, and a node
+    // on another agent or workspace needs a chat of that agent's own.
+    const reuse =
+      tracked && tracked.workspaceId === workspaceId && tracked.agent === metadata.definition.agent
+        ? tracked
+        : null
+    if (reuse) {
+      return await this.executeTrackedTurn(input, reuse)
+    }
+    if (tracked) {
+      sessions?.delete(nodeId)
+      await this.closeSession(tracked)
+    }
+
+    const selector = `id:${workspaceId}`
     const support = await this.runtime.getStructuredAgentSessionCreateSupport(
       selector,
       metadata.definition.agent
@@ -112,7 +134,7 @@ export class WorkflowStructuredTurnRunner implements AgentsWorkflowStructuredTur
       )
     }
 
-    const caller = { callerKey: `agents-workflow:${input.runId}` }
+    const caller = { callerKey: `agents-workflow:${runId}` }
     const create = structuredAgentSessionCreateParams({
       sessionId: createStructuredAgentSessionId(metadata.definition.agent, randomUUID),
       worktree: selector,
@@ -124,13 +146,25 @@ export class WorkflowStructuredTurnRunner implements AgentsWorkflowStructuredTur
       return refusal(created.refusal.code, created.refusal.message)
     }
 
-    const active = {
+    const active: ActiveSession = {
       sessionId: created.value.sessionId,
       fence: created.value.fence,
       host,
-      caller
+      caller,
+      workspaceId,
+      agent: metadata.definition.agent
     }
-    this.activeByRunId.set(input.runId, active)
+    const runSessions = sessions ?? new Map<string, ActiveSession>()
+    runSessions.set(nodeId, active)
+    this.sessionsByRunId.set(runId, runSessions)
+    return await this.executeTrackedTurn(input, active)
+  }
+
+  /** A node's turn on the chat this run keeps open: the chat stays after the turn ends. */
+  private async executeTrackedTurn(
+    input: Parameters<AgentsWorkflowStructuredTurnRunner['run']>[0],
+    active: ActiveSession
+  ) {
     try {
       return await this.executeTurn(active, input.prompt, input.signal)
     } catch (error) {
@@ -139,45 +173,66 @@ export class WorkflowStructuredTurnRunner implements AgentsWorkflowStructuredTur
         error instanceof Error ? error.message : String(error),
         !input.signal?.aborted
       )
-    } finally {
-      if (this.activeByRunId.get(input.runId) === active) {
-        this.activeByRunId.delete(input.runId)
-      }
-      try {
-        await closeStructuredAgentSessionChild(active.sessionId)
-      } catch {
-        // A completed turn remains authoritative even if background-session cleanup is uncertain.
-      }
     }
   }
 
+  /**
+   * Stops tracking a finished run. A manual run leaves its chats on screen for the user; a
+   * scheduled one reclaims them, since nobody is watching it.
+   */
+  async release(runId: string, options: { reclaim: boolean }): Promise<void> {
+    const sessions = this.sessionsByRunId.get(runId)
+    if (!sessions) {
+      return
+    }
+    this.sessionsByRunId.delete(runId)
+    if (!options.reclaim) {
+      return
+    }
+    await Promise.all([...sessions.values()].map((session) => this.closeSession(session)))
+  }
+
   async cancel(runId: string): Promise<'stopped' | 'unverifiable'> {
-    const active = this.activeByRunId.get(runId)
-    if (!active) {
+    const sessions = this.sessionsByRunId.get(runId)
+    if (!sessions || sessions.size === 0) {
       return 'unverifiable'
     }
-    const clientOperationId = createStructuredAgentSessionOperationId(randomUUID)
-    const fields = {}
-    try {
-      await active.host.cancel(active.caller, {
-        envelope: {
-          sessionId: active.sessionId,
-          clientOperationId,
-          expectedRuntimeFence: active.fence,
-          payloadFingerprint: structuredAgentSessionPayloadFingerprint({
-            method: 'agentSession.cancel',
-            sessionId: active.sessionId,
-            fields
-          })
-        }
-      })
-    } catch {
-      // Closing still provides the authoritative child-exit observation.
+    this.sessionsByRunId.delete(runId)
+    const active = [...sessions.values()]
+    let stopped = true
+    for (const session of active) {
+      const clientOperationId = createStructuredAgentSessionOperationId(randomUUID)
+      const fields = {}
+      try {
+        await session.host.cancel(session.caller, {
+          envelope: {
+            sessionId: session.sessionId,
+            clientOperationId,
+            expectedRuntimeFence: session.fence,
+            payloadFingerprint: structuredAgentSessionPayloadFingerprint({
+              method: 'agentSession.cancel',
+              sessionId: session.sessionId,
+              fields
+            })
+          }
+        })
+      } catch {
+        // Closing still provides the authoritative child-exit observation.
+      }
+      await this.closeSession(session)
+      if (observeStructuredSession(session.sessionId).status !== 'exited') {
+        stopped = false
+      }
     }
-    await closeStructuredAgentSessionChild(active.sessionId)
-    return observeStructuredSession(active.sessionId).status === 'exited'
-      ? 'stopped'
-      : 'unverifiable'
+    return stopped ? 'stopped' : 'unverifiable'
+  }
+
+  private async closeSession(active: ActiveSession): Promise<void> {
+    try {
+      await closeStructuredAgentSessionChild(active.sessionId)
+    } catch {
+      // A finished turn stays authoritative even when background-session cleanup is uncertain.
+    }
   }
 
   private async executeTurn(

@@ -27,13 +27,20 @@ import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowUpdateFields
 } from '../../../../shared/agents-workflow-types'
+import {
+  agentsWorkflowAgentChannelPlanEntries,
+  type AgentsWorkflowAgentChannelEntry
+} from '../../../../shared/agents-workflow-agent-channels'
 import type {
   AgentsWorkflowRun,
   AgentsWorkflowRunsPage
 } from '../../../../shared/agents-workflow-run-types'
 import { AgentsWorkflowRunService } from '../../../agents-workflow/workflow-run-service'
-import { createStructuredAgentsWorkflowExecutionAdapter } from '../../../agents-workflow/workflow-agent-execution-adapter'
+import { createAgentsWorkflowExecutionAdapter } from '../../../agents-workflow/workflow-agent-execution-adapter'
 import { createWorkflowStructuredTurnRunner } from '../../../agents-workflow/workflow-structured-turn-runner'
+import { createWorkflowFileHandoffTurnRunner } from '../../../agents-workflow/workflow-file-handoff-runner'
+import { createWorkflowTranscriptTurnRunner } from '../../../agents-workflow/workflow-transcript-turn-runner'
+import { createWorkflowReportTurnRunner } from '../../../agents-workflow/workflow-report-turn-runner'
 import { createAgentsWorkflowWorkspaceResolver } from '../../../agents-workflow/workflow-workspace-resolver'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 import { worktreeIdsEqual } from '../../../../shared/worktree/id'
@@ -166,6 +173,11 @@ export abstract class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWit
     return this.store.listAgentsWorkflows()
   }
 
+  /** Every agent a workflow may reference, with the channels this host can run it through. */
+  listAgentsWorkflowAgentChannels(): AgentsWorkflowAgentChannelEntry[] {
+    return [...agentsWorkflowAgentChannelPlanEntries()]
+  }
+
   showAgentsWorkflow(id: string): AgentsWorkflowDefinition {
     if (!this.store?.showAgentsWorkflow) {
       throw new Error('runtime_unavailable')
@@ -284,7 +296,12 @@ export abstract class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWit
         flushPendingOrThrowAsync: store.flushPendingOrThrowAsync?.bind(store)
       },
       () => this.notifyAgentsWorkflowsChanged({ reason: 'run' }),
-      createStructuredAgentsWorkflowExecutionAdapter(createWorkflowStructuredTurnRunner(runtime)),
+      createAgentsWorkflowExecutionAdapter(
+        createWorkflowStructuredTurnRunner(runtime),
+        createWorkflowFileHandoffTurnRunner(runtime),
+        createWorkflowTranscriptTurnRunner(runtime),
+        createWorkflowReportTurnRunner(runtime)
+      ),
       createAgentsWorkflowWorkspaceResolver(runtime)
     )
     return this.agentsWorkflowRunService

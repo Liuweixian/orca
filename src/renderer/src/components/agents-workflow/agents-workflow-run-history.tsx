@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 import type {
   AgentsWorkflowRun,
+  AgentsWorkflowNodeOutput,
   AgentsWorkflowRunStatus,
   AgentsWorkflowRunSummary
 } from '../../../../shared/agents-workflow-run-types'
@@ -146,9 +147,14 @@ function RunDetail({
               </span>
             </div>
             {attempt.output ? (
-              <pre className="mt-2 overflow-x-auto whitespace-pre-wrap rounded-md bg-muted p-2 font-mono text-xs">
-                {attempt.output.content}
-              </pre>
+              <div className="mt-2 space-y-1">
+                <div className="text-xs text-muted-foreground">
+                  {outputSourceLabel(attempt.output.source)}
+                </div>
+                <pre className="overflow-x-auto whitespace-pre-wrap rounded-md bg-muted p-2 font-mono text-xs">
+                  {attempt.output.content}
+                </pre>
+              </div>
             ) : null}
             {attempt.errorMessage || attempt.errorCode ? (
               <div className="mt-2 space-y-0.5">
@@ -165,6 +171,37 @@ function RunDetail({
       </div>
     </div>
   )
+}
+
+/** Where a node's value came from, so a reader can weigh it. */
+function outputSourceLabel(source: AgentsWorkflowNodeOutput['source']): string {
+  switch (source) {
+    case 'structured_assistant_message':
+      return translate(
+        'auto.components.agents-workflow.history.outputStructured',
+        'Structured answer'
+      )
+    case 'agent_transcript':
+      return translate(
+        'auto.components.agents-workflow.history.outputTranscript',
+        'Answer read from the agent transcript'
+      )
+    case 'agent_file_handoff':
+      return translate(
+        'auto.components.agents-workflow.history.outputFile',
+        'Answer written to the workflow output file'
+      )
+    case 'terminal_snapshot':
+      return translate(
+        'auto.components.agents-workflow.history.outputTerminal',
+        'Terminal output (not passed downstream)'
+      )
+    case 'unknown':
+      return translate(
+        'auto.components.agents-workflow.history.outputUnknown',
+        'Answer from an unrecognised source'
+      )
+  }
 }
 
 function CopyErrorButton({ report }: { report: string }): React.JSX.Element {
