@@ -1,5 +1,6 @@
 import type { AutomationsChangedPayload } from '../../../../shared/runtime-client-events'
 import type { ResolvedWorktree } from '../../runtime-worktree-path-identity'
+import { OrcaRuntimeWithPtyForegroundProcessReads } from '../../client/runtime-client-state'
 import type {
   AutomationOwnerPrecondition,
   AutomationDestination
@@ -22,9 +23,8 @@ import type { LegacyWorkerTerminalRecoveryPlan } from '../../orchestration/orche
 import type { LegacyWorkerTerminalRecoveryResult } from '../../runtime-legacy-worker-terminal-recovery-types'
 import { makePaneKey } from '../../../../shared/stable-pane-id'
 import { worktreeIdsEqual } from '../../../../shared/worktree/id'
-import { OrcaRuntimeWithAgentsWorkflowOperations } from './agents-workflow-operations'
 
-export abstract class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWithAgentsWorkflowOperations {
+export abstract class OrcaRuntimeWithAutomationOperations extends OrcaRuntimeWithPtyForegroundProcessReads {
   abstract notifyAutomationsChanged(payload?: AutomationsChangedPayload): void
   abstract ensureOrchestrationFederationRelay(runId?: string): void
   protected abstract scheduleRestoredMessageRepoints(): void

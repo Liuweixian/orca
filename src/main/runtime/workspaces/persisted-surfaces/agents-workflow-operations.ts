@@ -13,7 +13,7 @@ import type {
   AgentsWorkflowRun,
   AgentsWorkflowRunsPage
 } from '../../../../shared/agents-workflow-run-types'
-import { OrcaRuntimeWithPtyForegroundProcessReads } from '../../client/runtime-client-state'
+import { OrcaRuntimeWithAutomationOperations } from './automation-operations'
 import { AgentsWorkflowRunService } from '../../../agents-workflow/workflow-run-service'
 import { createAgentsWorkflowExecutionAdapter } from '../../../agents-workflow/workflow-agent-execution-adapter'
 import { createWorkflowStructuredTurnRunner } from '../../../agents-workflow/workflow-structured-turn-runner'
@@ -23,7 +23,7 @@ import { createWorkflowReportTurnRunner } from '../../../agents-workflow/workflo
 import { createAgentsWorkflowWorkspaceResolver } from '../../../agents-workflow/workflow-workspace-resolver'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 
-export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends OrcaRuntimeWithPtyForegroundProcessReads {
+export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends OrcaRuntimeWithAutomationOperations {
   private agentsWorkflowRunService: AgentsWorkflowRunService | null = null
 
   abstract notifyAgentsWorkflowsChanged(payload?: { reason?: 'definition' | 'run' }): void
