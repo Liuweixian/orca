@@ -244,6 +244,42 @@ describe('AgentsWorkflowRunService execution guards', () => {
     expect(reclaim).not.toHaveBeenCalled()
   })
 
+  it('fails a run that outlives the run-level budget', async () => {
+    const store = persistence()
+    const service = new AgentsWorkflowRunService(
+      store,
+      vi.fn(),
+      {
+        execute: ({ signal }) =>
+          new Promise((resolve) => {
+            signal?.addEventListener('abort', () =>
+              resolve({
+                ok: false,
+                code: 'cancelled',
+                message: 'Workflow run was cancelled.',
+                cancelled: true
+              })
+            )
+          }),
+        cancel: async () => 'stopped'
+      },
+      workspace,
+      () => 10,
+      async () => null,
+      undefined,
+      10
+    )
+
+    const started = await service.runNow({ workflowId: 'workflow-1', requestKey: 'r1' })
+    await vi.waitFor(() => {
+      // Why failed: nobody asked to stop; the run's own ceiling did.
+      expect(store.showAgentsWorkflowRun(started.id)).toMatchObject({
+        status: 'failed',
+        errorCode: 'run_timeout'
+      })
+    })
+  })
+
   it('keeps the schedule result when reclaiming panes throws', async () => {
     const store = persistence()
     const service = new AgentsWorkflowRunService(

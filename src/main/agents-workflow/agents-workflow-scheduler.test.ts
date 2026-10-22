@@ -46,6 +46,50 @@ describe('AgentsWorkflowScheduler', () => {
     ).toBe(now)
   })
 
+  it('honors BYHOUR on an hourly rule instead of firing every hour', () => {
+    // Why: the hourly branch used to skip the hour check, so a rule that named 9am fired at every
+    // hour of the day.
+    expect(
+      latestAgentsWorkflowOccurrence(
+        {
+          timezone: 'UTC',
+          rrule: 'FREQ=HOURLY;BYHOUR=9;BYMINUTE=15',
+          dtstart: Date.UTC(2026, 0, 1),
+          missedRunGraceMinutes: 60
+        },
+        Date.UTC(2026, 0, 5, 14, 30)
+      )
+    ).toBe(Date.UTC(2026, 0, 5, 9, 15))
+  })
+
+  it('runs an hourly rule that names no hour every hour', () => {
+    expect(
+      latestAgentsWorkflowOccurrence(
+        {
+          timezone: 'UTC',
+          rrule: 'FREQ=HOURLY;BYMINUTE=0',
+          dtstart: Date.UTC(2026, 0, 1),
+          missedRunGraceMinutes: 60
+        },
+        Date.UTC(2026, 0, 5, 14, 30)
+      )
+    ).toBe(Date.UTC(2026, 0, 5, 14, 0))
+  })
+
+  it('never returns an occurrence before dtstart', () => {
+    expect(
+      latestAgentsWorkflowOccurrence(
+        {
+          timezone: 'UTC',
+          rrule: 'FREQ=DAILY;BYHOUR=9;BYMINUTE=0',
+          dtstart: Date.UTC(2026, 0, 5, 10),
+          missedRunGraceMinutes: 60
+        },
+        Date.UTC(2026, 0, 5, 11)
+      )
+    ).toBeNull()
+  })
+
   it('starts one due occurrence and does not repeat its persisted occurrence', async () => {
     const now = Date.UTC(2026, 0, 5, 9)
     const definition = workflow({

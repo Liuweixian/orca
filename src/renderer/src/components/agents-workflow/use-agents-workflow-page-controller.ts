@@ -263,11 +263,9 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
     loading,
     saving,
     running: runsPage.running,
-    dirty: Boolean(
-      definition &&
-      savedDefinition &&
-      JSON.stringify(definition) !== JSON.stringify(savedDefinition)
-    ),
+    // Why reference equality: every edit path builds a new definition object, and the saved object is
+    // the very one held in state, so this is exact without a deep JSON compare on every render.
+    dirty: Boolean(definition && savedDefinition && definition !== savedDefinition),
     conflict,
     agentChannels,
     setDefinition: setDefinitionState,

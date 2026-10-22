@@ -21,6 +21,10 @@ import type { AutomationDraft } from '../automations/AutomationEditorDialog'
 import { AutomationSchedulePicker } from '../automations/AutomationSchedulePicker'
 import { AgentsWorkflowTargetFields } from './agents-workflow-target-fields'
 
+/** Below a minute, any tick jitter would mark the occurrence missed before it could start. */
+const MIN_GRACE_MINUTES = 1
+const MAX_GRACE_MINUTES = 7 * 24 * 60
+
 export function AgentsWorkflowDefinitionPanel({
   workflows,
   definition,
@@ -146,13 +150,23 @@ function ScheduleFields({
         <Label htmlFor="agents-workflow-timezone">
           {translate('auto.components.agents-workflow.definition.timezone', 'Timezone')}
         </Label>
-        <Input
-          id="agents-workflow-timezone"
+        <Select
           value={schedule.timezone}
-          onChange={(event) =>
-            updateSchedule(definition, { ...schedule, timezone: event.target.value }, onChange)
+          onValueChange={(timezone) =>
+            updateSchedule(definition, { ...schedule, timezone }, onChange)
           }
-        />
+        >
+          <SelectTrigger id="agents-workflow-timezone">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {timezoneOptions(schedule.timezone).map((timezone) => (
+              <SelectItem key={timezone} value={timezone}>
+                {timezone}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
       <div className="space-y-2">
         <Label htmlFor="agents-workflow-grace">
@@ -164,18 +178,27 @@ function ScheduleFields({
         <Input
           id="agents-workflow-grace"
           type="number"
-          min={0}
+          min={MIN_GRACE_MINUTES}
+          max={MAX_GRACE_MINUTES}
           value={schedule.missedRunGraceMinutes}
-          onChange={(event) =>
+          onChange={(event) => {
+            // Why clamp: an empty field reads as 0, which would mark every occurrence missed.
+            const parsed = Number.parseInt(event.target.value, 10)
+            if (!Number.isFinite(parsed)) {
+              return
+            }
             updateSchedule(
               definition,
               {
                 ...schedule,
-                missedRunGraceMinutes: Math.max(0, Number(event.target.value))
+                missedRunGraceMinutes: Math.min(
+                  MAX_GRACE_MINUTES,
+                  Math.max(MIN_GRACE_MINUTES, parsed)
+                )
               },
               onChange
             )
-          }
+          }}
         />
       </div>
     </div>
@@ -201,6 +224,34 @@ function defaultSchedule(): AgentsWorkflowSchedule {
     dtstart: Date.now(),
     missedRunGraceMinutes: 60
   }
+}
+
+const FALLBACK_TIMEZONES = [
+  'UTC',
+  'America/Los_Angeles',
+  'America/New_York',
+  'Europe/London',
+  'Europe/Berlin',
+  'Asia/Shanghai',
+  'Asia/Tokyo',
+  'Australia/Sydney'
+]
+
+/**
+ * The choices offered by the timezone picker. Why a select and not a text field: a typo is only
+ * rejected by the host at save time, long after the author moved on.
+ */
+function timezoneOptions(current: string): string[] {
+  const supported = (
+    Intl as unknown as { supportedValuesOf?: (key: string) => string[] }
+  ).supportedValuesOf?.('timeZone')
+  const zones = supported && supported.length > 0 ? [...supported] : [...FALLBACK_TIMEZONES]
+  // Why keep the current zone: a schedule saved in a zone this build does not list must stay
+  // selectable instead of silently changing on the next edit.
+  if (!zones.includes(current)) {
+    zones.unshift(current)
+  }
+  return zones
 }
 
 function toScheduleDraft(schedule: AgentsWorkflowSchedule | null): AutomationDraft {

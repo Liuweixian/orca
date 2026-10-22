@@ -113,15 +113,84 @@ describe('agent workflow persistence', () => {
     expect(store.listAgentsWorkflows()).toEqual([])
   })
 
-  it('refuses a definition whose graph cannot run', () => {
+  it('deletes the workflow run history with the workflow', () => {
     const { store } = createStore()
-    const input = workflowInput('invalid-graph')
+    const workflow = store.createAgentsWorkflow(workflowInput('delete-runs'))
+    const kept = store.createAgentsWorkflow(workflowInput('keep-runs'))
+    const doomed = store.createAgentsWorkflowRun({ workflow, requestKey: 'r1', now: 1 })
+    store.updateAgentsWorkflowRun(doomed.run.id, { status: 'completed', finishedAt: 2 })
+    const survivor = store.createAgentsWorkflowRun({ workflow: kept, requestKey: 'r2', now: 3 })
+    store.updateAgentsWorkflowRun(survivor.run.id, { status: 'completed', finishedAt: 4 })
+
+    store.deleteAgentsWorkflow(workflow.id, workflow.revision)
+
+    // Why: retention only prunes the workflow being written, so these rows would never be reclaimed.
+    expect(() => store.showAgentsWorkflowRun(doomed.run.id)).toThrow(/not found/)
+    expect(store.showAgentsWorkflowRun(survivor.run.id).workflowId).toBe(kept.id)
+  })
+
+  it('lets an active run settle after its workflow is deleted, then drops it', () => {
+    const { store } = createStore()
+    const workflow = store.createAgentsWorkflow(workflowInput('delete-active'))
+    const active = store.createAgentsWorkflowRun({ workflow, requestKey: 'live', now: 1 })
+
+    store.deleteAgentsWorkflow(workflow.id, workflow.revision)
+
+    // Why keep it: the run is still writing; deleting its row would make every checkpoint throw.
+    expect(store.showAgentsWorkflowRun(active.run.id).status).toBe('pending')
+    store.updateAgentsWorkflowRun(active.run.id, { status: 'failed', finishedAt: 2 })
+    expect(() => store.showAgentsWorkflowRun(active.run.id)).toThrow(/not found/)
+  })
+
+  it('locks the checkout a new_per_run workflow creates, not a null workspace', () => {
+    const { store } = createStore()
+    const base = workflowInput('checkout-a')
+    const first = store.createAgentsWorkflow({
+      ...base,
+      workspace: { mode: 'new_per_run', baseBranch: 'main', setupDecision: 'skip' }
+    })
+    store.createAgentsWorkflowRun({ workflow: first, requestKey: 'first', now: 1 })
+
+    const sameCheckout = store.createAgentsWorkflow({
+      ...workflowInput('checkout-b'),
+      workspace: { mode: 'new_per_run', baseBranch: 'main', setupDecision: 'skip' }
+    })
+    expect(() =>
+      store.createAgentsWorkflowRun({ workflow: sameCheckout, requestKey: 'second', now: 2 })
+    ).toThrow(/active workflow run/)
+
+    const otherBranch = store.createAgentsWorkflow({
+      ...workflowInput('checkout-c'),
+      workspace: { mode: 'new_per_run', baseBranch: 'release', setupDecision: 'skip' }
+    })
+    expect(
+      store.createAgentsWorkflowRun({ workflow: otherBranch, requestKey: 'third', now: 3 }).created
+    ).toBe(true)
+  })
+
+  it('stores a half-wired graph as a draft', () => {
+    const { store } = createStore()
+    const input = workflowInput('draft-graph')
     input.nodes = [{ id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } }]
     input.edges = []
 
-    // Why refuse the write: a stored definition that cannot compile fails on every scheduled
-    // occurrence, where nobody sees the error.
-    expect(() => store.createAgentsWorkflow(input)).toThrow(/must be an agent/)
+    // Why allow the write: the canvas blocks Run until the graph compiles, but a draft the author
+    // is still wiring must survive closing the window.
+    const drafted = store.createAgentsWorkflow(input)
+    expect(drafted.id).toBeTruthy()
+    expect(store.showAgentsWorkflow(drafted.id).nodes).toHaveLength(1)
+  })
+
+  it('still refuses a definition the schema cannot represent', () => {
+    const { store } = createStore()
+    const input = workflowInput('schema-invalid')
+    input.nodes = [
+      { id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } },
+      { id: 'loop', kind: 'loop', title: 'Loop', position: { x: 0, y: 1 }, count: 0 }
+    ]
+    input.edges = []
+
+    expect(() => store.createAgentsWorkflow(input)).toThrow(/schema|count/i)
   })
 
   it('refuses an unparseable schedule instead of letting the ticker throw every minute', () => {

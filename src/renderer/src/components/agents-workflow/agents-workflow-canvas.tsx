@@ -32,7 +32,9 @@ import { AgentsWorkflowEdgeComponent } from './agents-workflow-edge'
 import {
   AgentsWorkflowConnectionDropMenu,
   AgentsWorkflowCanvasContextMenu,
-  type AgentsWorkflowConnectionDrop
+  AgentsWorkflowDeleteConfirmDialog,
+  type AgentsWorkflowConnectionDrop,
+  type AgentsWorkflowPendingDelete
 } from './agents-workflow-canvas-menus'
 import {
   CANVAS_SNAP_GRID,
@@ -68,6 +70,8 @@ export function AgentsWorkflowCanvas({
   const [edgeMenuTargetId, setEdgeMenuTargetId] = React.useState<string | null>(null)
   const [connectionDropTarget, setConnectionDropTarget] =
     React.useState<AgentsWorkflowConnectionDrop | null>(null)
+  /** A destructive edit waiting for confirmation; nothing leaves the graph until it is confirmed. */
+  const [pendingDelete, setPendingDelete] = React.useState<AgentsWorkflowPendingDelete | null>(null)
   const derivedNodes = React.useMemo(
     () => toAgentsWorkflowCanvasNodes(definition, issues),
     [definition, issues]
@@ -128,7 +132,12 @@ export function AgentsWorkflowCanvas({
       onDefinitionChange({
         ...definition,
         edges: [
-          ...definition.edges,
+          // Why filter: a port has one outgoing edge, so connecting replaces the old target
+          // instead of leaving an extra edge the canvas shows but validation rejects.
+          ...definition.edges.filter(
+            (edge) =>
+              !(edge.fromNodeId === connection.source && edge.fromPort === connection.sourceHandle)
+          ),
           {
             id: createBrowserUuid(),
             fromNodeId: connection.source,
@@ -238,43 +247,59 @@ export function AgentsWorkflowCanvas({
     [definition, onDefinitionChange, onNodesRemoved]
   )
 
-  const deleteNodes = React.useCallback(
-    (deleted: AgentsWorkflowCanvasNode[]) => {
-      removeNodeIds(
-        new Set(
-          deleted
-            .filter((entry) => entry.data.workflowNode.kind !== 'start')
-            .map((entry) => entry.id)
-        )
+  const resyncNodes = React.useCallback(() => {
+    setNodes((current) =>
+      derivedNodes.map((node) => {
+        const existing = current.find((entry) => entry.id === node.id)
+        return existing
+          ? { ...node, measured: existing.measured, width: existing.width, height: existing.height }
+          : node
+      })
+    )
+  }, [derivedNodes])
+
+  const requestNodeDeletion = React.useCallback(
+    (ids: string[]) => {
+      // The start node is structural: deleting it would leave nothing to run from.
+      const deletable = ids.filter(
+        (id) => definition.nodes.find((node) => node.id === id)?.kind !== 'start'
       )
-    },
-    [removeNodeIds]
-  )
-
-  const deleteNode = React.useCallback(
-    (id: string) => {
-      const target = definition.nodes.find((node) => node.id === id)
-      if (!target || target.kind === 'start') {
+      if (deletable.length === 0) {
+        // React Flow already removed the node locally; put it back when nothing may be deleted.
+        resyncNodes()
         return
       }
-      removeNodeIds(new Set([id]))
+      setPendingDelete({ kind: 'nodes', nodeIds: deletable })
     },
-    [definition.nodes, removeNodeIds]
+    [definition.nodes, resyncNodes]
   )
 
-  const deleteEdge = React.useCallback(
-    (id: string) => {
-      if (!definition.edges.some((edge) => edge.id === id)) {
-        return
+  const requestEdgeDeletion = React.useCallback(
+    (ids: string[]) => {
+      const deletable = ids.filter((id) => definition.edges.some((edge) => edge.id === id))
+      if (deletable.length > 0) {
+        setPendingDelete({ kind: 'edges', edgeIds: deletable })
       }
+    },
+    [definition.edges]
+  )
+
+  const confirmPendingDelete = React.useCallback(() => {
+    if (!pendingDelete) {
+      return
+    }
+    if (pendingDelete.kind === 'nodes') {
+      removeNodeIds(new Set(pendingDelete.nodeIds))
+    } else {
+      const ids = new Set(pendingDelete.edgeIds)
       onDefinitionChange({
         ...definition,
-        edges: definition.edges.filter((edge) => edge.id !== id),
+        edges: definition.edges.filter((edge) => !ids.has(edge.id)),
         updatedAt: Date.now()
       })
-    },
-    [definition, onDefinitionChange]
-  )
+    }
+    setPendingDelete(null)
+  }, [definition, onDefinitionChange, pendingDelete, removeNodeIds])
 
   return (
     <>
@@ -297,16 +322,8 @@ export function AgentsWorkflowCanvas({
               nodeTypes={NODE_TYPES}
               edgeTypes={EDGE_TYPES}
               onNodesChange={onNodesChange}
-              onNodesDelete={deleteNodes}
-              onEdgesDelete={(deleted) =>
-                onDefinitionChange({
-                  ...definition,
-                  edges: definition.edges.filter(
-                    (edge) => !deleted.some((entry) => entry.id === edge.id)
-                  ),
-                  updatedAt: Date.now()
-                })
-              }
+              onNodesDelete={(deleted) => requestNodeDeletion(deleted.map((entry) => entry.id))}
+              onEdgesDelete={(deleted) => requestEdgeDeletion(deleted.map((entry) => entry.id))}
               onConnect={onConnect}
               onConnectEnd={(event, connectionState) => {
                 if (connectionState.isValid === false && connectionState.toHandle) {
@@ -369,14 +386,24 @@ export function AgentsWorkflowCanvas({
           nodeMenuNode={nodeMenuNode}
           edgeMenuId={edgeMenuTargetId}
           onAddNode={(kind) => addNode(kind, contextMenuScreenPositionRef.current)}
-          onDeleteNode={deleteNode}
-          onDeleteEdge={deleteEdge}
+          onDeleteNode={(id) => requestNodeDeletion([id])}
+          onDeleteEdge={(id) => requestEdgeDeletion([id])}
         />
       </ContextMenu>
       <AgentsWorkflowConnectionDropMenu
         dropTarget={connectionDropTarget}
         onCreateConnectedNode={addConnectedNode}
         onDismiss={() => setConnectionDropTarget(null)}
+      />
+      <AgentsWorkflowDeleteConfirmDialog
+        target={pendingDelete}
+        onCancel={() => {
+          // Why resync: React Flow already applied the keyboard delete locally; cancelling must
+          // put the nodes back, not leave the canvas missing nodes the definition still has.
+          resyncNodes()
+          setPendingDelete(null)
+        }}
+        onConfirm={confirmPendingDelete}
       />
     </>
   )

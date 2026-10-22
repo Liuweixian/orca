@@ -1,6 +1,3 @@
-// What a node's agent receives: the loop iteration note, then the inherited answers, then the
-// author's instruction. Every value a node needs is a file path, so nothing is inlined in a prompt.
-
 import { agentsWorkflowLoopIterationRelativePath } from '../../shared/agents-workflow-output-paths'
 import {
   agentsWorkflowUpstreamMarker,
@@ -28,13 +25,17 @@ export function agentsWorkflowNodePrompt(input: {
         hasValue: (nodeId) => values.nodeOutputs.has(nodeId) || values.loopOutputs.has(nodeId)
       })
     : null
+  const loopContext = input.loopContext
   const loopNote =
-    executionContext && input.loopContext
-      ? `${agentsWorkflowUpstreamMarker(input.loopContext.loopNodeId)}\nread ${agentsWorkflowLoopIterationRelativePath(
+    executionContext && loopContext
+      ? `${agentsWorkflowUpstreamMarker(loopContext.loopNodeId)}\nread ${agentsWorkflowLoopIterationRelativePath(
           executionContext.runId,
-          input.loopContext.loopNodeId,
-          input.loopContext.loopIteration
-        )} first, then`
+          loopContext.loopNodeId,
+          loopContext.loopIteration
+        )} first (loop "${
+          input.context.nodesById.get(loopContext.loopNodeId)?.title.trim() ||
+          loopContext.loopNodeId
+        }" turn ${loopContext.loopIteration + 1}), then`
       : null
   return withAgentsWorkflowUpstream(withAgentsWorkflowUpstream(input.source, loopNote), upstream)
 }

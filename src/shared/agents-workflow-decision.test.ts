@@ -16,6 +16,16 @@ describe('agentsWorkflowPromptDeclaresDecision', () => {
     ).toBe(true)
   })
 
+  it('accepts a prose description of the same contract', () => {
+    // Why: the runtime only needs the agent to emit "yes" or "no" in the decision field; demanding
+    // the literal JSON in the prompt rejected prompts that still describe it unambiguously.
+    expect(
+      agentsWorkflowPromptDeclaresDecision(
+        'Judge whether the change is small. Set the decision field to yes or no.'
+      )
+    ).toBe(true)
+  })
+
   it('rejects a prompt that only asks for one branch or none at all', () => {
     expect(agentsWorkflowPromptDeclaresDecision('Answer with {"decision":"yes"}.')).toBe(false)
     expect(agentsWorkflowPromptDeclaresDecision('Answer yes or no.')).toBe(false)

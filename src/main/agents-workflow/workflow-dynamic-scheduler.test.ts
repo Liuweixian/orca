@@ -8,6 +8,8 @@ import type {
   AgentsWorkflowNode
 } from '../../shared/agents-workflow-types'
 import { executeAgentsWorkflowSchedule } from './workflow-dynamic-scheduler'
+import { runWorkflowRegion } from './workflow-region-runner'
+import type { WorkflowRegionContext } from './workflow-region-types'
 
 const tempDirs: string[] = []
 
@@ -168,10 +170,10 @@ describe('executeAgentsWorkflowSchedule', () => {
 
     expect(result.ok).toBe(true)
     expect(prompts[0]).toBe(
-      '<!-- orca:upstream:loop -->\nread .orca-workflow/run-1/answers/loop.0.md first, then\n\nHandle this turn.'
+      '<!-- orca:upstream:loop -->\nread .orca-workflow/run-1/answers/loop.0.md first (loop "Loop" turn 1), then\n\nHandle this turn.'
     )
     expect(prompts[1]).toBe(
-      '<!-- orca:upstream:loop -->\nread .orca-workflow/run-1/answers/loop.1.md first, then\n\nHandle this turn.'
+      '<!-- orca:upstream:loop -->\nread .orca-workflow/run-1/answers/loop.1.md first (loop "Loop" turn 2), then\n\nHandle this turn.'
     )
     await expect(
       readFile(join(workspacePath, '.orca-workflow/run-1/answers/loop.1.md'), 'utf8')
@@ -363,7 +365,7 @@ describe('executeAgentsWorkflowSchedule', () => {
     expect(result.ok).toBe(true)
     expect(prompts).toEqual([
       'work',
-      '<!-- orca:upstream:first -->\nread .orca-workflow/run-1/answers/first.md first, then\n\nturn it into a todo list'
+      '<!-- orca:upstream:first -->\nread .orca-workflow/run-1/answers/first.md first (answer from "first"), then\n\nturn it into a todo list'
     ])
     await expect(
       readFile(join(workspacePath, '.orca-workflow/run-1/answers/first.md'), 'utf8')
@@ -427,5 +429,73 @@ describe('executeAgentsWorkflowSchedule', () => {
       errorCode: 'agent_turn_failed',
       errorMessage: 'terminal_handle_stale'
     })
+  })
+
+  // Why: a body node skipped this turn kept the previous turn's value in `nodeOutputs`, so a loop
+  // whose exit was bypassed aggregated an answer that belonged to an earlier iteration. A valid
+  // definition cannot bypass its exit, so the region runner is exercised directly.
+  it('fails a loop turn whose exit node was skipped instead of reusing the previous answer', async () => {
+    const workflow = definition(
+      [
+        { id: 'loop', kind: 'loop', title: 'Loop', position: { x: 0, y: 0 }, count: 2 },
+        {
+          id: 'check',
+          kind: 'condition',
+          title: 'Check',
+          position: { x: 1, y: 0 },
+          agentId: 'claude',
+          prompt: {
+            source: 'Decide whether to write. Answer with {"decision":"yes"} or {"decision":"no"}.'
+          }
+        },
+        agent('body', { source: 'write the section' })
+      ],
+      [
+        edge('start-loop', 'start', 'loop'),
+        edge('loop-check', 'loop', 'check', { fromPort: 'each' }),
+        edge('check-body', 'check', 'body', { fromPort: 'yes' }),
+        // Why to the node after the loop: the no branch leaves the loop region, so the exit node
+        // has no active input this turn.
+        edge('check-after', 'check', 'after', { fromPort: 'no' }),
+        edge('body-loop', 'body', 'loop', { toPort: 'aggregate' })
+      ]
+    )
+    const values = {
+      nodeOutputs: new Map([['body', 'answer from an earlier iteration']]),
+      loopOutputs: new Map<string, string>()
+    }
+    const context: WorkflowRegionContext = {
+      definition: workflow,
+      loopRegions: [
+        {
+          loopNodeId: 'loop',
+          eachTargetNodeId: 'check',
+          doneTargetNodeId: 'after',
+          exitNodeId: 'body',
+          bodyNodeIds: ['body', 'check']
+        }
+      ],
+      nodesById: new Map(workflow.nodes.map((node) => [node.id, node])),
+      attempts: [],
+      executionTrace: [],
+      values,
+      executeAgent: async () => ({
+        ok: true as const,
+        output: {
+          format: 'plain_text' as const,
+          content: '{"decision":"no"}',
+          capturedAt: 10,
+          truncated: false,
+          source: 'structured_assistant_message' as const
+        }
+      }),
+      now: () => 10,
+      checkpoint: async () => undefined,
+      captureOutputBytes: () => true
+    }
+
+    const failure = await runWorkflowRegion(context, new Set(['start', 'loop']), new Set(['start']))
+
+    expect(failure).toMatchObject({ ok: false, code: 'loop_output_missing' })
   })
 })

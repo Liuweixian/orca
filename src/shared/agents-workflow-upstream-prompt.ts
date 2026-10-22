@@ -13,6 +13,22 @@ export function agentsWorkflowUpstreamMarker(nodeId: string): string {
 }
 
 /**
+ * One inherited answer to read. Why the title is repeated: a join node may inherit several answers
+ * from different branches, and without a label the agent cannot tell which branch each belongs to.
+ */
+export function agentsWorkflowUpstreamInstruction(input: {
+  nodeId: string
+  title: string
+  runId: string
+}): string {
+  const label = input.title.trim() || input.nodeId
+  return `${agentsWorkflowUpstreamMarker(input.nodeId)}\nread ${agentsWorkflowUpstreamRelativePath(
+    input.runId,
+    input.nodeId
+  )} first (answer from "${label}"), then`
+}
+
+/**
  * A predecessor that produced an answer, found by walking back through nodes that produce no text
  * of their own (start, condition). A loop body does not inherit from before the loop: its iteration
  * values are its context, so the walk stops at the `each` edge.
@@ -67,12 +83,12 @@ export function agentsWorkflowUpstreamPrompt(input: {
     return null
   }
   return nodes
-    .map(
-      (nodeId) =>
-        `${agentsWorkflowUpstreamMarker(nodeId)}\nread ${agentsWorkflowUpstreamRelativePath(
-          input.runId,
-          nodeId
-        )} first, then`
+    .map((nodeId) =>
+      agentsWorkflowUpstreamInstruction({
+        nodeId,
+        title: input.definition.nodes.find((node) => node.id === nodeId)?.title ?? '',
+        runId: input.runId
+      })
     )
     .join('\n\n')
 }

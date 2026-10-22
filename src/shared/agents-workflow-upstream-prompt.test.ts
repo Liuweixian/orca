@@ -5,7 +5,7 @@ import type {
   AgentsWorkflowNode
 } from './agents-workflow-types'
 import {
-  agentsWorkflowUpstreamMarker,
+  agentsWorkflowUpstreamInstruction,
   agentsWorkflowUpstreamPrompt,
   withAgentsWorkflowUpstream
 } from './agents-workflow-upstream-prompt'
@@ -90,6 +90,11 @@ function upstream(
   })
 }
 
+/** The instruction for a node whose title is its id, i.e. every fixture node. */
+function read(nodeId: string): string {
+  return agentsWorkflowUpstreamInstruction({ nodeId, title: nodeId, runId: 'run-1' })
+}
+
 describe('agents workflow upstream prompt', () => {
   it('tells the next node where the previous answer was saved', () => {
     const workflow = definition(
@@ -97,11 +102,9 @@ describe('agents workflow upstream prompt', () => {
       [edge('start', 'a'), edge('a', 'b')]
     )
 
-    expect(upstream(workflow, 'b', ['a'])).toBe(
-      `${agentsWorkflowUpstreamMarker('a')}\nread .orca-workflow/run-1/answers/a.md first, then`
-    )
+    expect(upstream(workflow, 'b', ['a'])).toBe(read('a'))
     expect(withAgentsWorkflowUpstream('b prompt', upstream(workflow, 'b', ['a']))).toBe(
-      `${agentsWorkflowUpstreamMarker('a')}\nread .orca-workflow/run-1/answers/a.md first, then\n\nb prompt`
+      `${read('a')}\n\nb prompt`
     )
   })
 
@@ -111,9 +114,7 @@ describe('agents workflow upstream prompt', () => {
       [edge('start', 'a'), edge('a', 'check'), edge('check', 'b', 'yes')]
     )
 
-    expect(upstream(workflow, 'b', ['a'])).toBe(
-      `${agentsWorkflowUpstreamMarker('a')}\nread .orca-workflow/run-1/answers/a.md first, then`
-    )
+    expect(upstream(workflow, 'b', ['a'])).toBe(read('a'))
   })
 
   it('hands a loop aggregate to the node after done', () => {
@@ -122,9 +123,7 @@ describe('agents workflow upstream prompt', () => {
       [edge('start', 'a'), edge('a', 'each'), edge('each', 'b', 'done')]
     )
 
-    expect(upstream(workflow, 'b', ['a', 'each'])).toBe(
-      `${agentsWorkflowUpstreamMarker('each')}\nread .orca-workflow/run-1/answers/each.md first, then`
-    )
+    expect(upstream(workflow, 'b', ['a', 'each'])).toBe(read('each'))
   })
 
   it('names every predecessor that produced an answer', () => {
@@ -133,10 +132,7 @@ describe('agents workflow upstream prompt', () => {
       [edge('start', 'a'), edge('start', 'b'), edge('a', 'c'), edge('b', 'c')]
     )
 
-    expect(upstream(workflow, 'c', ['a', 'b'])).toBe(
-      `${agentsWorkflowUpstreamMarker('a')}\nread .orca-workflow/run-1/answers/a.md first, then\n\n` +
-        `${agentsWorkflowUpstreamMarker('b')}\nread .orca-workflow/run-1/answers/b.md first, then`
-    )
+    expect(upstream(workflow, 'c', ['a', 'b'])).toBe(`${read('a')}\n\n${read('b')}`)
   })
 
   it('gives the first node nothing to inherit', () => {

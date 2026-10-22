@@ -155,6 +155,12 @@ async function runWorkflowLoopNode(
     if (noted !== null) {
       return workflowRegionFailure(context, noted.code, noted.message)
     }
+    // Why clear: a node skipped this turn must not keep last turn's value, or the aggregate would
+    // record an answer that belongs to an earlier iteration.
+    for (const bodyNodeId of region.bodyNodeIds) {
+      context.values.nodeOutputs.delete(bodyNodeId)
+      context.values.loopOutputs.delete(bodyNodeId)
+    }
     const bodyFailure = await runWorkflowRegion(
       context,
       new Set(region.bodyNodeIds),

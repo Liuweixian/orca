@@ -137,7 +137,15 @@ export function AgentsWorkflowInspector({
               min={1}
               max={20}
               value={node.count}
-              onChange={(event) => onChange({ ...node, count: Number(event.target.value) })}
+              onChange={(event) => {
+                // Why clamp: an empty field reads as 0 and a stray character as NaN; either one
+                // written into the definition only fails much later, at save or run time.
+                const parsed = Number.parseInt(event.target.value, 10)
+                if (!Number.isFinite(parsed)) {
+                  return
+                }
+                onChange({ ...node, count: Math.min(20, Math.max(1, parsed)) })
+              }}
             />
             <p className="text-xs text-muted-foreground">
               {translate(

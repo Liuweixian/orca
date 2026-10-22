@@ -166,6 +166,17 @@ function nodePortIssues(definition: AgentsWorkflowDefinition): AgentsWorkflowVal
         )
       }
     }
+    if (node.kind === 'agent' && !node.prompt.source.trim()) {
+      // Why an error: an empty prompt still launches an agent, which then answers something
+      // unrelated and feeds it downstream.
+      issues.push(
+        issue({
+          code: 'agent_prompt_required',
+          message: 'An agent node needs a prompt.',
+          nodeId: node.id
+        })
+      )
+    }
     if (node.kind === 'condition') {
       // The agent's answer is parsed as JSON, so a prompt that never asks for it cannot succeed.
       if (!node.prompt.source.trim()) {
@@ -181,7 +192,7 @@ function nodePortIssues(definition: AgentsWorkflowDefinition): AgentsWorkflowVal
           issue({
             code: 'condition_decision_contract_missing',
             message:
-              'The judging prompt must ask the agent for {"decision":"yes"} or {"decision":"no"}.',
+              'The judging prompt must ask for a yes/no decision, e.g. {"decision":"yes"} or {"decision":"no"}.',
             nodeId: node.id
           })
         )

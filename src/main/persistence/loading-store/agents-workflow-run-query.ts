@@ -5,22 +5,9 @@ import type {
   AgentsWorkflowRunsPage,
   AgentsWorkflowRunSummary
 } from '../../../shared/agents-workflow-run-types'
+import { isTerminalAgentsWorkflowRun } from '../../../shared/agents-workflow-run-types'
 
 export const TERMINAL_RUN_RETENTION_PER_WORKFLOW = 100
-
-export function isActiveAgentsWorkflowRun(run: AgentsWorkflowRun): boolean {
-  return run.status === 'pending' || run.status === 'running' || run.status === 'cancel_requested'
-}
-
-export function isTerminalAgentsWorkflowRun(run: AgentsWorkflowRun): boolean {
-  return (
-    run.status === 'completed' ||
-    run.status === 'failed' ||
-    run.status === 'cancelled' ||
-    run.status === 'unverifiable' ||
-    run.status === 'skipped'
-  )
-}
 
 function newestFirst(left: AgentsWorkflowRun, right: AgentsWorkflowRun): number {
   return right.createdAt - left.createdAt || right.id.localeCompare(left.id)

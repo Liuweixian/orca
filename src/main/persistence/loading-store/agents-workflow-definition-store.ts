@@ -10,7 +10,7 @@ import {
   AgentsWorkflowDefinitionInvalidError,
   AgentsWorkflowRevisionConflictError
 } from '../../../shared/agents-workflow-errors'
-import { agentsWorkflowDefinitionErrors } from '../../../shared/agents-workflow-definition-check'
+import { agentsWorkflowDefinitionWriteErrors } from '../../../shared/agents-workflow-definition-check'
 
 /** The slice of profile state a definition write touches. */
 export type AgentsWorkflowDefinitionStore = {
@@ -73,8 +73,9 @@ export function updateAgentsWorkflowDefinition(
 }
 
 /**
- * Removes the definition. Why its runs and checkouts are left alone: a manual run's checkout is
- * the user's workspace, and run history survives until retention prunes it.
+ * Removes the definition. Why the caller also drops its runs: retention only prunes the workflow
+ * being written, so a deleted workflow's history would never be reclaimed. Checkouts are left
+ * alone — a manual run's workspace belongs to the user.
  */
 export function deleteAgentsWorkflowDefinition(
   store: AgentsWorkflowDefinitionStore,
@@ -99,11 +100,13 @@ function requireDefinition(
 }
 
 /**
- * Why refuse the write instead of storing it: a definition that reaches the store but cannot be
- * compiled fails on every scheduled occurrence with no one watching.
+ * Why refuse the write instead of storing it: only a definition this store cannot represent, or a
+ * schedule that would fail on every unattended occurrence. A graph the author is still wiring is
+ * stored as a draft — the canvas blocks Run until it validates, but closing the window must not
+ * lose the work.
  */
 function assertDefinitionIsRunnable(definition: AgentsWorkflowDefinition): void {
-  const errors = agentsWorkflowDefinitionErrors(definition)
+  const errors = agentsWorkflowDefinitionWriteErrors(definition)
   if (errors.length > 0) {
     throw new AgentsWorkflowDefinitionInvalidError(errors)
   }

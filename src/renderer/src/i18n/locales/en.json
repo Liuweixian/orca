@@ -18250,9 +18250,10 @@
           "loop": "Loop"
         },
         "topbar": {
-          "valid": "Ready to save",
+          "valid": "Ready to run",
           "warnings": "{{count}} warnings",
           "errors": "{{count}} issues",
+          "draft": "{{count}} issues · saved as draft, Run is disabled",
           "export": "Copy JSON",
           "run": "Run",
           "delete": "Delete workflow",
@@ -18264,9 +18265,15 @@
         "createFirst": "Create workflow",
         "conflict": "This workflow changed in another window. Reload it before saving.",
         "reload": "Reload",
+        "discard": {
+          "title": "Discard unsaved changes?",
+          "description": "This workflow has edits that were not saved. Switching now loses them.",
+          "cancel": "Keep editing",
+          "confirm": "Discard"
+        },
         "delete": {
           "title": "Delete workflow?",
-          "description": "Run history remains available until retention removes it.",
+          "description": "The workflow and its run history are deleted. Workspaces created by previous runs are left in place.",
           "cancel": "Cancel",
           "confirm": "Delete"
         },
@@ -18320,6 +18327,7 @@
           "saveFailed": "Could not save the workflow.",
           "deleteFailed": "Could not delete the workflow.",
           "runFailed": "Could not start the workflow.",
+          "runConflict": "This workflow or its workspace already has an active run. Wait for it to finish.",
           "runLoadFailed": "Could not load the run.",
           "newName": "New workflow",
           "runsLoadFailed": "Could not load the run history.",
@@ -18332,7 +18340,13 @@
           "addCondition": "Condition",
           "addLoop": "Loop",
           "connectionRejected": "Connection not created: these ports are already linked or cannot be connected.",
-          "deleteConnection": "Delete connection"
+          "deleteConnection": "Delete connection",
+          "deleteNodesTitle": "Delete selected nodes?",
+          "deleteNodesDescription": "The nodes, their prompts, and every connected edge are removed. This cannot be undone.",
+          "deleteEdgeTitle": "Delete this connection?",
+          "deleteEdgeDescription": "The two nodes stay, but the run can no longer follow this connection.",
+          "deleteCancel": "Cancel",
+          "deleteConfirm": "Delete"
         }
       },
       "OrcaSignInProgress": {

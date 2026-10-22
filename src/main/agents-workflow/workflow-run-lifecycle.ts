@@ -27,10 +27,6 @@ export type AgentsWorkflowRunLifecycle = {
   resolveWorkspacePath?: AgentsWorkflowWorkspacePathResolver
 }
 
-export function isActiveAgentsWorkflowRun(run: AgentsWorkflowRun): boolean {
-  return run.status === 'pending' || run.status === 'running' || run.status === 'cancel_requested'
-}
-
 export async function flushAgentsWorkflowPersistence(
   persistence: FinishPersistence
 ): Promise<void> {
@@ -76,13 +72,13 @@ export async function finishAgentsWorkflowRun(
   lifecycle.notifyChanged()
 }
 
+/** Removes a worktree a run created; a later mixin owns the actual checkout. */
+export type AgentsWorkflowRunWorkspaceReclaimer = (workspaceId: string) => Promise<void>
+
 /**
  * Drops the run's scratch folder, including the files agents left for the next node. The answers
  * live on in run history, and the folder is git-ignored while the run is in flight.
  */
-/** Removes a worktree a run created; a later mixin owns the actual checkout. */
-export type AgentsWorkflowRunWorkspaceReclaimer = (workspaceId: string) => Promise<void>
-
 export async function removeAgentsWorkflowRunScratch(
   workspacePath: string,
   runId: string

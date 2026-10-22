@@ -3,7 +3,10 @@ import type {
   AgentsWorkflowRun,
   AgentsWorkflowRunsPage
 } from '../../shared/agents-workflow-run-types'
-import { agentsWorkflowScheduleRequestKey } from '../../shared/agents-workflow-run-types'
+import {
+  agentsWorkflowScheduleRequestKey,
+  isActiveAgentsWorkflowRun
+} from '../../shared/agents-workflow-run-types'
 import { AgentsWorkflowRunConflictError } from '../../shared/agents-workflow-errors'
 import {
   createProductionAgentsWorkflowExecutionAdapter,
@@ -14,7 +17,6 @@ import {
   failClosedAgentsWorkflowWorkspaceResolver,
   finishAgentsWorkflowRun,
   flushAgentsWorkflowPersistence,
-  isActiveAgentsWorkflowRun,
   recoverInterruptedAgentsWorkflowRuns,
   reclaimScheduledRunWorkspace,
   removeAgentsWorkflowRunScratch,
@@ -23,6 +25,8 @@ import {
   type AgentsWorkflowWorkspacePathResolver,
   type RecoveryPersistence
 } from './workflow-run-lifecycle'
+import { AGENTS_WORKFLOW_RUN_TIMEOUT_MS, startAgentsWorkflowRunBudget } from './workflow-run-budget'
+import type { AgentsWorkflowWorkspaceResolver } from './workflow-workspace-resolver'
 
 export type AgentsWorkflowRunPersistence = {
   showAgentsWorkflow(id: string): AgentsWorkflowDefinition
@@ -55,14 +59,6 @@ export type AgentsWorkflowRunPersistence = {
   flushPendingOrThrowAsync?: (options?: { drainToStableGeneration?: boolean }) => Promise<void>
 }
 
-export type AgentsWorkflowWorkspaceResolver = (
-  workflow: AgentsWorkflowDefinition,
-  runId: string
-) => Promise<
-  | { ok: true; workspaceId: string; workspacePath: string; displayName: string }
-  | { ok: false; code: string; message: string }
->
-
 export class AgentsWorkflowRunService {
   private readonly abortByRunId = new Map<string, AbortController>()
   private recovered = false
@@ -75,11 +71,12 @@ export class AgentsWorkflowRunService {
     private readonly now: () => number = Date.now,
     private readonly resolveWorkspacePath: AgentsWorkflowWorkspacePathResolver = async () => null,
     /**
-     * Removes a worktree this run created. Only scheduled `new_per_run` runs reclaim it: nobody is
-     * watching them, so leaving one per occurrence would grow the repo's workspace list forever.
-     * A manual run keeps its checkout for the user.
+     * Removes a worktree this run created; only scheduled `new_per_run` runs reclaim it. A manual
+     * run keeps its checkout for the user.
      */
-    private readonly reclaimCreatedWorkspace?: AgentsWorkflowRunWorkspaceReclaimer
+    private readonly reclaimCreatedWorkspace?: AgentsWorkflowRunWorkspaceReclaimer,
+    /** The ceiling for one whole run; tests shorten it. */
+    private readonly runTimeoutMs: number = AGENTS_WORKFLOW_RUN_TIMEOUT_MS
   ) {}
 
   private get lifecycle(): AgentsWorkflowRunLifecycle & { persistence: RecoveryPersistence } {
@@ -209,6 +206,7 @@ export class AgentsWorkflowRunService {
     this.abortByRunId.set(initial.id, controller)
     let workspacePath: string | null = null
     let workspaceId: string | null = null
+    const budget = startAgentsWorkflowRunBudget(controller, this.runTimeoutMs)
     try {
       const workspace = await this.resolveWorkspace(initial.definitionSnapshot, initial.id)
       if (!workspace.ok) {
@@ -275,6 +273,17 @@ export class AgentsWorkflowRunService {
       if (!isActiveAgentsWorkflowRun(this.persistence.showAgentsWorkflowRun(initial.id))) {
         return
       }
+      if (budget.exceeded) {
+        // Why failed, not cancelled: the user did not ask to stop, the run's budget ran out.
+        await finishAgentsWorkflowRun(
+          this.lifecycle,
+          initial.id,
+          'failed',
+          'run_timeout',
+          `The run exceeded its ${this.runTimeoutMs / 60_000}-minute limit.`
+        )
+        return
+      }
       if (result.ok) {
         await finishAgentsWorkflowRun(this.lifecycle, initial.id, 'completed')
         return
@@ -297,6 +306,7 @@ export class AgentsWorkflowRunService {
         error instanceof Error ? error.message : String(error)
       )
     } finally {
+      budget.clear()
       this.abortByRunId.delete(initial.id)
       if (workspacePath !== null) {
         await removeAgentsWorkflowRunScratch(workspacePath, initial.id)

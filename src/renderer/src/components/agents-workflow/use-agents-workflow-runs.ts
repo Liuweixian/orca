@@ -2,10 +2,13 @@ import React from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { createBrowserUuid } from '@/lib/browser-uuid'
+import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
+import { AGENTS_WORKFLOW_RUN_CONFLICT } from '../../../../shared/agents-workflow-errors'
 import type {
   AgentsWorkflowRun,
   AgentsWorkflowRunSummary
 } from '../../../../shared/agents-workflow-run-types'
+import { isActiveAgentsWorkflowRun } from '../../../../shared/agents-workflow-run-types'
 import {
   cancelAgentsWorkflowRun,
   listAgentsWorkflowRuns,
@@ -16,10 +19,6 @@ import {
 export const RUN_PAGE_SIZE = 20
 /** Only while a run is active: notifications are the fast path, this is the safety net. */
 const ACTIVE_RUN_POLL_MS = 5_000
-
-function isActiveRunStatus(status: AgentsWorkflowRunSummary['status']): boolean {
-  return status === 'pending' || status === 'running' || status === 'cancel_requested'
-}
 
 export type AgentsWorkflowRunsState = {
   runs: AgentsWorkflowRunSummary[]
@@ -77,12 +76,17 @@ export function useAgentsWorkflowRuns(workflowId: string | null): AgentsWorkflow
         const run = await runAgentsWorkflow(workflowId, createBrowserUuid())
         await refreshRuns(workflowId)
         setSelectedRun(run)
-      } catch {
+      } catch (error) {
         toast.error(
-          translate(
-            'auto.components.agents-workflow.controller.runFailed',
-            'Could not start the workflow.'
-          )
+          error instanceof RuntimeRpcCallError && error.code === AGENTS_WORKFLOW_RUN_CONFLICT
+            ? translate(
+                'auto.components.agents-workflow.controller.runConflict',
+                'This workflow or its workspace already has an active run. Wait for it to finish.'
+              )
+            : translate(
+                'auto.components.agents-workflow.controller.runFailed',
+                'Could not start the workflow.'
+              )
         )
       } finally {
         setRunning(false)
@@ -154,8 +158,8 @@ export function useAgentsWorkflowRuns(workflowId: string | null): AgentsWorkflow
   const selectedRunIdRef = React.useRef<string | null>(null)
   selectedRunIdRef.current = selectedRun?.id ?? null
   const hasActiveRun =
-    runs.some((run) => isActiveRunStatus(run.status)) ||
-    (selectedRun !== null && isActiveRunStatus(selectedRun.status))
+    runs.some(isActiveAgentsWorkflowRun) ||
+    (selectedRun !== null && isActiveAgentsWorkflowRun(selectedRun))
   React.useEffect(() => {
     if (!workflowId || !hasActiveRun) {
       return

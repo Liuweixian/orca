@@ -1,6 +1,15 @@
 import React from 'react'
 import { Bot, GitBranch, Repeat2, Trash2, Unplug } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
+import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle
+} from '@/components/ui/dialog'
 import { ContextMenuContent, ContextMenuItem } from '@/components/ui/context-menu'
 import {
   DropdownMenu,
@@ -76,6 +85,71 @@ export type AgentsWorkflowConnectionDrop = {
   screen: { x: number; y: number }
   fromNodeId: string
   fromPort: AgentsWorkflowEdge['fromPort']
+}
+
+/** A destructive canvas edit waiting for confirmation; nothing leaves the graph until confirmed. */
+export type AgentsWorkflowPendingDelete =
+  | { kind: 'nodes'; nodeIds: string[] }
+  | { kind: 'edges'; edgeIds: string[] }
+
+/**
+ * Asks before a node, a selection, or a connection disappears. Why a dialog rather than an
+ * immediate delete: prompt text and edges are gone for good once removed.
+ */
+export function AgentsWorkflowDeleteConfirmDialog({
+  target,
+  onCancel,
+  onConfirm
+}: {
+  target: AgentsWorkflowPendingDelete | null
+  onCancel: () => void
+  onConfirm: () => void
+}): React.JSX.Element {
+  return (
+    <Dialog
+      open={target !== null}
+      onOpenChange={(open) => {
+        if (!open) {
+          onCancel()
+        }
+      }}
+    >
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>
+            {target?.kind === 'nodes'
+              ? translate(
+                  'auto.components.agents-workflow.canvas.deleteNodesTitle',
+                  'Delete selected nodes?'
+                )
+              : translate(
+                  'auto.components.agents-workflow.canvas.deleteEdgeTitle',
+                  'Delete this connection?'
+                )}
+          </DialogTitle>
+          <DialogDescription>
+            {target?.kind === 'nodes'
+              ? translate(
+                  'auto.components.agents-workflow.canvas.deleteNodesDescription',
+                  'The nodes, their prompts, and every connected edge are removed. This cannot be undone.'
+                )
+              : translate(
+                  'auto.components.agents-workflow.canvas.deleteEdgeDescription',
+                  'The two nodes stay, but the run can no longer follow this connection.'
+                )}
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onCancel}>
+            {translate('auto.components.agents-workflow.canvas.deleteCancel', 'Cancel')}
+          </Button>
+          <Button variant="destructive" onClick={onConfirm}>
+            {translate('auto.components.agents-workflow.canvas.deleteConfirm', 'Delete')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
 }
 
 export function AgentsWorkflowConnectionDropMenu({

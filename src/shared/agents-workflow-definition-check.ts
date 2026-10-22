@@ -9,7 +9,7 @@ import {
   type AgentsWorkflowValidationIssue
 } from './agents-workflow-graph'
 import type { AgentsWorkflowSchedule } from './agents-workflow-types'
-import { parseSchedule } from './automation-schedule-parsing'
+import { parseSchedule, unsupportedRruleParts } from './automation-schedule-parsing'
 
 export function agentsWorkflowScheduleIssues(
   schedule: AgentsWorkflowSchedule | null | undefined
@@ -25,6 +25,15 @@ export function agentsWorkflowScheduleIssues(
       severity: 'error',
       code: 'schedule_timezone_invalid',
       message: `Schedule timezone "${schedule.timezone}" is not a known IANA zone.`
+    })
+  }
+  // Why reject instead of ignore: honoring a rule as plain weekly when the author wrote
+  // INTERVAL=2 would run it twice as often as asked.
+  for (const part of unsupportedRruleParts(schedule.rrule)) {
+    issues.push({
+      severity: 'error',
+      code: 'schedule_rrule_unsupported',
+      message: `Schedule recurrence uses ${part}, which agent workflows do not support.`
     })
   }
   try {
@@ -48,11 +57,31 @@ export function agentsWorkflowScheduleIssues(
 /** Every error that must block a write; warnings stay advisory. */
 export function agentsWorkflowDefinitionErrors(input: unknown): AgentsWorkflowValidationIssue[] {
   const issues = validateWorkflowDefinition(input)
-  const schedule =
-    typeof input === 'object' && input !== null
-      ? ((input as { trigger?: { schedule?: AgentsWorkflowSchedule | null } }).trigger?.schedule ??
-        null)
-      : null
-  issues.push(...agentsWorkflowScheduleIssues(schedule))
+  issues.push(...agentsWorkflowScheduleIssues(scheduleOf(input)))
   return issues.filter((issue) => issue.severity === 'error')
+}
+
+/**
+ * The errors that block a *write*, which is a smaller set than what blocks a run. A graph the
+ * author is still wiring must be storable as a draft, or closing the window loses it. So only a
+ * definition the store cannot represent, and a schedule that would fail unattended on every
+ * occurrence, are refused here; `agentsWorkflowDefinitionErrors` keeps blocking the Run button.
+ */
+export function agentsWorkflowDefinitionWriteErrors(
+  input: unknown
+): AgentsWorkflowValidationIssue[] {
+  const issues = validateWorkflowDefinition(input).filter(
+    (issue) => issue.severity === 'error' && issue.code === 'schema_invalid'
+  )
+  issues.push(
+    ...agentsWorkflowScheduleIssues(scheduleOf(input)).filter((issue) => issue.severity === 'error')
+  )
+  return issues
+}
+
+function scheduleOf(input: unknown): AgentsWorkflowSchedule | null {
+  return typeof input === 'object' && input !== null
+    ? ((input as { trigger?: { schedule?: AgentsWorkflowSchedule | null } }).trigger?.schedule ??
+        null)
+    : null
 }

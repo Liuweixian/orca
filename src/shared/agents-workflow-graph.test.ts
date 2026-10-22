@@ -16,7 +16,7 @@ function node(id: string, overrides: Partial<AgentNode> = {}): AgentNode {
     title: id,
     position: { x: 0, y: 0 },
     agentId: 'claude',
-    prompt: { source: '' },
+    prompt: { source: `${id} prompt` },
     ...overrides
   }
 }

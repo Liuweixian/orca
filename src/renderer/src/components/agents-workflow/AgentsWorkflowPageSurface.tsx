@@ -64,6 +64,10 @@ function AgentsWorkflowLoadedSurface({
   const target = `${targetLabels.host} · ${targetLabels.project} · ${targetLabels.workspace}`
   const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
+  /** A switch that would silently drop unsaved edits, held until the user confirms. */
+  const [pendingDiscard, setPendingDiscard] = React.useState<
+    { kind: 'select'; id: string } | { kind: 'create' } | null
+  >(null)
   const issues = React.useMemo(
     // Why include the schedule: the host refuses an unparseable schedule, so the Save button must
     // already be disabled rather than failing after the click.
@@ -85,6 +89,30 @@ function AgentsWorkflowLoadedSurface({
   const onNodesRemoved = React.useCallback((ids: Set<string>) => {
     setSelectedNodeId((current) => (current && ids.has(current) ? null : current))
   }, [])
+
+  const requestSwitch = React.useCallback(
+    (next: { kind: 'select'; id: string } | { kind: 'create' }) => {
+      if (controller.dirty) {
+        setPendingDiscard(next)
+        return
+      }
+      void (next.kind === 'select'
+        ? controller.selectWorkflow(next.id)
+        : controller.createWorkflow())
+    },
+    [controller]
+  )
+
+  const confirmDiscard = React.useCallback(() => {
+    const pending = pendingDiscard
+    setPendingDiscard(null)
+    if (!pending) {
+      return
+    }
+    void (pending.kind === 'select'
+      ? controller.selectWorkflow(pending.id)
+      : controller.createWorkflow())
+  }, [controller, pendingDiscard])
 
   const exportDefinition = React.useCallback(() => {
     // navigator.clipboard silently rejects in some renderer contexts; the preload bridge
@@ -135,8 +163,8 @@ function AgentsWorkflowLoadedSurface({
         <AgentsWorkflowDefinitionPanel
           workflows={controller.workflows}
           definition={definition}
-          onSelect={(id) => void controller.selectWorkflow(id)}
-          onCreate={() => void controller.createWorkflow()}
+          onSelect={(id) => requestSwitch({ kind: 'select', id })}
+          onCreate={() => requestSwitch({ kind: 'create' })}
           onChange={onDefinitionChange}
         />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -183,7 +211,7 @@ function AgentsWorkflowLoadedSurface({
             <DialogDescription>
               {translate(
                 'auto.components.agents-workflow.delete.description',
-                'Run history remains available until retention removes it.'
+                'The workflow and its run history are deleted. Workspaces created by previous runs are left in place.'
               )}
             </DialogDescription>
           </DialogHeader>
@@ -199,6 +227,39 @@ function AgentsWorkflowLoadedSurface({
               }}
             >
               {translate('auto.components.agents-workflow.delete.confirm', 'Delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={pendingDiscard !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPendingDiscard(null)
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {translate(
+                'auto.components.agents-workflow.discard.title',
+                'Discard unsaved changes?'
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {translate(
+                'auto.components.agents-workflow.discard.description',
+                'This workflow has edits that were not saved. Switching now loses them.'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setPendingDiscard(null)}>
+              {translate('auto.components.agents-workflow.discard.cancel', 'Keep editing')}
+            </Button>
+            <Button variant="destructive" onClick={confirmDiscard}>
+              {translate('auto.components.agents-workflow.discard.confirm', 'Discard')}
             </Button>
           </DialogFooter>
         </DialogContent>

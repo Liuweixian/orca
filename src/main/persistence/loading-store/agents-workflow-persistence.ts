@@ -16,12 +16,14 @@ import type {
   AgentsWorkflowRun,
   AgentsWorkflowRunsPage
 } from '../../../shared/agents-workflow-run-types'
-import { agentsWorkflowScheduleRequestKey } from '../../../shared/agents-workflow-run-types'
+import {
+  agentsWorkflowScheduleRequestKey,
+  isActiveAgentsWorkflowRun,
+  isTerminalAgentsWorkflowRun
+} from '../../../shared/agents-workflow-run-types'
 import type { StoreRuntimeState } from './store-runtime-state'
 import type { WriteFlushBarrierOperations } from './write-flush-barriers'
 import {
-  isActiveAgentsWorkflowRun,
-  isTerminalAgentsWorkflowRun,
   pageAgentsWorkflowRuns,
   retainTerminalAgentsWorkflowRuns
 } from './agents-workflow-run-query'
@@ -75,7 +77,19 @@ export class AgentsWorkflowPersistence {
   }
 
   deleteAgentsWorkflow(id: string, expectedRevision: number): boolean {
-    return deleteAgentsWorkflowDefinition(this.definitionStore(), id, expectedRevision)
+    const deleted = deleteAgentsWorkflowDefinition(this.definitionStore(), id, expectedRevision)
+    if (!deleted) {
+      return false
+    }
+    // Why here: retention only prunes the workflow being written, so a deleted workflow's runs
+    // would otherwise live in profile state forever. An active run is kept so it can settle; the
+    // update path drops it once it is terminal.
+    const runtime = this[agentsWorkflowPersistenceContext].runtime
+    runtime.state.agentsWorkflowRuns = (runtime.state.agentsWorkflowRuns ?? []).filter(
+      (run) => run.workflowId !== id || isActiveAgentsWorkflowRun(run)
+    )
+    flushAgentsWorkflowRuns(this)
+    return true
   }
 
   private definitionStore(): AgentsWorkflowDefinitionStore {
@@ -132,9 +146,9 @@ export class AgentsWorkflowPersistence {
   }): { run: AgentsWorkflowRun; created: boolean } {
     const runtime = this[agentsWorkflowPersistenceContext].runtime
     const runs = runtime.state.agentsWorkflowRuns ?? []
-    // Why in memory first: this is the fast path of one desktop process. The SQLite row carries
-    // UNIQUE(workflow_id, request_key) as well, but that only guards the write, not the read-modify
-    // cycle, so a second process mirroring the same profile still relies on its own in-memory view.
+    // Why in memory first: runs live in this process's profile-state view, so the request-key check
+    // and the active-run lock below are single-process guarantees. A second desktop mirroring the
+    // same profile has its own view and can still start a duplicate until it reloads.
     const duplicate = runs.find(
       (run) => run.workflowId === input.workflow.id && run.requestKey === input.requestKey
     )
@@ -143,11 +157,12 @@ export class AgentsWorkflowPersistence {
     }
     const workspaceId =
       input.workflow.workspace.mode === 'existing' ? input.workflow.workspace.workspaceId : null
+    const lockKey = runWorkspaceLockKey(input.workflow)
     const conflict = runs.find(
       (run) =>
         isActiveAgentsWorkflowRun(run) &&
         (run.workflowId === input.workflow.id ||
-          (workspaceId !== null && run.workspaceId === workspaceId))
+          runWorkspaceLockKey(run.definitionSnapshot) === lockKey)
     )
     if (conflict) {
       throw new AgentsWorkflowRunConflictError(input.workflow.id, conflict.id, workspaceId)
@@ -230,9 +245,14 @@ export class AgentsWorkflowPersistence {
       ...updates,
       ...(status === undefined ? {} : { status })
     }
-    runtime.state.agentsWorkflowRuns = (runtime.state.agentsWorkflowRuns ?? []).map((run) =>
-      run.id === runId ? updated : run
+    const workflowExists = (runtime.state.agentsWorkflows ?? []).some(
+      (workflow) => workflow.id === updated.workflowId
     )
+    runtime.state.agentsWorkflowRuns = (runtime.state.agentsWorkflowRuns ?? [])
+      .map((run) => (run.id === runId ? updated : run))
+      // Why: deleting a workflow keeps its active runs so they can settle; a settled run whose
+      // workflow is gone has nobody left to prune it.
+      .filter((run) => !(run.id === runId && !workflowExists && isTerminalAgentsWorkflowRun(run)))
     pruneTerminalRuns(runtime, updated.workflowId)
     flushAgentsWorkflowRuns(this)
     return updated
@@ -291,6 +311,17 @@ function flushAgentsWorkflowRuns(owner: AgentsWorkflowPersistence): void {
   const context = owner[agentsWorkflowPersistenceContext]
   context.runtime.dirtyProfileStateDomains?.add('agentsWorkflowRuns')
   context.flushBarriers.flush()
+}
+
+/**
+ * What a run occupies exclusively: an existing workspace, or the checkout a `new_per_run` run
+ * creates from a repo and base branch. Without the second case the lock key would be null and two
+ * runs could race in the same repository.
+ */
+function runWorkspaceLockKey(definition: AgentsWorkflowDefinition): string {
+  return definition.workspace.mode === 'existing'
+    ? `workspace:${definition.workspace.workspaceId}`
+    : `checkout:${definition.runContext.repoId}:${definition.workspace.baseBranch ?? ''}`
 }
 
 function pruneTerminalRuns(runtime: AgentsWorkflowPersistenceRuntime, workflowId: string): void {

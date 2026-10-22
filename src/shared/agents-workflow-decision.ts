@@ -11,13 +11,23 @@ export const AGENTS_WORKFLOW_DECISION_NO = '{"decision":"no"}'
 
 const DECISION_CONTRACT = /\{\s*"decision"\s*:\s*"(yes|no)"\s*\}/gi
 
-/** True when the prompt asks for both decisions the runtime can parse. */
+/**
+ * True when the prompt asks for both decisions the runtime can parse.
+ *
+ * Why not require the literal JSON alone: authors legitimately describe the contract in prose
+ * ("answer decision yes or no"), and the runtime only needs the agent to emit one of the two
+ * tokens. Both decisions must still be named, so the agent cannot guess a branch the author never
+ * offered.
+ */
 export function agentsWorkflowPromptDeclaresDecision(source: string): boolean {
   const answers = new Set<string>()
   for (const match of source.matchAll(DECISION_CONTRACT)) {
     answers.add((match[1] ?? '').toLowerCase())
   }
-  return answers.has('yes') && answers.has('no')
+  if (answers.has('yes') && answers.has('no')) {
+    return true
+  }
+  return /\bdecision\b/i.test(source) && /\byes\b/i.test(source) && /\bno\b/i.test(source)
 }
 
 export type AgentsWorkflowDecision = 'yes' | 'no'

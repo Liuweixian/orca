@@ -89,6 +89,7 @@ describe('AgentsWorkflowPageSurface', () => {
 
     fireEvent.contextMenu(researchNode)
     fireEvent.click(screen.getByRole('menuitem', { name: 'Delete node' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
 
     expect(onDefinitionChange).toHaveBeenCalledOnce()
     const updated = onDefinitionChange.mock.calls[0]?.[0]
@@ -138,6 +139,7 @@ describe('AgentsWorkflowPageSurface', () => {
 
     fireEvent.contextMenu(edge)
     fireEvent.click(screen.getByRole('menuitem', { name: 'Delete connection' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
 
     expect(onDefinitionChange).toHaveBeenCalledOnce()
     const updated = onDefinitionChange.mock.calls[0]?.[0]

@@ -36,14 +36,16 @@ export function AgentsWorkflowTopBar({
         </div>
         <div className="text-xs text-muted-foreground">
           {errorCount > 0
-            ? translate('auto.components.agents-workflow.topbar.errors', '{{count}} issues', {
-                count: errorCount
-              })
+            ? translate(
+                'auto.components.agents-workflow.topbar.draft',
+                '{{count}} issues · saved as draft, Run is disabled',
+                { count: errorCount }
+              )
             : warningCount > 0
               ? translate('auto.components.agents-workflow.topbar.warnings', '{{count}} warnings', {
                   count: warningCount
                 })
-              : translate('auto.components.agents-workflow.topbar.valid', 'Ready to save')}
+              : translate('auto.components.agents-workflow.topbar.valid', 'Ready to run')}
         </div>
       </div>
       <Button variant="outline" size="xs" onClick={onExport}>
@@ -57,7 +59,7 @@ export function AgentsWorkflowTopBar({
       >
         <Trash2 />
       </Button>
-      <Button size="xs" disabled={!dirty || saving || errorCount > 0} onClick={onSave}>
+      <Button size="xs" disabled={!dirty || saving} onClick={onSave}>
         <Save />
         {saving
           ? translate('auto.components.agents-workflow.topbar.saving', 'Saving')

@@ -102,3 +102,21 @@ export type AgentsWorkflowNodeAttempt = z.infer<typeof AgentsWorkflowNodeAttempt
 export type AgentsWorkflowRun = z.infer<typeof AgentsWorkflowRunSchema>
 export type AgentsWorkflowRunSummary = z.infer<typeof AgentsWorkflowRunSummarySchema>
 export type AgentsWorkflowRunsPage = z.infer<typeof AgentsWorkflowRunsPageSchema>
+
+/**
+ * Status predicates live here so the writer, the loading store and the renderer cannot drift when
+ * a status is added.
+ */
+export function isActiveAgentsWorkflowRun(run: { status: AgentsWorkflowRunStatus }): boolean {
+  return run.status === 'pending' || run.status === 'running' || run.status === 'cancel_requested'
+}
+
+export function isTerminalAgentsWorkflowRun(run: { status: AgentsWorkflowRunStatus }): boolean {
+  return (
+    run.status === 'completed' ||
+    run.status === 'failed' ||
+    run.status === 'cancelled' ||
+    run.status === 'unverifiable' ||
+    run.status === 'skipped'
+  )
+}

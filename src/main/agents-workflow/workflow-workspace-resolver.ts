@@ -1,7 +1,14 @@
 import { isFolderRepo } from '../../shared/repo-kind'
 import type { AgentsWorkflowDefinition } from '../../shared/agents-workflow-types'
 import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-managed-worktree-create-types'
-import type { AgentsWorkflowWorkspaceResolver } from './workflow-run-service'
+
+export type AgentsWorkflowWorkspaceResolver = (
+  workflow: AgentsWorkflowDefinition,
+  runId: string
+) => Promise<
+  | { ok: true; workspaceId: string; workspacePath: string; displayName: string }
+  | { ok: false; code: string; message: string }
+>
 
 const STRUCTURED_SETUP_WAIT_TIMEOUT_MS = 60_000
 
