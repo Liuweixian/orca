@@ -1,5 +1,5 @@
 import React from 'react'
-import { Bot, GitBranch, Repeat2, Trash2 } from 'lucide-react'
+import { Bot, GitBranch, Repeat2, Trash2, Unplug } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { ContextMenuContent, ContextMenuItem } from '@/components/ui/context-menu'
 import {
@@ -16,12 +16,16 @@ import type { AgentsWorkflowNodeKindToAdd } from './agents-workflow-node-factory
 
 export function AgentsWorkflowCanvasContextMenu({
   nodeMenuNode,
+  edgeMenuId,
   onAddNode,
-  onDeleteNode
+  onDeleteNode,
+  onDeleteEdge
 }: {
   nodeMenuNode: AgentsWorkflowNode | null
+  edgeMenuId: string | null
   onAddNode: (kind: AgentsWorkflowNodeKindToAdd) => void
   onDeleteNode: (id: string) => void
+  onDeleteEdge: (id: string) => void
 }): React.JSX.Element {
   if (nodeMenuNode) {
     return (
@@ -33,6 +37,19 @@ export function AgentsWorkflowCanvasContextMenu({
         >
           <Trash2 />
           {translate('auto.components.agents-workflow.canvas.deleteNode', 'Delete node')}
+        </ContextMenuItem>
+      </ContextMenuContent>
+    )
+  }
+  if (edgeMenuId) {
+    return (
+      <ContextMenuContent>
+        <ContextMenuItem variant="destructive" onSelect={() => onDeleteEdge(edgeMenuId)}>
+          <Unplug />
+          {translate(
+            'auto.components.agents-workflow.canvas.deleteConnection',
+            'Delete connection'
+          )}
         </ContextMenuItem>
       </ContextMenuContent>
     )

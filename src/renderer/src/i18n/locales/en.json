@@ -18331,7 +18331,8 @@
           "addAgent": "Agent",
           "addCondition": "Condition",
           "addLoop": "Loop",
-          "connectionRejected": "Connection not created: these ports are already linked or cannot be connected."
+          "connectionRejected": "Connection not created: these ports are already linked or cannot be connected.",
+          "deleteConnection": "Delete connection"
         }
       },
       "OrcaSignInProgress": {

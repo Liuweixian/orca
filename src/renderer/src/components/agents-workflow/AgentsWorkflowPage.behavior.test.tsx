@@ -117,6 +117,33 @@ describe('AgentsWorkflowPageSurface', () => {
     expect(onDefinitionChange).not.toHaveBeenCalled()
   })
 
+  it('deletes an edge from its context menu', () => {
+    const definition = createAgentsWorkflowPageFixture(100)
+    const onDefinitionChange = vi.fn()
+    const { container } = render(
+      <AgentsWorkflowPageSurface controller={controller(definition, onDefinitionChange)} />
+    )
+
+    // Why inject: xyflow only paints edges once it has measured handles, and happy-dom
+    // reports zero-size boxes, so the rendered canvas never contains an edge element.
+    const canvas = container.querySelector('.agents-workflow-canvas')
+    expect(canvas).not.toBeNull()
+    if (!canvas) {
+      return
+    }
+    const edge = document.createElementNS('http://www.w3.org/2000/svg', 'g')
+    edge.setAttribute('class', 'react-flow__edge')
+    edge.setAttribute('data-id', 'start-research')
+    canvas.append(edge)
+
+    fireEvent.contextMenu(edge)
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Delete connection' }))
+
+    expect(onDefinitionChange).toHaveBeenCalledOnce()
+    const updated = onDefinitionChange.mock.calls[0]?.[0]
+    expect(updated?.edges.map((entry: { id: string }) => entry.id)).toEqual(['research-publish'])
+  })
+
   it('enables an RRULE schedule from workflow settings', () => {
     const definition = createAgentsWorkflowPageFixture(100)
     const onDefinitionChange = vi.fn()

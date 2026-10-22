@@ -18082,7 +18082,8 @@
           "addAgent": "智能体",
           "addCondition": "条件",
           "addLoop": "循环",
-          "connectionRejected": "未创建连接：这些端口已连接或无法连接。"
+          "connectionRejected": "未创建连接：这些端口已连接或无法连接。",
+          "deleteConnection": "删除连接"
         }
       },
       "OrcaSignInProgress": {

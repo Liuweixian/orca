@@ -65,6 +65,7 @@ export function AgentsWorkflowCanvas({
   > | null>(null)
   const contextMenuScreenPositionRef = React.useRef<{ x: number; y: number } | null>(null)
   const [nodeMenuTargetId, setNodeMenuTargetId] = React.useState<string | null>(null)
+  const [edgeMenuTargetId, setEdgeMenuTargetId] = React.useState<string | null>(null)
   const [connectionDropTarget, setConnectionDropTarget] =
     React.useState<AgentsWorkflowConnectionDrop | null>(null)
   const derivedNodes = React.useMemo(
@@ -205,12 +206,15 @@ export function AgentsWorkflowCanvas({
     const nodeElement = target?.closest('.react-flow__node') ?? null
     if (nodeElement) {
       setNodeMenuTargetId(nodeElement.getAttribute('data-id'))
+      setEdgeMenuTargetId(null)
       return
     }
+    const edgeElement = target?.closest('.react-flow__edge') ?? null
     setNodeMenuTargetId(null)
-    // Why preventDefault on edges and panels: only the bare canvas and nodes offer
-    // menus; everywhere else keeps the app default.
-    if (target?.closest('.react-flow__edge, .react-flow__panel')) {
+    setEdgeMenuTargetId(edgeElement?.getAttribute('data-id') ?? null)
+    // Why preventDefault only on panels: the context menu trigger opens on the
+    // bubble phase, so preventing the native menu everywhere else would cancel it.
+    if (target?.closest('.react-flow__panel')) {
       event.preventDefault()
     }
     contextMenuScreenPositionRef.current = { x: event.clientX, y: event.clientY }
@@ -258,12 +262,27 @@ export function AgentsWorkflowCanvas({
     [definition.nodes, removeNodeIds]
   )
 
+  const deleteEdge = React.useCallback(
+    (id: string) => {
+      if (!definition.edges.some((edge) => edge.id === id)) {
+        return
+      }
+      onDefinitionChange({
+        ...definition,
+        edges: definition.edges.filter((edge) => edge.id !== id),
+        updatedAt: Date.now()
+      })
+    },
+    [definition, onDefinitionChange]
+  )
+
   return (
     <>
       <ContextMenu
         onOpenChange={(open) => {
           if (!open) {
             setNodeMenuTargetId(null)
+            setEdgeMenuTargetId(null)
           }
         }}
       >
@@ -348,8 +367,10 @@ export function AgentsWorkflowCanvas({
         </ContextMenuTrigger>
         <AgentsWorkflowCanvasContextMenu
           nodeMenuNode={nodeMenuNode}
+          edgeMenuId={edgeMenuTargetId}
           onAddNode={(kind) => addNode(kind, contextMenuScreenPositionRef.current)}
           onDeleteNode={deleteNode}
+          onDeleteEdge={deleteEdge}
         />
       </ContextMenu>
       <AgentsWorkflowConnectionDropMenu
