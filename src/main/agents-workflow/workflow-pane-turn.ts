@@ -190,7 +190,9 @@ export class WorkflowPaneTurns {
   async cancel(runId: string): Promise<'stopped' | 'unverifiable'> {
     const panes = this.panesByRunId.get(runId)
     if (!panes || panes.size === 0) {
-      return 'unverifiable'
+      // Why stopped: a run cancelled before its first node launched has nothing to stop. Calling
+      // that unverifiable told the user the host could not confirm a stop nobody needed.
+      return 'stopped'
     }
     this.panesByRunId.delete(runId)
     let stopped = true

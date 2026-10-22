@@ -21,6 +21,7 @@ import {
   isActiveAgentsWorkflowRun,
   isTerminalAgentsWorkflowRun
 } from '../../../shared/agents-workflow-run-types'
+import { markAgentsWorkflowRunInterrupted } from '../../../shared/agents-workflow-run-recovery'
 import type { StoreRuntimeState } from './store-runtime-state'
 import type { WriteFlushBarrierOperations } from './write-flush-barriers'
 import {
@@ -281,20 +282,7 @@ export class AgentsWorkflowPersistence {
     }
     const ids = new Set(interrupted.map((run) => run.id))
     runtime.state.agentsWorkflowRuns = (runtime.state.agentsWorkflowRuns ?? []).map((run) =>
-      ids.has(run.id)
-        ? {
-            ...run,
-            status: 'unverifiable',
-            finishedAt: now,
-            errorCode: 'execution_evidence_lost',
-            errorMessage: 'The app restarted without reliable process-exit evidence.',
-            attempts: run.attempts.map((attempt) =>
-              attempt.status === 'running' || attempt.status === 'pending'
-                ? { ...attempt, status: 'unverifiable', finishedAt: now }
-                : attempt
-            )
-          }
-        : run
+      ids.has(run.id) ? markAgentsWorkflowRunInterrupted(run, now) : run
     )
     flushAgentsWorkflowRuns(this)
     return interrupted.map((run) => this.showAgentsWorkflowRun(run.id))

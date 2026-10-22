@@ -205,6 +205,14 @@ describe('WorkflowStructuredTurnRunner', () => {
     expect(lifecycle.close).toHaveBeenCalledOnce()
   })
 
+  // Why: a run cancelled before its first node opened a chat has nothing to stop.
+  it('confirms a cancel when no chat was opened yet', async () => {
+    const rig = harness()
+
+    await expect(rig.runner.cancel('run-1')).resolves.toBe('stopped')
+    expect(rig.host.cancel).not.toHaveBeenCalled()
+  })
+
   it('reports stopped only when cancellation observes an exited child', async () => {
     const controller = new AbortController()
     const rig = harness()

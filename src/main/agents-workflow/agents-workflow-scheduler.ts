@@ -1,8 +1,13 @@
 import type { AgentsWorkflowDefinition } from '../../shared/agents-workflow-types'
-import { latestAgentsWorkflowOccurrence } from './agents-workflow-schedule-occurrence'
+import {
+  agentsWorkflowOccurrencesDescending,
+  latestAgentsWorkflowOccurrence
+} from './agents-workflow-schedule-occurrence'
 
 const DEFAULT_TICK_MS = 60_000
 const MINUTE_MS = 60_000
+/** How many missed occurrences one tick may record; the rest wait for the next tick. */
+const MAX_MISSED_OCCURRENCES_PER_TICK = 50
 
 export type AgentsWorkflowSchedulerDependencies = {
   listWorkflows: () => AgentsWorkflowDefinition[]
@@ -76,9 +81,41 @@ export class AgentsWorkflowScheduler {
       return
     }
     if (now - scheduledFor > schedule.missedRunGraceMinutes * MINUTE_MS) {
-      await this.dependencies.recordSkipped(workflow, scheduledFor, 'missed_grace')
+      await this.recordMissedOccurrences(workflow, now)
       return
     }
     await this.dependencies.runScheduled(workflow, scheduledFor)
+  }
+
+  /**
+   * Records every occurrence nobody claimed while the app was down.
+   *
+   * Why not just the latest: after a three-day outage only the newest occurrence was recorded, and
+   * the run history showed an unexplained hole where the earlier ones should have been. Walking
+   * back stops at the first occurrence that has a run — that is where the gap ends — and at the
+   * workflow's own creation, so a long-lived schedule does not backfill rows it never owed.
+   */
+  private async recordMissedOccurrences(
+    workflow: AgentsWorkflowDefinition,
+    now: number
+  ): Promise<void> {
+    const schedule = workflow.trigger.schedule
+    if (!schedule) {
+      return
+    }
+    let recorded = 0
+    for (const occurrence of agentsWorkflowOccurrencesDescending(schedule, now)) {
+      if (occurrence < workflow.createdAt) {
+        return
+      }
+      if (this.dependencies.hasScheduledRun(workflow.id, occurrence)) {
+        return
+      }
+      await this.dependencies.recordSkipped(workflow, occurrence, 'missed_grace')
+      recorded += 1
+      if (recorded >= MAX_MISSED_OCCURRENCES_PER_TICK) {
+        return
+      }
+    }
   }
 }

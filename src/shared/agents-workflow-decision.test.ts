@@ -40,6 +40,12 @@ describe('parseAgentsWorkflowDecision', () => {
     expect(parseAgentsWorkflowDecision('  {"decision":"yes","reason":"small"}  ')).toBe('yes')
   })
 
+  it('reads a decision an agent wrapped in a fenced block or prose', () => {
+    expect(parseAgentsWorkflowDecision('```json\n{"decision":"yes"}\n```')).toBe('yes')
+    expect(parseAgentsWorkflowDecision('The change is small.\n\n{"decision":"no"}')).toBe('no')
+    expect(parseAgentsWorkflowDecision('```\n{"decision": "yes"}\n```\nDone.')).toBe('yes')
+  })
+
   it('rejects prose and answers without a usable decision', () => {
     expect(parseAgentsWorkflowDecision('Yes, it is small.')).toBeNull()
     expect(parseAgentsWorkflowDecision('{"decision":"maybe"}')).toBeNull()

@@ -72,6 +72,37 @@ export async function finishAgentsWorkflowRun(
   lifecycle.notifyChanged()
 }
 
+/**
+ * Settles a run the user asked to stop. The stop's own verdict decides the status: a host that
+ * cannot confirm the stop is an `unverifiable` ending, not a quieter `cancelled`.
+ */
+export async function finishCancelledAgentsWorkflowRun(
+  lifecycle: AgentsWorkflowRunLifecycle,
+  run: AgentsWorkflowRun,
+  stopped: 'stopped' | 'unverifiable'
+): Promise<AgentsWorkflowRun> {
+  const status = stopped === 'stopped' ? 'cancelled' : 'unverifiable'
+  const finishedAt = lifecycle.now()
+  const updated = lifecycle.persistence.updateAgentsWorkflowRun(run.id, {
+    status,
+    finishedAt,
+    attempts: run.attempts.map((attempt) =>
+      attempt.status === 'running' || attempt.status === 'pending'
+        ? { ...attempt, status, finishedAt }
+        : attempt
+    ),
+    ...(status === 'unverifiable'
+      ? {
+          errorCode: 'cancellation_unverifiable',
+          errorMessage: 'The agent stop request could not be confirmed.'
+        }
+      : {})
+  })
+  await flushAgentsWorkflowPersistence(lifecycle.persistence)
+  lifecycle.notifyChanged()
+  return updated
+}
+
 /** Removes a worktree a run created; a later mixin owns the actual checkout. */
 export type AgentsWorkflowRunWorkspaceReclaimer = (workspaceId: string) => Promise<void>
 

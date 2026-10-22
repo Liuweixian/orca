@@ -10,7 +10,9 @@ import type { AgentsWorkflowNodeOutput } from '../../shared/agents-workflow-run-
 import type { AgentsWorkflowTurnSettlement } from '../../shared/agents-workflow-agent-channels'
 import type { AgentsWorkflowStepExecutor } from './workflow-dynamic-scheduler'
 import {
+  agentsWorkflowHandoffByteLimitExceeded,
   agentsWorkflowHandoffPath,
+  agentsWorkflowHandoffTooLarge,
   parseAgentsWorkflowHandoff,
   withAgentsWorkflowOutputContract
 } from './workflow-file-handoff'
@@ -248,11 +250,18 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
     outputPath: string
   ): Promise<{ read: ReturnType<typeof parseAgentsWorkflowHandoff>; signature: string } | null> {
     let signature: string
+    let size: number
     try {
       const stats = await stat(outputPath)
       signature = `${stats.size}:${stats.mtimeMs}`
+      size = stats.size
     } catch {
       return null
+    }
+    // Why before readFile: this polls every 500ms, and an agent that leaves a huge file would
+    // otherwise be read into the main process in full on every pass.
+    if (agentsWorkflowHandoffByteLimitExceeded(size)) {
+      return { read: agentsWorkflowHandoffTooLarge(), signature }
     }
     let raw: string
     try {

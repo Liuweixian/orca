@@ -16,6 +16,7 @@ import { executeAgentsWorkflowSchedule } from './workflow-dynamic-scheduler'
 import {
   failClosedAgentsWorkflowWorkspaceResolver,
   finishAgentsWorkflowRun,
+  finishCancelledAgentsWorkflowRun,
   flushAgentsWorkflowPersistence,
   recoverInterruptedAgentsWorkflowRuns,
   reclaimScheduledRunWorkspace,
@@ -99,12 +100,17 @@ export class AgentsWorkflowRunService {
     if (!created.created) {
       return created.run
     }
+    await this.startRun(created.run)
+    return created.run
+  }
+
+  /** Persists the claimed run before executing it, so a crash still leaves a row to recover. */
+  private async startRun(run: AgentsWorkflowRun): Promise<void> {
     await flushAgentsWorkflowPersistence(this.persistence)
     this.notifyChanged()
-    void this.execute(created.run).catch((error: unknown) => {
+    void this.execute(run).catch((error: unknown) => {
       console.error('[agents-workflow] Run execution failed:', error)
     })
-    return created.run
   }
 
   async runScheduled(
@@ -130,11 +136,7 @@ export class AgentsWorkflowRunService {
     if (!created.created) {
       return created.run
     }
-    await flushAgentsWorkflowPersistence(this.persistence)
-    this.notifyChanged()
-    void this.execute(created.run).catch((error: unknown) => {
-      console.error('[agents-workflow] Scheduled run execution failed:', error)
-    })
+    await this.startRun(created.run)
     return created.run
   }
 
@@ -165,26 +167,7 @@ export class AgentsWorkflowRunService {
     this.notifyChanged()
     this.abortByRunId.get(runId)?.abort()
     const stopped = await this.adapter.cancel(runId)
-    const status = stopped === 'stopped' ? 'cancelled' : 'unverifiable'
-    const finishedAt = this.now()
-    const updated = this.persistence.updateAgentsWorkflowRun(runId, {
-      status,
-      finishedAt,
-      attempts: run.attempts.map((attempt) =>
-        attempt.status === 'running' || attempt.status === 'pending'
-          ? { ...attempt, status, finishedAt }
-          : attempt
-      ),
-      ...(status === 'unverifiable'
-        ? {
-            errorCode: 'cancellation_unverifiable',
-            errorMessage: 'The agent stop request could not be confirmed.'
-          }
-        : {})
-    })
-    await flushAgentsWorkflowPersistence(this.persistence)
-    this.notifyChanged()
-    return updated
+    return await finishCancelledAgentsWorkflowRun(this.lifecycle, run, stopped)
   }
 
   async runs(input: {
@@ -208,15 +191,21 @@ export class AgentsWorkflowRunService {
     let workspaceId: string | null = null
     const budget = startAgentsWorkflowRunBudget(controller, this.runTimeoutMs)
     try {
-      const workspace = await this.resolveWorkspace(initial.definitionSnapshot, initial.id)
+      const workspace = await this.resolveWorkspace(initial.definitionSnapshot, initial.id, {
+        signal: controller.signal
+      })
       if (!workspace.ok) {
-        await finishAgentsWorkflowRun(
-          this.lifecycle,
-          initial.id,
-          'failed',
-          workspace.code,
-          workspace.message
-        )
+        // Why first: a cancel during resolution already settled the run, and a failure here would
+        // rewrite the user's cancel into a workspace error.
+        if (!isActiveAgentsWorkflowRun(this.persistence.showAgentsWorkflowRun(initial.id))) {
+          return
+        }
+        // Why the budget before the code: the abort that ended resolution may be the timeout's own.
+        if (budget.exceeded) {
+          await this.failRun(initial.id, 'run_timeout', this.timeoutMessage())
+          return
+        }
+        await this.failRun(initial.id, workspace.code, workspace.message)
         return
       }
       workspacePath = workspace.workspacePath
@@ -252,13 +241,7 @@ export class AgentsWorkflowRunService {
         })
       } catch (error) {
         // The scheduler threw instead of returning a failure: the run must not stay `running`.
-        await finishAgentsWorkflowRun(
-          this.lifecycle,
-          initial.id,
-          'failed',
-          'workflow_execution_failed',
-          error instanceof Error ? error.message : String(error)
-        )
+        await this.failRun(initial.id, 'workflow_execution_failed', error)
         return
       } finally {
         // Nobody watches a scheduled run, so it takes its chats and panes with it; a manual run
@@ -280,7 +263,7 @@ export class AgentsWorkflowRunService {
           initial.id,
           'failed',
           'run_timeout',
-          `The run exceeded its ${this.runTimeoutMs / 60_000}-minute limit.`
+          this.timeoutMessage()
         )
         return
       }
@@ -298,13 +281,7 @@ export class AgentsWorkflowRunService {
     } catch (error) {
       // Resolving the workspace or persisting a checkpoint failed. Match the scheduler's guard:
       // an active run never stays running because bookkeeping threw.
-      await finishAgentsWorkflowRun(
-        this.lifecycle,
-        initial.id,
-        'failed',
-        'workflow_execution_failed',
-        error instanceof Error ? error.message : String(error)
-      )
+      await this.failRun(initial.id, 'workflow_execution_failed', error)
     } finally {
       budget.clear()
       this.abortByRunId.delete(initial.id)
@@ -315,11 +292,28 @@ export class AgentsWorkflowRunService {
     }
   }
 
+  private timeoutMessage(): string {
+    return `The run exceeded its ${this.runTimeoutMs / 60_000}-minute limit.`
+  }
+
+  /** Ends the run as failed; `error` may be the thrown value itself. */
+  private async failRun(runId: string, code: string, error: unknown): Promise<void> {
+    await finishAgentsWorkflowRun(
+      this.lifecycle,
+      runId,
+      'failed',
+      code,
+      error instanceof Error ? error.message : String(error)
+    )
+  }
+
   private async recoverInterrupted(): Promise<void> {
     if (this.recovered) {
       return
     }
-    this.recovered = true
+    // Why after the await: a failed recovery (a flush error, say) used to mark the process as
+    // recovered anyway, so no later call ever tried again.
     await recoverInterruptedAgentsWorkflowRuns(this.lifecycle)
+    this.recovered = true
   }
 }

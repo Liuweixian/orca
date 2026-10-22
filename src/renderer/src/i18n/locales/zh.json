@@ -18003,7 +18003,6 @@
         "topbar": {
           "valid": "可以保存",
           "warnings": "{{count}} 个警告",
-          "errors": "{{count}} 个问题",
           "export": "复制 JSON",
           "run": "运行",
           "delete": "删除工作流",

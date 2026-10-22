@@ -30,7 +30,11 @@ import {
 import { normalizeRetiredNameRegistryMap } from './retired-name-registry-normalization'
 import { hydrateWorktreeMetaAliasProjection } from './worktree-meta-alias-projection'
 import { AgentsWorkflowDefinitionSchema } from '../../../shared/agents-workflow-types'
-import { AgentsWorkflowRunSchema } from '../../../shared/agents-workflow-run-types'
+import {
+  AgentsWorkflowRunSchema,
+  isActiveAgentsWorkflowRun
+} from '../../../shared/agents-workflow-run-types'
+import { markAgentsWorkflowRunInterrupted } from '../../../shared/agents-workflow-run-recovery'
 import {
   migrateLegacyAgentsWorkflowDefinition,
   migrateLegacyAgentsWorkflowRun
@@ -67,28 +71,11 @@ function normalizeAgentsWorkflowRuns(
       console.warn('[agents-workflow] Dropped an unreadable workflow run:', parsed.error)
       return []
     }
-    if (
-      parsed.data.status !== 'pending' &&
-      parsed.data.status !== 'running' &&
-      parsed.data.status !== 'cancel_requested'
-    ) {
+    if (!isActiveAgentsWorkflowRun(parsed.data)) {
       return [parsed.data]
     }
     markNeedsSave()
-    return [
-      {
-        ...parsed.data,
-        status: 'unverifiable' as const,
-        finishedAt: now,
-        errorCode: 'execution_evidence_lost',
-        errorMessage: 'The app restarted without reliable process-exit evidence.',
-        attempts: parsed.data.attempts.map((attempt) =>
-          attempt.status === 'running' || attempt.status === 'pending'
-            ? { ...attempt, status: 'unverifiable' as const, finishedAt: now }
-            : attempt
-        )
-      }
-    ]
+    return [markAgentsWorkflowRunInterrupted(parsed.data, now)]
   })
 }
 

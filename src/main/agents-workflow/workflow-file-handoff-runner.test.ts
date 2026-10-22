@@ -190,6 +190,30 @@ describe('WorkflowFileHandoffTurnRunner', () => {
     await rm(dir, { recursive: true, force: true })
   })
 
+  it('refuses an oversized output file before reading it', async () => {
+    const dir = await workspace()
+    const rig = runtime()
+    answersWith(rig, 'x'.repeat(1024 * 1024 + 1))
+    const runner = new WorkflowFileHandoffTurnRunner(
+      // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: the runner reads only the five terminal methods this fixture provides.
+      rig as unknown as OrcaRuntimeService,
+      Date.now,
+      60_000,
+      5
+    )
+
+    const result = await runner.run({
+      runId: 'run-1',
+      workspaceId: 'workspace-1',
+      workspacePath: dir,
+      node: node(),
+      prompt: 'work'
+    })
+
+    expect(result).toMatchObject({ ok: false, code: 'output_contract_too_large' })
+    await rm(dir, { recursive: true, force: true })
+  })
+
   it('reports a lost pane as unverifiable instead of waiting out the file timeout', async () => {
     const dir = await workspace()
     const rig = runtime()

@@ -83,6 +83,59 @@ describe('createAgentsWorkflowWorkspaceResolver', () => {
     expect(createManagedWorktree.mock.calls[0]?.[0]).not.toHaveProperty('startupAgent')
   })
 
+  it('does not wait out the setup window of a cancelled run', async () => {
+    const controller = new AbortController()
+    const waitForSetupTerminalCompletion = vi.fn(
+      (_handle: string, signal: AbortSignal) =>
+        new Promise<void>((resolve) => signal.addEventListener('abort', () => resolve()))
+    )
+    const createManagedWorktree = vi.fn(async (_input: RuntimeManagedWorktreeCreateArgs) => {
+      // The run is cancelled while its workspace is being provisioned.
+      controller.abort()
+      return {
+        worktree: { id: 'workspace-2', path: '/repo/workspace-2', displayName: 'Review run-1' },
+        setupReceipt: { state: 'running', startupPolicy: 'wait-for-setup', terminalHandle: 'h-1' }
+      }
+    })
+    const resolve = createAgentsWorkflowWorkspaceResolver({
+      showManagedWorktree: vi.fn(),
+      createManagedWorktree,
+      waitForSetupTerminalCompletion
+    })
+
+    await expect(
+      resolve(
+        workflow({ mode: 'new_per_run', baseBranch: null, setupDecision: 'inherit' }),
+        'run-1',
+        {
+          signal: controller.signal
+        }
+      )
+    ).resolves.toMatchObject({ ok: true, workspaceId: 'workspace-2' })
+    expect(waitForSetupTerminalCompletion).not.toHaveBeenCalled()
+  })
+
+  it('refuses immediately when the run was already cancelled', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    const createManagedWorktree = vi.fn()
+    const resolve = createAgentsWorkflowWorkspaceResolver({
+      showManagedWorktree: vi.fn(),
+      createManagedWorktree
+    })
+
+    await expect(
+      resolve(
+        workflow({ mode: 'new_per_run', baseBranch: null, setupDecision: 'inherit' }),
+        'run-1',
+        {
+          signal: controller.signal
+        }
+      )
+    ).resolves.toMatchObject({ ok: false, code: 'workflow_run_cancelled' })
+    expect(createManagedWorktree).not.toHaveBeenCalled()
+  })
+
   it('refuses to create a git worktree for a folder project', async () => {
     const createManagedWorktree = vi.fn()
     const resolve = createAgentsWorkflowWorkspaceResolver({

@@ -167,4 +167,39 @@ describe('AgentsWorkflowScheduler', () => {
     await scheduler.evaluateDueRuns()
     expect(recordSkipped).toHaveBeenCalledWith(definition, scheduledFor, 'missed_grace')
   })
+
+  it('records every occurrence of an outage instead of only the newest one', async () => {
+    const definition = {
+      ...workflow({
+        timezone: 'UTC',
+        rrule: 'FREQ=DAILY;BYHOUR=9;BYMINUTE=0',
+        dtstart: Date.UTC(2026, 0, 1),
+        missedRunGraceMinutes: 60
+      }),
+      createdAt: Date.UTC(2026, 0, 5)
+    }
+    const now = Date.UTC(2026, 0, 8, 12)
+    const recordSkipped = vi.fn(async () => undefined)
+    const scheduler = new AgentsWorkflowScheduler(
+      {
+        listWorkflows: () => [definition],
+        hasScheduledRun: () => false,
+        runScheduled: vi.fn(async () => undefined),
+        recordSkipped
+      },
+      60_000,
+      () => now
+    )
+
+    await scheduler.evaluateDueRuns()
+
+    expect(
+      recordSkipped.mock.calls.map((call) => (call as unknown as [unknown, number])[1])
+    ).toEqual([
+      Date.UTC(2026, 0, 8, 9),
+      Date.UTC(2026, 0, 7, 9),
+      Date.UTC(2026, 0, 6, 9),
+      Date.UTC(2026, 0, 5, 9)
+    ])
+  })
 })

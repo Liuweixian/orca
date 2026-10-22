@@ -18252,7 +18252,6 @@
         "topbar": {
           "valid": "Ready to run",
           "warnings": "{{count}} warnings",
-          "errors": "{{count}} issues",
           "draft": "{{count}} issues · saved as draft, Run is disabled",
           "export": "Copy JSON",
           "run": "Run",
@@ -18323,6 +18322,7 @@
           "loadFailed": "Could not load the workflow.",
           "listFailed": "Could not load workflows.",
           "createFailed": "Could not create the workflow.",
+          "noTarget": "Open a project workspace before creating a workflow.",
           "saved": "Workflow saved.",
           "saveFailed": "Could not save the workflow.",
           "deleteFailed": "Could not delete the workflow.",

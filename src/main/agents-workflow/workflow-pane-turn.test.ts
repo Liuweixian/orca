@@ -118,6 +118,26 @@ describe('WorkflowPaneTurns', () => {
     }
   })
 
+  // Why: cancelling before the first node launched used to come back unverifiable, so the run
+  // reported that the host could not confirm a stop nobody needed.
+  it('confirms a cancel when no pane was opened yet', async () => {
+    const rig = runtime(['handle-1'])
+    const panes = panesFor(rig)
+
+    await expect(panes.cancel('run-1')).resolves.toBe('stopped')
+    expect(rig.closeTerminal).not.toHaveBeenCalled()
+  })
+
+  it('confirms a cancel of a run that already released its panes', async () => {
+    const rig = runtime(['handle-1'])
+    const panes = panesFor(rig)
+
+    await panes.launch(work)
+    await panes.release('run-1', { reclaim: false })
+
+    await expect(panes.cancel('run-1')).resolves.toBe('stopped')
+  })
+
   // Why: a pane closed or reloaded mid-turn made the wait reject. Letting that throw escaped the
   // scheduler, failed the run with `workflow_execution_failed`, and left the attempt `running`.
   it('reports a lost pane as unverifiable instead of throwing', async () => {

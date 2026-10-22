@@ -189,7 +189,8 @@ export class WorkflowStructuredTurnRunner implements AgentsWorkflowStructuredTur
   async cancel(runId: string): Promise<'stopped' | 'unverifiable'> {
     const sessions = this.sessionsByRunId.get(runId)
     if (!sessions || sessions.size === 0) {
-      return 'unverifiable'
+      // Why stopped: no chat was opened yet, so a cancel has nothing to confirm.
+      return 'stopped'
     }
     this.sessionsByRunId.delete(runId)
     const active = [...sessions.values()]

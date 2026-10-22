@@ -4,7 +4,9 @@ import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-manage
 
 export type AgentsWorkflowWorkspaceResolver = (
   workflow: AgentsWorkflowDefinition,
-  runId: string
+  runId: string,
+  /** The run's own signal: a cancelled run must stop waiting on setup, not build a checkout. */
+  options?: { signal?: AbortSignal }
 ) => Promise<
   | { ok: true; workspaceId: string; workspacePath: string; displayName: string }
   | { ok: false; code: string; message: string }
@@ -25,19 +27,25 @@ type WorkflowWorkspaceRuntime = {
 
 async function waitForStructuredSetup(
   runtime: WorkflowWorkspaceRuntime,
-  receipt: { state: string; startupPolicy?: string; terminalHandle?: string } | undefined
+  receipt: { state: string; startupPolicy?: string; terminalHandle?: string } | undefined,
+  signal?: AbortSignal
 ): Promise<void> {
   if (
     !runtime.waitForSetupTerminalCompletion ||
     !receipt ||
     receipt.startupPolicy !== 'wait-for-setup' ||
     receipt.state !== 'running' ||
-    !receipt.terminalHandle
+    !receipt.terminalHandle ||
+    signal?.aborted
   ) {
     return
   }
   const abort = new AbortController()
   const timer = setTimeout(() => abort.abort(), STRUCTURED_SETUP_WAIT_TIMEOUT_MS)
+  // Why linked: a cancelled run kept waiting out the full setup window and then created a
+  // checkout nobody would use.
+  const abortOnRun = (): void => abort.abort()
+  signal?.addEventListener('abort', abortOnRun)
   try {
     await runtime.waitForSetupTerminalCompletion(receipt.terminalHandle, abort.signal)
   } catch (error) {
@@ -46,6 +54,7 @@ async function waitForStructuredSetup(
     }
   } finally {
     clearTimeout(timer)
+    signal?.removeEventListener('abort', abortOnRun)
   }
 }
 
@@ -57,11 +66,23 @@ function failure(error: unknown) {
   }
 }
 
+function cancelled() {
+  return {
+    ok: false as const,
+    code: 'workflow_run_cancelled',
+    message: 'The run was cancelled before its workspace was ready.'
+  }
+}
+
 export function createAgentsWorkflowWorkspaceResolver(
   runtime: WorkflowWorkspaceRuntime
 ): AgentsWorkflowWorkspaceResolver {
-  return async (workflow: AgentsWorkflowDefinition, runId: string) => {
+  return async (workflow: AgentsWorkflowDefinition, runId: string, options) => {
+    const signal = options?.signal
     try {
+      if (signal?.aborted) {
+        return cancelled()
+      }
       if (workflow.workspace.mode === 'existing') {
         const workspace = await runtime.showManagedWorktree(`id:${workflow.workspace.workspaceId}`)
         return {
@@ -102,7 +123,17 @@ export function createAgentsWorkflowWorkspaceResolver(
           message: created.warning ?? 'Workflow workspace setup could not be started.'
         }
       }
-      await waitForStructuredSetup(runtime, created.setupReceipt)
+      await waitForStructuredSetup(runtime, created.setupReceipt, signal)
+      if (signal?.aborted) {
+        // Why report the workspace anyway: it exists and the run's cleanup is the layer that
+        // knows whether to reclaim it.
+        return {
+          ok: true,
+          workspaceId: created.worktree.id,
+          workspacePath: created.worktree.path,
+          displayName: created.worktree.displayName
+        }
+      }
       return {
         ok: true,
         workspaceId: created.worktree.id,

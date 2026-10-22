@@ -150,8 +150,30 @@ describe('readWorkflowTranscriptTurn', () => {
         prompt: 'review the diff',
         startedAt: STARTED_AT
       })
-    ).resolves.toEqual({ ok: false, message: 'No transcript session matched this turn.' })
+    ).resolves.toEqual({
+      ok: false,
+      message:
+        "No transcript session matched this turn's prompt (1 session(s) in the workspace, 1 touched since the turn began)."
+    })
     expect(parser.parseAgentSessionFile).not.toHaveBeenCalled()
+  })
+
+  it('matches a prompt whose only difference is whitespace or line endings', async () => {
+    scanner.scanAiVaultSessions.mockResolvedValue(
+      scanResult([session({ lastUserPrompt: 'Read the diff first,\r\nthen   review it.\n' })])
+    )
+    parser.parseAgentSessionFile.mockImplementation(
+      transcript([{ role: 'assistant', text: 'looks good', timestamp: '2026-10-20T10:00:04.000Z' }])
+    )
+
+    await expect(
+      readWorkflowTranscriptTurn({
+        agent: 'gemini',
+        workspacePath: '/repo/worktree',
+        prompt: 'Read the diff first, then review it.',
+        startedAt: STARTED_AT
+      })
+    ).resolves.toMatchObject({ ok: true, content: 'looks good' })
   })
 
   it('matches a workspace path written with a trailing separator', async () => {

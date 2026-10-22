@@ -1,6 +1,7 @@
 import React from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
+import { useAppStore } from '@/store'
 import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
 import { AGENTS_WORKFLOW_REVISION_CONFLICT } from '../../../../shared/agents-workflow-errors'
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
@@ -14,7 +15,11 @@ import {
 } from './use-agents-workflow-agent-channels'
 import { useAgentsWorkflowInvalidation } from './use-agents-workflow-invalidation'
 import { useAgentsWorkflowRuns } from './use-agents-workflow-runs'
-import { newWorkflowInput, workflowUpdateFields } from './agents-workflow-page-inputs'
+import {
+  newWorkflowInput,
+  workflowTargetForNewWorkflow,
+  workflowUpdateFields
+} from './agents-workflow-page-inputs'
 import { reportDefinitionFailure } from './agents-workflow-definition-errors'
 import {
   createAgentsWorkflow,
@@ -59,6 +64,10 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
   const [saving, setSaving] = React.useState(false)
   const [conflict, setConflict] = React.useState(false)
   const agentChannels = useAgentsWorkflowAgentChannels()
+  const repos = useAppStore((s) => s.repos)
+  const projectHostSetups = useAppStore((s) => s.projectHostSetups)
+  const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
+  const activeWorktreeId = useAppStore((s) => s.activeWorktreeId)
   const runsPage = useAgentsWorkflowRuns(savedDefinition?.id ?? null)
   const {
     refreshRuns,
@@ -143,9 +152,27 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
   }, [refreshList, selectWorkflow])
 
   const createWorkflow = React.useCallback(async () => {
+    // Why resolve a target first: every workflow needs a project this host can actually run in,
+    // and the store refuses ids it cannot resolve.
+    const target = workflowTargetForNewWorkflow({
+      source: definition,
+      repos,
+      projectHostSetups,
+      worktreesByRepo,
+      activeWorktreeId
+    })
+    if (!target) {
+      toast.error(
+        translate(
+          'auto.components.agents-workflow.controller.noTarget',
+          'Open a project workspace before creating a workflow.'
+        )
+      )
+      return
+    }
     setSaving(true)
     try {
-      const created = await createAgentsWorkflow(newWorkflowInput(definition))
+      const created = await createAgentsWorkflow(newWorkflowInput(definition, target))
       setWorkflows((current) => [created, ...current])
       setDefinitionState(created)
       setSavedDefinition(created)
@@ -161,7 +188,7 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
     } finally {
       setSaving(false)
     }
-  }, [clearRuns, definition])
+  }, [activeWorktreeId, clearRuns, definition, projectHostSetups, repos, worktreesByRepo])
 
   const saveWorkflow = React.useCallback(async () => {
     if (!definition || !savedDefinition) {

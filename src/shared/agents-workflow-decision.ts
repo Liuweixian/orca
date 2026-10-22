@@ -34,18 +34,41 @@ export type AgentsWorkflowDecision = 'yes' | 'no'
 
 const DecisionAnswerSchema = z.object({ decision: z.string() })
 
+/**
+ * The places a judge's JSON answer may be hiding: the whole reply, a fenced block, or the first
+ * brace span after a sentence of prose. Agents commonly wrap the contract in ```json fences even
+ * when told not to, and failing the whole run over the wrapper is not a judgement of the branch.
+ */
+function* decisionCandidates(source: string): Generator<string> {
+  const trimmed = source.trim()
+  yield trimmed
+  for (const match of trimmed.matchAll(/```[a-zA-Z]*\s*([\s\S]*?)```/g)) {
+    yield (match[1] ?? '').trim()
+  }
+  const start = trimmed.indexOf('{')
+  const end = trimmed.lastIndexOf('}')
+  if (start !== -1 && end > start && !(start === 0 && end === trimmed.length - 1)) {
+    yield trimmed.slice(start, end + 1)
+  }
+}
+
 /** Parses the JSON answer a judge agent must produce; null when it is not one. */
 export function parseAgentsWorkflowDecision(source: string): AgentsWorkflowDecision | null {
-  let raw: unknown
-  try {
-    raw = JSON.parse(source.trim())
-  } catch {
-    return null
+  for (const candidate of decisionCandidates(source)) {
+    let raw: unknown
+    try {
+      raw = JSON.parse(candidate)
+    } catch {
+      continue
+    }
+    const parsed = DecisionAnswerSchema.safeParse(raw)
+    if (!parsed.success) {
+      continue
+    }
+    const normalized = parsed.data.decision.trim().toLowerCase()
+    if (normalized === 'yes' || normalized === 'no') {
+      return normalized
+    }
   }
-  const parsed = DecisionAnswerSchema.safeParse(raw)
-  if (!parsed.success) {
-    return null
-  }
-  const normalized = parsed.data.decision.trim().toLowerCase()
-  return normalized === 'yes' || normalized === 'no' ? normalized : null
+  return null
 }

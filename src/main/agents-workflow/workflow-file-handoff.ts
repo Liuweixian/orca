@@ -50,13 +50,22 @@ export function withAgentsWorkflowOutputContract(prompt: string, outputPath: str
   ].join('\n')
 }
 
+export function agentsWorkflowHandoffTooLarge(): AgentsWorkflowHandoffRead {
+  return {
+    ok: false,
+    code: 'output_contract_too_large',
+    message: 'The output file is larger than a workflow value may be.'
+  }
+}
+
+/** True when a file of this size may not be read as a workflow value at all. */
+export function agentsWorkflowHandoffByteLimitExceeded(byteLength: number): boolean {
+  return byteLength > AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES
+}
+
 export function parseAgentsWorkflowHandoff(raw: string): AgentsWorkflowHandoffRead {
-  if (Buffer.byteLength(raw, 'utf8') > AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES) {
-    return {
-      ok: false,
-      code: 'output_contract_too_large',
-      message: 'The output file is larger than a workflow value may be.'
-    }
+  if (agentsWorkflowHandoffByteLimitExceeded(Buffer.byteLength(raw, 'utf8'))) {
+    return agentsWorkflowHandoffTooLarge()
   }
   const content = raw.trim()
   if (content.length === 0) {

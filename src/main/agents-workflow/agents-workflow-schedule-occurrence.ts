@@ -16,22 +16,26 @@ type WallClock = {
 }
 
 /**
- * The latest occurrence at or before `now` in the schedule's timezone.
+ * The occurrences at or before `now`, newest first.
  *
  * Why derive candidates instead of scanning minute by minute: a weekly rule five days stale would
  * otherwise cost thousands of `Intl` format calls on every tick, for every enabled workflow. Here
- * the search walks back at most one candidate per day (or per hour for an hourly rule).
+ * the search walks back at most one candidate per day (or per hour for an hourly rule), and only
+ * as far as `MAX_SCAN_DAYS`, which is why callers treat a longer gap as out of view.
  */
-export function latestAgentsWorkflowOccurrence(
+export function* agentsWorkflowOccurrencesDescending(
   schedule: AgentsWorkflowSchedule,
   now: number
-): number | null {
+): Generator<number> {
   if (now < schedule.dtstart) {
-    return null
+    return
   }
   const rule = parseSchedule(schedule.rrule)
   if (rule.kind !== 'rrule') {
-    throw new Error('Agent workflow schedules require RRULE syntax.')
+    // Why not throw: this runs every minute, and a throw only produced a log line per tick for a
+    // workflow that could never run. The store already refuses to save such a schedule; a legacy
+    // row simply has no occurrences on this build.
+    return
   }
   const formatter = createFormatter(schedule.timezone)
   // An hourly rule without BYHOUR means every hour; with BYHOUR it means that hour each day.
@@ -50,22 +54,36 @@ export function latestAgentsWorkflowOccurrence(
     if (rule.freq === 'WEEKLY' && !rule.byDay.includes(DAY_CODES[calendarDay.getUTCDay()])) {
       continue
     }
-    const candidates = hours.flatMap((hour) => {
-      const candidate = zonedTimestamp(formatter, { year, month, day, hour, minute: rule.byMinute })
-      return candidate !== null && candidate <= now && candidate >= schedule.dtstart
-        ? [candidate]
-        : []
-    })
-    if (candidates.length > 0) {
-      return Math.max(...candidates)
-    }
+    const candidates = hours
+      .flatMap((hour) => {
+        const candidate = zonedTimestamp(formatter, {
+          year,
+          month,
+          day,
+          hour,
+          minute: rule.byMinute
+        })
+        return candidate !== null && candidate <= now && candidate >= schedule.dtstart
+          ? [candidate]
+          : []
+      })
+      .sort((left, right) => right - left)
+    yield* candidates
     // Why stop: candidates only get older, so a day whose last slot predates dtstart ends the search.
     const endOfDay = zonedTimestamp(formatter, { year, month, day, hour: 23, minute: 59 })
     if (endOfDay !== null && endOfDay < schedule.dtstart) {
       break
     }
   }
-  return null
+}
+
+/** The latest occurrence at or before `now` in the schedule's timezone. */
+export function latestAgentsWorkflowOccurrence(
+  schedule: AgentsWorkflowSchedule,
+  now: number
+): number | null {
+  const first = agentsWorkflowOccurrencesDescending(schedule, now).next()
+  return first.done ? null : first.value
 }
 
 function createFormatter(timezone: string): Intl.DateTimeFormat {

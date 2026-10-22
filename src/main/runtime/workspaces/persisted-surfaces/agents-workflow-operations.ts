@@ -3,8 +3,14 @@
 import type {
   AgentsWorkflowCreateInput,
   AgentsWorkflowDefinition,
-  AgentsWorkflowUpdateFields
+  AgentsWorkflowRunContext,
+  AgentsWorkflowUpdateFields,
+  AgentsWorkflowWorkspace
 } from '../../../../shared/agents-workflow-types'
+import {
+  AgentsWorkflowDefinitionInvalidError,
+  type AgentsWorkflowDefinitionIssue
+} from '../../../../shared/agents-workflow-errors'
 import {
   agentsWorkflowAgentChannelPlanEntries,
   type AgentsWorkflowAgentChannelEntry
@@ -57,6 +63,7 @@ export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends OrcaRuntim
     if (!this.store?.createAgentsWorkflow) {
       throw new Error('runtime_unavailable')
     }
+    await this.assertAgentsWorkflowTargetResolvable(input)
     const workflow = this.store.createAgentsWorkflow(input)
     await this.store.flushPendingOrThrowAsync?.({ drainToStableGeneration: false })
     this.notifyAgentsWorkflowsChanged({ reason: 'definition' })
@@ -70,6 +77,13 @@ export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends OrcaRuntim
   ): Promise<AgentsWorkflowDefinition> {
     if (!this.store?.updateAgentsWorkflow) {
       throw new Error('runtime_unavailable')
+    }
+    if (updates.runContext !== undefined || updates.workspace !== undefined) {
+      const current = this.showAgentsWorkflow(id)
+      await this.assertAgentsWorkflowTargetResolvable({
+        runContext: updates.runContext ?? current.runContext,
+        workspace: updates.workspace ?? current.workspace
+      })
     }
     const workflow = this.store.updateAgentsWorkflow(id, expectedRevision, updates)
     await this.store.flushPendingOrThrowAsync?.({ drainToStableGeneration: false })
@@ -127,6 +141,51 @@ export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends OrcaRuntim
 
   showAgentsWorkflowRun(runId: string): Promise<AgentsWorkflowRun> {
     return this.getAgentsWorkflowRunService().showRun(runId)
+  }
+
+  /**
+   * Why refuse the write: a graph with a target this host cannot resolve saves fine and then
+   * fails every run — and for a schedule, nobody is watching when it fails.
+   */
+  private async assertAgentsWorkflowTargetResolvable(target: {
+    runContext: AgentsWorkflowRunContext
+    workspace: AgentsWorkflowWorkspace
+  }): Promise<void> {
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Runtime mixins are assembled into OrcaRuntimeService; this layer cannot statically see later mixins.
+    const runtime = this as OrcaRuntimeService
+    const issues: AgentsWorkflowDefinitionIssue[] = []
+    let repoResolved = false
+    try {
+      await runtime.showRepo(`id:${target.runContext.repoId}`)
+      repoResolved = true
+    } catch {
+      issues.push({
+        severity: 'error',
+        code: 'run_context_repo_unresolved',
+        message: "The workflow's project cannot be found on this host."
+      })
+    }
+    if (target.workspace.mode === 'existing') {
+      try {
+        const workspace = await this.showManagedWorktree(`id:${target.workspace.workspaceId}`)
+        if (repoResolved && workspace.repoId !== target.runContext.repoId) {
+          issues.push({
+            severity: 'error',
+            code: 'run_context_workspace_mismatch',
+            message: 'The chosen workspace belongs to a different project.'
+          })
+        }
+      } catch {
+        issues.push({
+          severity: 'error',
+          code: 'run_context_workspace_unresolved',
+          message: 'The chosen workspace cannot be found on this host.'
+        })
+      }
+    }
+    if (issues.length > 0) {
+      throw new AgentsWorkflowDefinitionInvalidError(issues)
+    }
   }
 
   private getAgentsWorkflowRunService(): AgentsWorkflowRunService {

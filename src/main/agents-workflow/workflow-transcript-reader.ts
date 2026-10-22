@@ -41,13 +41,29 @@ function modifiedAtMs(session: AiVaultSession): number {
   return Number.isNaN(parsed) ? 0 : parsed
 }
 
+/**
+ * A prompt as it can be compared across the two sides that record it: our assembled prompt and
+ * the agent's `lastUserPrompt`. Line endings and runs of whitespace differ between what a CLI is
+ * handed and what it writes back, and a trailing newline was enough to lose the whole turn.
+ */
+function normalizePrompt(text: string | null | undefined): string {
+  return (text ?? '').replace(/\s+/g, ' ').trim()
+}
+
+/** Short prefixes are the shared boilerplate every node prompt carries, and prove nothing. */
+const PROMPT_PREFIX_MATCH_MIN_LENGTH = 120
+
+type SessionMatch =
+  | { session: AiVaultSession }
+  | { session: null; workspaceSessions: number; recentSessions: number }
+
 function pickSession(
   sessions: readonly AiVaultSession[],
   workspacePath: string,
   prompt: string,
   startedAt: number,
   claimedSessionPaths: ReadonlySet<string>
-): AiVaultSession | null {
+): SessionMatch {
   const cwd = comparablePath(workspacePath)
   const inWorkspace = sessions.filter(
     (session) =>
@@ -55,22 +71,41 @@ function pickSession(
       !claimedSessionPaths.has(comparablePath(session.filePath) ?? '')
   )
   if (inWorkspace.length === 0) {
-    return null
+    return { session: null, workspaceSessions: 0, recentSessions: 0 }
   }
   const since = startedAt - TRANSCRIPT_CLOCK_SLACK_MS
-  const target = prompt.trim()
-  // Why no time-based fallback: another session in this workspace (the user's own chat, or a
+  const recent = inWorkspace.filter((session) => modifiedAtMs(session) >= since)
+  const target = normalizePrompt(prompt)
+  // Why no time-only fallback: another session in this workspace (the user's own chat, or a
   // parallel node of this workflow) would be indistinguishable, and handing its answer downstream
-  // is worse than falling through to the file contract. Only an exact prompt match counts; the
-  // time bound keeps an older run of the same prompt from answering this one. The newest match
-  // wins, because a loop iteration repeating the same prompt leaves the earlier session in range.
-  return (
-    inWorkspace
-      .filter(
-        (session) => session.lastUserPrompt?.trim() === target && modifiedAtMs(session) >= since
+  // is worse than falling through to the file contract. Only a prompt match counts; the time bound
+  // keeps an older run of the same prompt from answering this one. The newest match wins, because
+  // a loop iteration repeating the same prompt leaves the earlier session in range.
+  const normalized = (session: AiVaultSession): string => normalizePrompt(session.lastUserPrompt)
+  const exact = recent.filter((session) => normalized(session) === target)
+  if (exact.length > 0) {
+    return { session: newest(exact) }
+  }
+  // Why a second chance: an agent may record the prompt with only its own wrapper trimmed. It is
+  // accepted only when one candidate qualifies, and only for a prompt long enough that the shared
+  // prefix is not the whole match.
+  if (target.length >= PROMPT_PREFIX_MATCH_MIN_LENGTH) {
+    const prefix = recent.filter((session) => {
+      const recorded = normalized(session)
+      return (
+        recorded.length >= PROMPT_PREFIX_MATCH_MIN_LENGTH &&
+        (recorded.startsWith(target) || target.startsWith(recorded))
       )
-      .sort((left, right) => modifiedAtMs(right) - modifiedAtMs(left))[0] ?? null
-  )
+    })
+    if (prefix.length === 1) {
+      return { session: prefix[0] }
+    }
+  }
+  return { session: null, workspaceSessions: inWorkspace.length, recentSessions: recent.length }
+}
+
+function newest(sessions: readonly AiVaultSession[]): AiVaultSession {
+  return [...sessions].sort((left, right) => modifiedAtMs(right) - modifiedAtMs(left))[0]
 }
 
 async function sessionCandidate(session: AiVaultSession): Promise<SessionFileCandidate> {
@@ -133,6 +168,14 @@ async function readAssistantAnswer(
   return null
 }
 
+/** Why the counts: "no session matched" gave the user nothing to act on. */
+function noMatchMessage(match: { workspaceSessions: number; recentSessions: number }): string {
+  if (match.workspaceSessions === 0) {
+    return 'No transcript session ran in this workspace for this turn.'
+  }
+  return `No transcript session matched this turn's prompt (${match.workspaceSessions} session(s) in the workspace, ${match.recentSessions} touched since the turn began).`
+}
+
 /** The answer this turn wrote, read back from `agent`'s transcript. */
 export async function readWorkflowTranscriptTurn(input: {
   agent: AiVaultAgent
@@ -158,15 +201,16 @@ export async function readWorkflowTranscriptTurn(input: {
     }
   }
 
-  const session = pickSession(
+  const match = pickSession(
     result.sessions.filter((candidate) => candidate.agent === input.agent),
     input.workspacePath,
     input.prompt,
     input.startedAt,
     new Set((input.claimedSessionPaths ?? []).map((path) => comparablePath(path) ?? ''))
   )
+  const session = match.session
   if (!session) {
-    return { ok: false, message: 'No transcript session matched this turn.' }
+    return { ok: false, message: noMatchMessage(match) }
   }
   let content: string | null
   try {
