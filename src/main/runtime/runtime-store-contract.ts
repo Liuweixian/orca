@@ -99,6 +99,7 @@ export type RuntimeStore = {
   updateAgentsWorkflowRun?: Store['updateAgentsWorkflowRun']
   replaceAgentsWorkflowRunTrace?: Store['replaceAgentsWorkflowRunTrace']
   markInterruptedAgentsWorkflowRunsUnverifiable?: Store['markInterruptedAgentsWorkflowRunsUnverifiable']
+  clearAgentsWorkflowRuns?: Store['clearAgentsWorkflowRuns']
   listAgentsWorkflowRuns?: Store['listAgentsWorkflowRuns']
   showAgentsWorkflowRun?: Store['showAgentsWorkflowRun']
   getSparsePresets?: Store['getSparsePresets']

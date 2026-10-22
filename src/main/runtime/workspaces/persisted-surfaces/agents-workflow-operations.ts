@@ -131,6 +131,20 @@ export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends OrcaRuntim
     return this.getAgentsWorkflowRunService().cancelRun(runId)
   }
 
+  /** How many finished runs of this workflow were dropped; active runs are kept. */
+  async clearAgentsWorkflowRuns(workflowId: string): Promise<number> {
+    if (!this.store?.clearAgentsWorkflowRuns) {
+      throw new Error('runtime_unavailable')
+    }
+    const removed = this.store.clearAgentsWorkflowRuns(workflowId)
+    if (removed === 0) {
+      return 0
+    }
+    await this.store.flushPendingOrThrowAsync?.({ drainToStableGeneration: false })
+    this.notifyAgentsWorkflowsChanged({ reason: 'run' })
+    return removed
+  }
+
   listAgentsWorkflowRuns(input: {
     workflowId?: string
     cursor?: string

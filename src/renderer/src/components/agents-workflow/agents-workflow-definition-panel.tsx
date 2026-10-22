@@ -1,4 +1,4 @@
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -31,6 +31,7 @@ export function AgentsWorkflowDefinitionPanel({
   issues,
   onSelect,
   onCreate,
+  onDelete,
   onChange
 }: {
   workflows: AgentsWorkflowDefinition[]
@@ -38,6 +39,7 @@ export function AgentsWorkflowDefinitionPanel({
   issues: readonly AgentsWorkflowValidationIssue[]
   onSelect: (id: string) => void
   onCreate: () => void
+  onDelete: () => void
   onChange: (definition: AgentsWorkflowDefinition) => void
 }): React.JSX.Element {
   const scheduleDraft = toScheduleDraft(definition.trigger.schedule)
@@ -137,6 +139,16 @@ export function AgentsWorkflowDefinitionPanel({
         {definition.trigger.schedule ? (
           <ScheduleFields definition={definition} draft={scheduleDraft} onChange={onChange} />
         ) : null}
+        <div className="border-t border-border pt-4">
+          <Button
+            variant="outline"
+            className="w-full text-destructive hover:text-destructive"
+            onClick={onDelete}
+          >
+            <Trash2 />
+            {translate('auto.components.agents-workflow.definition.delete', 'Delete workflow')}
+          </Button>
+        </div>
       </div>
     </aside>
   )

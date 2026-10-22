@@ -63,6 +63,7 @@ function AgentsWorkflowLoadedSurface({
   const target = `${targetLabels.host} · ${targetLabels.project} · ${targetLabels.workspace}`
   const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null)
   const [deleteOpen, setDeleteOpen] = React.useState(false)
+  const [clearHistoryOpen, setClearHistoryOpen] = React.useState(false)
   /** A switch that would silently drop unsaved edits, held until the user confirms. */
   const [pendingDiscard, setPendingDiscard] = React.useState<
     { kind: 'select'; id: string } | { kind: 'create' } | null
@@ -162,6 +163,7 @@ function AgentsWorkflowLoadedSurface({
           issues={issues}
           onSelect={(id) => requestSwitch({ kind: 'select', id })}
           onCreate={() => requestSwitch({ kind: 'create' })}
+          onDelete={() => setDeleteOpen(true)}
           onChange={onDefinitionChange}
         />
         <div className="flex min-w-0 flex-1 flex-col">
@@ -179,6 +181,7 @@ function AgentsWorkflowLoadedSurface({
             onSelect={(runId) => void controller.selectRun(runId)}
             onLoadMore={() => void controller.loadMoreRuns()}
             onCancel={(runId) => void controller.cancelRun(runId)}
+            onClearHistory={() => setClearHistoryOpen(true)}
           />
         </div>
         <AgentsWorkflowInspector
@@ -224,6 +227,38 @@ function AgentsWorkflowLoadedSurface({
               }}
             >
               {translate('auto.components.agents-workflow.delete.confirm', 'Delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={clearHistoryOpen} onOpenChange={setClearHistoryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {translate(
+                'auto.components.agents-workflow.history.clearTitle',
+                'Clear run history?'
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {translate(
+                'auto.components.agents-workflow.history.clearDescription',
+                'Finished runs of this workflow are deleted. A run that is still active is kept until it ends.'
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setClearHistoryOpen(false)}>
+              {translate('auto.components.agents-workflow.history.clearCancel', 'Cancel')}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setClearHistoryOpen(false)
+                void controller.clearRunHistory()
+              }}
+            >
+              {translate('auto.components.agents-workflow.history.clearConfirm', 'Clear')}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -164,11 +164,45 @@ describe('AgentsWorkflowPageSurface', () => {
     const updated = onDefinitionChange.mock.calls[0]?.[0]
     expect(updated?.trigger.schedule?.rrule).toBe('FREQ=DAILY;BYHOUR=9;BYMINUTE=0')
   })
+
+  it('clears the run history after confirmation', () => {
+    const definition = createAgentsWorkflowPageFixture(100)
+    const clearRunHistory = vi.fn(async () => undefined)
+    render(
+      <AgentsWorkflowPageSurface
+        controller={controller(definition, vi.fn(), {
+          clearRunHistory,
+          runs: [
+            {
+              schemaVersion: 1,
+              id: 'run-1',
+              workflowId: definition.id,
+              workflowRevision: definition.revision,
+              requestKey: 'manual:1',
+              trigger: 'manual',
+              status: 'completed',
+              workspaceId: null,
+              workspaceDisplayName: null,
+              createdAt: 100,
+              startedAt: 100,
+              finishedAt: 200
+            }
+          ]
+        })}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear run history' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
+
+    expect(clearRunHistory).toHaveBeenCalledOnce()
+  })
 })
 
 function controller(
   definition: ReturnType<typeof createAgentsWorkflowPageFixture>,
-  setDefinition: AgentsWorkflowPageController['setDefinition']
+  setDefinition: AgentsWorkflowPageController['setDefinition'],
+  overrides: Partial<AgentsWorkflowPageController> = {}
 ): AgentsWorkflowPageController {
   return {
     workflows: [definition],
@@ -189,8 +223,10 @@ function controller(
     deleteWorkflow: vi.fn(async () => undefined),
     runNow: vi.fn(async () => undefined),
     cancelRun: vi.fn(async () => undefined),
+    clearRunHistory: vi.fn(async () => undefined),
     selectRun: vi.fn(async () => undefined),
     loadMoreRuns: vi.fn(async () => undefined),
-    reloadAfterConflict: vi.fn(async () => undefined)
+    reloadAfterConflict: vi.fn(async () => undefined),
+    ...overrides
   }
 }

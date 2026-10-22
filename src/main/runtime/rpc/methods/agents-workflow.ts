@@ -1,5 +1,6 @@
 import {
   AgentsWorkflowCapabilities,
+  AgentsWorkflowClearRuns,
   AgentsWorkflowCreate,
   AgentsWorkflowCancelRun,
   AgentsWorkflowDelete,
@@ -77,6 +78,14 @@ export const AGENTS_WORKFLOW_METHODS = [
     permission: 'workspace',
     params: AgentsWorkflowRuns,
     handler: (params, { runtime }) => runtime.listAgentsWorkflowRuns(params)
+  }),
+  defineMethod({
+    name: 'agentsWorkflow.clearRuns',
+    permission: 'workspace',
+    params: AgentsWorkflowClearRuns,
+    handler: async (params, { runtime }) => ({
+      removed: await runtime.clearAgentsWorkflowRuns(params.workflowId)
+    })
   }),
   defineMethod({
     name: 'agentsWorkflow.showRun',

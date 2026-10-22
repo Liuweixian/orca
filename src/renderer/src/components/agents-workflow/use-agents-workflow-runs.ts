@@ -11,6 +11,7 @@ import type {
 import { isActiveAgentsWorkflowRun } from '../../../../shared/agents-workflow-run-types'
 import {
   cancelAgentsWorkflowRun,
+  clearAgentsWorkflowRuns,
   listAgentsWorkflowRuns,
   runAgentsWorkflow,
   showAgentsWorkflowRun
@@ -31,6 +32,7 @@ export type AgentsWorkflowRunsState = {
   selectRun: (runId: string) => Promise<void>
   runNow: (workflowId: string) => Promise<void>
   cancelRun: (runId: string, workflowId: string | null) => Promise<void>
+  clearRunHistory: (workflowId: string | null) => Promise<void>
   loadMoreRuns: (workflowId: string | null) => Promise<void>
 }
 
@@ -127,6 +129,30 @@ export function useAgentsWorkflowRuns(workflowId: string | null): AgentsWorkflow
     [refreshRuns]
   )
 
+  /** Clears the workflow's finished runs; the host keeps a run that is still active. */
+  const clearRunHistory = React.useCallback(
+    async (workflowId: string | null) => {
+      if (!workflowId) {
+        return
+      }
+      try {
+        await clearAgentsWorkflowRuns(workflowId)
+        await refreshRuns(workflowId)
+        toast.success(
+          translate('auto.components.agents-workflow.history.cleared', 'Run history cleared.')
+        )
+      } catch {
+        toast.error(
+          translate(
+            'auto.components.agents-workflow.history.clearFailed',
+            'Could not clear the run history.'
+          )
+        )
+      }
+    },
+    [refreshRuns]
+  )
+
   const loadMoreRuns = React.useCallback(
     async (workflowId: string | null) => {
       if (!workflowId || !nextRunsCursor) {
@@ -187,6 +213,7 @@ export function useAgentsWorkflowRuns(workflowId: string | null): AgentsWorkflow
     clearRuns,
     selectRun,
     cancelRun,
+    clearRunHistory,
     loadMoreRuns
   }
 }

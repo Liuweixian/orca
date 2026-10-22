@@ -67,6 +67,16 @@ export async function deleteAgentsWorkflow(id: string, expectedRevision: number)
   await callRuntimeRpc(LOCAL_TARGET, 'agentsWorkflow.delete', { id, expectedRevision })
 }
 
+/** Drops this workflow's finished runs; the host keeps any run that is still active. */
+export async function clearAgentsWorkflowRuns(workflowId: string): Promise<number> {
+  const result = await callRuntimeRpc<{ removed: number }>(
+    LOCAL_TARGET,
+    'agentsWorkflow.clearRuns',
+    { workflowId }
+  )
+  return result.removed
+}
+
 export function runAgentsWorkflow(
   workflowId: string,
   requestKey: string

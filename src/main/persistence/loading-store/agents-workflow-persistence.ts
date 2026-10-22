@@ -105,6 +105,25 @@ export class AgentsWorkflowPersistence {
     }
   }
 
+  /**
+   * Drops the finished runs of one workflow and returns how many went away. Why keep active runs:
+   * they still own their workspace, so erasing the row while it runs would strand the lock and the
+   * scratch folder cleanup.
+   */
+  clearAgentsWorkflowRuns(workflowId: string): number {
+    const runtime = this[agentsWorkflowPersistenceContext].runtime
+    const runs = runtime.state.agentsWorkflowRuns ?? []
+    const kept = runs.filter(
+      (run) => run.workflowId !== workflowId || isActiveAgentsWorkflowRun(run)
+    )
+    const removed = runs.length - kept.length
+    if (removed > 0) {
+      runtime.state.agentsWorkflowRuns = kept
+      flushAgentsWorkflowRuns(this)
+    }
+    return removed
+  }
+
   listAgentsWorkflowRuns(input: {
     workflowId?: string
     cursor?: string

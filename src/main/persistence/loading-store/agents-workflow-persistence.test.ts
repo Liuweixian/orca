@@ -384,4 +384,27 @@ describe('agent workflow persistence', () => {
     expect(store.showAgentsWorkflowRun(active.run.id).status).toBe('pending')
     expect(() => store.showAgentsWorkflowRun(oldestRunId)).toThrow(/not found/)
   })
+
+  it('clears a workflow’s finished runs, keeping an active run and other workflows', () => {
+    const { store } = createStore()
+    const workflow = store.createAgentsWorkflow(workflowInput('clear-history'))
+    const other = store.createAgentsWorkflow(workflowInput('clear-other'))
+    const finished = store.createAgentsWorkflowRun({
+      workflow,
+      requestKey: 'finished',
+      now: 1
+    })
+    store.updateAgentsWorkflowRun(finished.run.id, { status: 'completed', finishedAt: 2 })
+    const otherRun = store.createAgentsWorkflowRun({ workflow: other, requestKey: 'other', now: 3 })
+    store.updateAgentsWorkflowRun(otherRun.run.id, { status: 'completed', finishedAt: 4 })
+    const active = store.createAgentsWorkflowRun({ workflow, requestKey: 'active', now: 5 })
+
+    expect(store.clearAgentsWorkflowRuns(workflow.id)).toBe(1)
+
+    expect(store.listAgentsWorkflowRuns({ workflowId: workflow.id, limit: 100 }).runs).toEqual([
+      expect.objectContaining({ id: active.run.id, status: 'pending' })
+    ])
+    expect(() => store.showAgentsWorkflowRun(finished.run.id)).toThrow(/not found/)
+    expect(store.showAgentsWorkflowRun(otherRun.run.id).workflowId).toBe(other.id)
+  })
 })

@@ -52,6 +52,10 @@ export const AgentsWorkflowRuns = z.object({
   limit: z.number().int().min(1).max(100).default(20)
 })
 
+export const AgentsWorkflowClearRuns = z.object({
+  workflowId: requiredString('Missing agent workflow id')
+})
+
 export const AgentsWorkflowShowRun = z.object({
   runId: requiredString('Missing agent workflow run id')
 })

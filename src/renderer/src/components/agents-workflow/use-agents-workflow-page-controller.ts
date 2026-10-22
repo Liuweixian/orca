@@ -49,6 +49,7 @@ export type AgentsWorkflowPageController = {
   deleteWorkflow: () => Promise<void>
   runNow: () => Promise<void>
   cancelRun: (runId: string) => Promise<void>
+  clearRunHistory: () => Promise<void>
   selectRun: (runId: string) => Promise<void>
   loadMoreRuns: () => Promise<void>
   reloadAfterConflict: () => Promise<void>
@@ -75,6 +76,7 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
     clearRuns,
     selectRun,
     cancelRun: cancelRuns,
+    clearRunHistory: clearRunHistoryPage,
     loadMoreRuns: loadMoreRunsPage
   } = runsPage
 
@@ -281,6 +283,11 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
     [loadMoreRunsPage, savedDefinition]
   )
 
+  const clearRunHistory = React.useCallback(
+    () => clearRunHistoryPage(savedDefinition?.id ?? null),
+    [clearRunHistoryPage, savedDefinition]
+  )
+
   return {
     workflows,
     definition,
@@ -302,6 +309,7 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
     deleteWorkflow,
     runNow: () => runsPage.runNow(savedDefinition?.id ?? ''),
     cancelRun,
+    clearRunHistory,
     selectRun,
     loadMoreRuns,
     reloadAfterConflict

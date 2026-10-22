@@ -18283,7 +18283,8 @@
           "schedule": "Scheduled runs",
           "timezone": "Timezone",
           "grace": "Missed-run grace (minutes)",
-          "noProjectSetup": "This project has no ready setup on the selected host."
+          "noProjectSetup": "This project has no ready setup on the selected host.",
+          "delete": "Delete workflow"
         },
         "history": {
           "title": "Run history",
@@ -18316,7 +18317,14 @@
           "outputTranscript": "Answer read from the agent transcript",
           "outputFile": "Answer written to the workflow output file",
           "outputTerminal": "Terminal output (not passed downstream)",
-          "outputUnknown": "Answer from an unrecognised source"
+          "outputUnknown": "Answer from an unrecognised source",
+          "clearTitle": "Clear run history?",
+          "clearDescription": "Finished runs of this workflow are deleted. A run that is still active is kept until it ends.",
+          "clearCancel": "Cancel",
+          "clearConfirm": "Clear",
+          "clear": "Clear run history",
+          "cleared": "Run history cleared.",
+          "clearFailed": "Could not clear the run history."
         },
         "controller": {
           "loadFailed": "Could not load the workflow.",

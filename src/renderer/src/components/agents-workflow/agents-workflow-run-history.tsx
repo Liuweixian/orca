@@ -1,4 +1,4 @@
-import { Copy } from 'lucide-react'
+import { Copy, Trash2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
@@ -15,7 +15,8 @@ export function AgentsWorkflowRunHistory({
   hasMore,
   onSelect,
   onLoadMore,
-  onCancel
+  onCancel,
+  onClearHistory
 }: {
   runs: AgentsWorkflowRunSummary[]
   selectedRun: AgentsWorkflowRun | null
@@ -23,12 +24,28 @@ export function AgentsWorkflowRunHistory({
   onSelect: (runId: string) => void
   onLoadMore: () => void
   onCancel: (runId: string) => void
+  onClearHistory: () => void
 }): React.JSX.Element {
   return (
     <section className="grid h-64 shrink-0 grid-cols-[18rem_minmax(0,1fr)] border-t border-border bg-card">
       <div className="overflow-y-auto border-r border-border p-3 scrollbar-sleek">
-        <div className="mb-2 text-xs font-semibold">
-          {translate('auto.components.agents-workflow.history.title', 'Run history')}
+        <div className="mb-2 flex items-center justify-between gap-2">
+          <div className="text-xs font-semibold">
+            {translate('auto.components.agents-workflow.history.title', 'Run history')}
+          </div>
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            aria-label={translate(
+              'auto.components.agents-workflow.history.clear',
+              'Clear run history'
+            )}
+            title={translate('auto.components.agents-workflow.history.clear', 'Clear run history')}
+            disabled={runs.length === 0}
+            onClick={onClearHistory}
+          >
+            <Trash2 />
+          </Button>
         </div>
         {runs.length === 0 ? (
           <div className="text-xs text-muted-foreground">
