@@ -239,6 +239,7 @@
     "showStatusBar": "ステータスバーを表示",
     "showTasksButton": "タスクボタンを表示",
     "showAutomationsButton": "オートメーションボタンを表示",
+    "showAgentsWorkflowButton": "ワークフローボタンを表示",
     "showMobileButton": "Orca Mobile ボタンを表示",
     "showTitlebarAppName": "タイトルバーのアプリ名を表示",
     "view": "表示",
@@ -5539,7 +5540,8 @@
           "fee535205b": "タスク",
           "d599269755": "サイドバーから非表示",
           "artifacts": "アーティファクト",
-          "skills": "スキル"
+          "skills": "スキル",
+          "agentsWorkflows": "ワークフロー"
         },
         "SidebarRepositoryFilterSection": {
           "d3a9c4cea1": "クリア",
