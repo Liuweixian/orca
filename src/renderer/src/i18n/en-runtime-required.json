@@ -215,17 +215,6 @@
           "markManyUnread_other": "Mark {{count}} Agents Unread"
         }
       },
-      "agents-workflow": {
-        "importFailed": "Could not import workflow JSON.",
-        "importFile": "Import workflow JSON file",
-        "imported": "Workflow JSON imported.",
-        "topbar": {
-          "addAgent": "Agent",
-          "addCondition": "Condition",
-          "addLoop": "Loop",
-          "import": "Import JSON"
-        }
-      },
       "artifacts": {
         "ArtifactsPage": {
           "openArtifact": "Open artifact",
