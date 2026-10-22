@@ -1,6 +1,7 @@
 import React from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { AlertTriangle, Bot, CirclePlay, GitBranch, Repeat2 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { AgentIcon, getAgentLabel } from '@/lib/agent-catalog'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
@@ -118,7 +119,7 @@ function AgentsWorkflowNodeCardComponent({
           {agentId === null ? null : (
             <>
               <AgentIcon agent={agentId} size={16} />
-              <span>{getAgentLabel(agentId)}</span>
+              <Badge variant="secondary">{getAgentLabel(agentId)}</Badge>
             </>
           )}
           <span>{nodeKindLabel(node.kind)}</span>
