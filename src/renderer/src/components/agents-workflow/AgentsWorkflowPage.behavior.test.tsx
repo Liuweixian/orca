@@ -146,6 +146,14 @@ describe('AgentsWorkflowPageSurface', () => {
     expect(updated?.edges.map((entry: { id: string }) => entry.id)).toEqual(['research-publish'])
   })
 
+  it('shows a workflow-level issue that has no node to attach to', () => {
+    const definition = { ...createAgentsWorkflowPageFixture(100), name: '   ' }
+    render(<AgentsWorkflowPageSurface controller={controller(definition, vi.fn())} />)
+
+    // Why visible: this issue disables Run, and no inspector or canvas badge can show it.
+    expect(screen.getByText('Workflow name is required.')).not.toBeNull()
+  })
+
   it('enables an RRULE schedule from workflow settings', () => {
     const definition = createAgentsWorkflowPageFixture(100)
     const onDefinitionChange = vi.fn()

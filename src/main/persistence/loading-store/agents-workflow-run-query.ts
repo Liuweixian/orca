@@ -6,8 +6,7 @@ import type {
   AgentsWorkflowRunSummary
 } from '../../../shared/agents-workflow-run-types'
 import { isTerminalAgentsWorkflowRun } from '../../../shared/agents-workflow-run-types'
-
-export const TERMINAL_RUN_RETENTION_PER_WORKFLOW = 100
+import { TERMINAL_RUN_RETENTION_PER_WORKFLOW } from '../../../shared/agents-workflow-run-limits'
 
 function newestFirst(left: AgentsWorkflowRun, right: AgentsWorkflowRun): number {
   return right.createdAt - left.createdAt || right.id.localeCompare(left.id)

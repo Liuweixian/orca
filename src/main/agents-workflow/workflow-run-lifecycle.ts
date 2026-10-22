@@ -6,6 +6,7 @@
 import { rm } from 'node:fs/promises'
 import { isAbsolute, join, relative } from 'node:path'
 import type { AgentsWorkflowRun } from '../../shared/agents-workflow-run-types'
+import { isTerminalAgentsWorkflowRun } from '../../shared/agents-workflow-run-types'
 import {
   AGENTS_WORKFLOW_OUTPUT_DIR,
   agentsWorkflowRunDirectory
@@ -13,6 +14,8 @@ import {
 
 type FinishPersistence = {
   updateAgentsWorkflowRun(runId: string, updates: Partial<AgentsWorkflowRun>): AgentsWorkflowRun
+  /** The stored run, so a settle writes over the newest attempts instead of a stale snapshot. */
+  showAgentsWorkflowRun?(runId: string): AgentsWorkflowRun
   flushPendingOrThrowAsync?: (options?: { drainToStableGeneration?: boolean }) => Promise<void>
 }
 
@@ -91,10 +94,17 @@ export async function finishCancelledAgentsWorkflowRun(
 ): Promise<AgentsWorkflowRun> {
   const status = stopped === 'stopped' ? 'cancelled' : 'unverifiable'
   const finishedAt = lifecycle.now()
+  // Why re-read: the caller's snapshot was taken before the agent was stopped. A run that finished
+  // on its own in between already wrote its final attempts, and copying the older array over them
+  // would drop the last node's error and output.
+  const current = lifecycle.persistence.showAgentsWorkflowRun?.(run.id) ?? run
+  if (isTerminalAgentsWorkflowRun(current)) {
+    return current
+  }
   const updated = lifecycle.persistence.updateAgentsWorkflowRun(run.id, {
     status,
     finishedAt,
-    attempts: run.attempts.map((attempt) =>
+    attempts: current.attempts.map((attempt) =>
       attempt.status === 'running' || attempt.status === 'pending'
         ? { ...attempt, status, finishedAt }
         : attempt

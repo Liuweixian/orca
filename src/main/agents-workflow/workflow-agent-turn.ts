@@ -6,7 +6,7 @@ import type {
   AgentsWorkflowNodeOutput
 } from '../../shared/agents-workflow-run-types'
 import type { AgentsWorkflowAgentTurnNode } from './workflow-schedule-types'
-import { AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES } from './structured-agent-output-capture'
+import { AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES } from '../../shared/agents-workflow-run-limits'
 import {
   createWorkflowAttempt,
   workflowRegionFailure,

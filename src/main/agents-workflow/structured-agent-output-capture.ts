@@ -6,8 +6,7 @@ import { isRootAgentJournalItem } from '../../shared/agent-session-journal-produ
 import { withoutNativeChatVisualDirectiveLines } from '../../shared/native-chat-visual-directive'
 import { structuredAgentSessionCommandTurnItemIds } from '../../shared/structured-agent-session-command-entry'
 import { clampUtf8TextPrefix, isUtf8ByteLengthWithinLimit } from '../../shared/utf8-byte-limits'
-
-export const AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES = 1024 * 1024
+import { AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES } from '../../shared/agents-workflow-run-limits'
 
 export type AgentsWorkflowStructuredOutput = {
   format: 'plain_text'

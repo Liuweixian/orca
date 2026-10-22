@@ -1,8 +1,7 @@
 import React from 'react'
 import { toast } from 'sonner'
-import { validateWorkflowDefinition } from '../../../../shared/agents-workflow-graph'
 import { agentsWorkflowNodeIsTerminal } from '../../../../shared/agents-workflow-graph-analysis'
-import { agentsWorkflowScheduleIssues } from '../../../../shared/agents-workflow-definition-check'
+import { agentsWorkflowDefinitionIssues } from '../../../../shared/agents-workflow-definition-check'
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
@@ -69,12 +68,9 @@ function AgentsWorkflowLoadedSurface({
     { kind: 'select'; id: string } | { kind: 'create' } | null
   >(null)
   const issues = React.useMemo(
-    // Why include the schedule: the host refuses an unparseable schedule, so the Save button must
-    // already be disabled rather than failing after the click.
-    () => [
-      ...validateWorkflowDefinition(definition),
-      ...agentsWorkflowScheduleIssues(definition.trigger.schedule)
-    ],
+    // Why the shared helper: the host refuses a write on the same schedule errors, so "why is Run
+    // disabled" must be computed exactly the way the host computes it.
+    () => agentsWorkflowDefinitionIssues(definition),
     [definition]
   )
   const selectedNode = definition.nodes.find((node) => node.id === selectedNodeId) ?? null
@@ -163,6 +159,7 @@ function AgentsWorkflowLoadedSurface({
         <AgentsWorkflowDefinitionPanel
           workflows={controller.workflows}
           definition={definition}
+          issues={issues}
           onSelect={(id) => requestSwitch({ kind: 'select', id })}
           onCreate={() => requestSwitch({ kind: 'create' })}
           onChange={onDefinitionChange}

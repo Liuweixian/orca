@@ -11,8 +11,27 @@ function workflow(
     id: 'workflow-1',
     revision: 1,
     name: 'Scheduled workflow',
-    nodes: [{ id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } }],
-    edges: [],
+    // A runnable graph: the scheduler skips definitions the canvas would refuse to run.
+    nodes: [
+      { id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } },
+      {
+        id: 'finish',
+        kind: 'agent',
+        title: 'Finish',
+        position: { x: 200, y: 0 },
+        agentId: 'claude',
+        prompt: { source: 'Summarize.' }
+      }
+    ],
+    edges: [
+      {
+        id: 'start-finish',
+        fromNodeId: 'start',
+        toNodeId: 'finish',
+        fromPort: 'default',
+        toPort: 'default'
+      }
+    ],
     runContext: {
       kind: 'workspace-run',
       projectId: 'project-1',
@@ -184,7 +203,7 @@ describe('AgentsWorkflowScheduler', () => {
     ).toBe(Date.UTC(2026, 2, 8, 7))
   })
 
-  it('keeps backfilling older holes after the newest occurrence already has a run', async () => {
+  it('records one missed occurrence per tick and keeps walking back on later ticks', async () => {
     const definition = {
       ...workflow({
         timezone: 'UTC',
@@ -195,13 +214,15 @@ describe('AgentsWorkflowScheduler', () => {
       createdAt: Date.UTC(2026, 0, 5)
     }
     const now = Date.UTC(2026, 0, 8, 12)
-    const latest = Date.UTC(2026, 0, 8, 9)
-    const recordSkipped = vi.fn(async () => undefined)
+    // Only the newest occurrence was recorded before the cap stopped the earlier backfill.
+    const recorded = new Set([Date.UTC(2026, 0, 8, 9)])
+    const recordSkipped = vi.fn(async (_workflow: unknown, scheduledFor: number) => {
+      recorded.add(scheduledFor)
+    })
     const scheduler = new AgentsWorkflowScheduler(
       {
         listWorkflows: () => [definition],
-        // Only the newest occurrence was recorded before the cap stopped the earlier backfill.
-        hasScheduledRun: (_workflowId, scheduledFor) => scheduledFor === latest,
+        hasScheduledRun: (_workflowId, scheduledFor) => recorded.has(scheduledFor),
         runScheduled: vi.fn(async () => undefined),
         recordSkipped
       },
@@ -210,44 +231,47 @@ describe('AgentsWorkflowScheduler', () => {
     )
 
     await scheduler.evaluateDueRuns()
+    await scheduler.evaluateDueRuns()
+    await scheduler.evaluateDueRuns()
 
+    // Why one per tick: a single pass over a long outage used to write and broadcast dozens of
+    // skipped rows at once, pushing real failures out of the retained history.
     expect(
       recordSkipped.mock.calls.map((call) => (call as unknown as [unknown, number])[1])
     ).toEqual([Date.UTC(2026, 0, 7, 9), Date.UTC(2026, 0, 6, 9), Date.UTC(2026, 0, 5, 9)])
   })
 
-  it('records every occurrence of an outage instead of only the newest one', async () => {
-    const definition = {
-      ...workflow({
-        timezone: 'UTC',
-        rrule: 'FREQ=DAILY;BYHOUR=9;BYMINUTE=0',
-        dtstart: Date.UTC(2026, 0, 1),
-        missedRunGraceMinutes: 60
-      }),
-      createdAt: Date.UTC(2026, 0, 5)
-    }
-    const now = Date.UTC(2026, 0, 8, 12)
+  it('skips a scheduled definition the canvas would refuse to run', async () => {
+    const definition = workflow({
+      timezone: 'UTC',
+      rrule: 'FREQ=DAILY;BYHOUR=9;BYMINUTE=0',
+      dtstart: Date.UTC(2026, 0, 1),
+      missedRunGraceMinutes: 60
+    })
+    // A draft saved before the host-only restriction could still name a remote host.
+    definition.runContext = { ...definition.runContext, hostId: 'ssh:builder' }
+    const runScheduled = vi.fn(async () => undefined)
     const recordSkipped = vi.fn(async () => undefined)
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => undefined)
     const scheduler = new AgentsWorkflowScheduler(
       {
         listWorkflows: () => [definition],
         hasScheduledRun: () => false,
-        runScheduled: vi.fn(async () => undefined),
+        runScheduled,
         recordSkipped
       },
       60_000,
-      () => now
+      () => Date.UTC(2026, 0, 5, 9)
     )
 
     await scheduler.evaluateDueRuns()
+    await scheduler.evaluateDueRuns()
 
-    expect(
-      recordSkipped.mock.calls.map((call) => (call as unknown as [unknown, number])[1])
-    ).toEqual([
-      Date.UTC(2026, 0, 8, 9),
-      Date.UTC(2026, 0, 7, 9),
-      Date.UTC(2026, 0, 6, 9),
-      Date.UTC(2026, 0, 5, 9)
-    ])
+    // Why no failed runs: every occurrence used to fail with `definition_invalid` and no
+    // explanation; the canvas now shows the reason, and the log reports it once.
+    expect(runScheduled).not.toHaveBeenCalled()
+    expect(recordSkipped).not.toHaveBeenCalled()
+    expect(warn).toHaveBeenCalledTimes(1)
+    warn.mockRestore()
   })
 })

@@ -498,4 +498,38 @@ describe('executeAgentsWorkflowSchedule', () => {
 
     expect(failure).toMatchObject({ ok: false, code: 'loop_output_missing' })
   })
+
+  it('stores a bounded copy of each answer instead of the whole text', async () => {
+    const workflow = definition(
+      [agent('finish', { source: 'Summarize.' })],
+      [edge('start-finish', 'start', 'finish')]
+    )
+    const answer = 'x'.repeat(32 * 1024)
+    const captured: { output: { content: string; truncated: boolean } | null }[] = []
+
+    const result = await executeAgentsWorkflowSchedule({
+      definition: workflow,
+      executeAgent: async () => ({
+        ok: true,
+        output: {
+          format: 'plain_text',
+          content: answer,
+          capturedAt: 10,
+          truncated: false,
+          source: 'structured_assistant_message'
+        }
+      }),
+      checkpoint: ({ attempts }) => {
+        captured.length = 0
+        captured.push(...attempts)
+      }
+    })
+
+    // Why bounded: run history retains 100 runs per workflow, so a full copy of every answer made
+    // the stored domain grow with the run's output. The next node read the full text from its file.
+    expect(result.ok).toBe(true)
+    const stored = captured.find((attempt) => attempt.output !== null)
+    expect(stored?.output?.truncated).toBe(true)
+    expect(Buffer.byteLength(stored?.output?.content ?? '', 'utf8')).toBeLessThanOrEqual(8 * 1024)
+  })
 })

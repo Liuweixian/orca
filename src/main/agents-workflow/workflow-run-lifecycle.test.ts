@@ -6,6 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AgentsWorkflowRun } from '../../shared/agents-workflow-run-types'
 import { agentsWorkflowRunDirectory } from '../../shared/agents-workflow-output-paths'
 import {
+  finishCancelledAgentsWorkflowRun,
   recoverInterruptedAgentsWorkflowRuns,
   removeAgentsWorkflowRunScratch
 } from './workflow-run-lifecycle'
@@ -56,6 +57,58 @@ function interruptedRun(runContextPath: string): AgentsWorkflowRun {
     finishedAt: null
   }
 }
+
+describe('finishCancelledAgentsWorkflowRun', () => {
+  it('keeps the evidence of a run that finished before the stop landed', async () => {
+    const requested = {
+      ...interruptedRun('/repo/project'),
+      status: 'cancel_requested' as const,
+      attempts: []
+    }
+    const finished = {
+      ...requested,
+      status: 'completed' as const,
+      finishedAt: 9,
+      attempts: [
+        {
+          id: 'finish:1',
+          nodeId: 'finish',
+          status: 'completed' as const,
+          startedAt: 2,
+          finishedAt: 8,
+          output: {
+            format: 'plain_text' as const,
+            content: 'the answer',
+            capturedAt: 8,
+            truncated: false,
+            source: 'structured_assistant_message' as const
+          }
+        }
+      ]
+    }
+    const updateAgentsWorkflowRun = vi.fn()
+
+    const settled = await finishCancelledAgentsWorkflowRun(
+      {
+        persistence: {
+          showAgentsWorkflowRun: () => finished,
+          updateAgentsWorkflowRun,
+          flushPendingOrThrowAsync: async () => undefined
+        },
+        notifyChanged: vi.fn(),
+        now: () => 10
+      },
+      requested,
+      'stopped'
+    )
+
+    // Why: the requested run's attempt snapshot predates the final node, so copying it back would
+    // erase the evidence the user needs to understand what happened.
+    expect(settled.status).toBe('completed')
+    expect(settled.attempts[0]?.output?.content).toBe('the answer')
+    expect(updateAgentsWorkflowRun).not.toHaveBeenCalled()
+  })
+})
 
 describe('recoverInterruptedAgentsWorkflowRuns', () => {
   it('cleans the workspace the run actually used, not its project path', async () => {

@@ -15,11 +15,11 @@ import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowSchedule
 } from '../../../../shared/agents-workflow-types'
-import { buildAutomationRrule } from '../../../../shared/automation-schedule-occurrences'
-import { tryParseAutomationRrule } from '../../../../shared/automation-schedule-parsing'
+import type { AgentsWorkflowValidationIssue } from '../../../../shared/agents-workflow-graph'
 import type { AutomationDraft } from '../automations/AutomationEditorDialog'
 import { AutomationSchedulePicker } from '../automations/AutomationSchedulePicker'
 import { AgentsWorkflowTargetFields } from './agents-workflow-target-fields'
+import { rruleFromScheduleDraft, toScheduleDraft } from './agents-workflow-schedule-draft'
 
 /** Below a minute, any tick jitter would mark the occurrence missed before it could start. */
 const MIN_GRACE_MINUTES = 1
@@ -28,17 +28,24 @@ const MAX_GRACE_MINUTES = 7 * 24 * 60
 export function AgentsWorkflowDefinitionPanel({
   workflows,
   definition,
+  issues,
   onSelect,
   onCreate,
   onChange
 }: {
   workflows: AgentsWorkflowDefinition[]
   definition: AgentsWorkflowDefinition
+  issues: readonly AgentsWorkflowValidationIssue[]
   onSelect: (id: string) => void
   onCreate: () => void
   onChange: (definition: AgentsWorkflowDefinition) => void
 }): React.JSX.Element {
   const scheduleDraft = toScheduleDraft(definition.trigger.schedule)
+  // Why shown here: issues without a node or edge have nowhere else to appear, so clearing the
+  // name or picking an unsupported host used to disable Run with no visible reason.
+  const workflowIssues = issues.filter(
+    (issue) => issue.nodeId === undefined && issue.edgeId === undefined
+  )
   return (
     <aside className="w-72 shrink-0 overflow-y-auto border-r border-border bg-card p-4 scrollbar-sleek">
       <div className="space-y-5">
@@ -76,6 +83,25 @@ export function AgentsWorkflowDefinitionPanel({
             }
           />
         </div>
+        {workflowIssues.length > 0 ? (
+          <section className="space-y-1">
+            <div className="text-xs font-semibold text-destructive">
+              {translate('auto.components.agents-workflow.inspector.issues', 'Issues')}
+            </div>
+            <ul className="space-y-1 text-xs">
+              {workflowIssues.map((issue) => (
+                <li
+                  key={`${issue.code}:${issue.message}`}
+                  className={
+                    issue.severity === 'error' ? 'text-destructive' : 'text-muted-foreground'
+                  }
+                >
+                  {issue.message}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
         <AgentsWorkflowTargetFields definition={definition} onChange={onChange} />
         <div className="flex items-center justify-between gap-3">
           <Label htmlFor="agents-workflow-enabled">
@@ -135,14 +161,7 @@ function ScheduleFields({
         draft={draft}
         allowCustom={false}
         onDraftChange={(update) => {
-          const next = update(draft)
-          const [hour, minute] = next.time.split(':').map(Number)
-          const rrule = buildAutomationRrule({
-            preset: next.preset === 'custom' ? 'daily' : next.preset,
-            hour: Number.isFinite(hour) ? hour : 9,
-            minute: Number.isFinite(minute) ? minute : 0,
-            dayOfWeek: Number(next.dayOfWeek)
-          })
+          const rrule = rruleFromScheduleDraft(update(draft))
           updateSchedule(definition, { ...schedule, rrule }, onChange)
         }}
       />
@@ -252,30 +271,4 @@ function timezoneOptions(current: string): string[] {
     zones.unshift(current)
   }
   return zones
-}
-
-function toScheduleDraft(schedule: AgentsWorkflowSchedule | null): AutomationDraft {
-  const parsed = schedule ? tryParseAutomationRrule(schedule.rrule) : null
-  const hour = parsed?.hour ?? 9
-  const minute = parsed?.minute ?? 0
-  return {
-    name: '',
-    prompt: '',
-    agentId: 'claude',
-    extraAgentArgs: '',
-    projectId: '',
-    workspaceMode: 'new_per_run',
-    workspaceId: '',
-    baseBranch: '',
-    reuseSession: false,
-    precheckCommand: '',
-    precheckTimeoutSeconds: '',
-    preset: parsed?.preset === 'custom' ? 'daily' : (parsed?.preset ?? 'daily'),
-    time: `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`,
-    dayOfWeek: String(parsed?.dayOfWeek ?? 1),
-    customSchedule: '',
-    savedSchedule: schedule?.rrule ?? null,
-    missedRunGraceMinutes: String(schedule?.missedRunGraceMinutes ?? 60),
-    scheduleWarning: null
-  }
 }

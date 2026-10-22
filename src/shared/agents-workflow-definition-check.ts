@@ -54,11 +54,17 @@ export function agentsWorkflowScheduleIssues(
   return issues
 }
 
-/** Every error that must block a write; warnings stay advisory. */
+/**
+ * Every issue the definition has, warnings included. The canvas and the host both start here, so
+ * "why is Run disabled" cannot drift between them.
+ */
+export function agentsWorkflowDefinitionIssues(input: unknown): AgentsWorkflowValidationIssue[] {
+  return [...validateWorkflowDefinition(input), ...agentsWorkflowScheduleIssues(scheduleOf(input))]
+}
+
+/** Every error that must block a run; warnings stay advisory. */
 export function agentsWorkflowDefinitionErrors(input: unknown): AgentsWorkflowValidationIssue[] {
-  const issues = validateWorkflowDefinition(input)
-  issues.push(...agentsWorkflowScheduleIssues(scheduleOf(input)))
-  return issues.filter((issue) => issue.severity === 'error')
+  return agentsWorkflowDefinitionIssues(input).filter((issue) => issue.severity === 'error')
 }
 
 /**

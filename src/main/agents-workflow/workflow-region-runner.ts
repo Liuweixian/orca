@@ -44,9 +44,12 @@ export async function runWorkflowRegion(
   const skipNode = (node: AgentsWorkflowNode): void => {
     settledNodes.add(node.id)
     settleEdges(node.id, () => false)
+    // Why the message: every skip lands here, including a branch an upstream condition did not
+    // select and a node no surviving path reaches. The code stays stable; the text says which.
     context.attempts.push({
       ...createWorkflowAttempt(context, node.id, 'skipped', loopContext),
-      errorCode: 'condition_not_selected'
+      errorCode: 'condition_not_selected',
+      errorMessage: 'No upstream branch selected this node, so it did not run.'
     })
   }
 

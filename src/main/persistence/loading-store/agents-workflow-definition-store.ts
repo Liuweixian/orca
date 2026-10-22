@@ -39,7 +39,7 @@ export function createAgentsWorkflowDefinition(
     createdAt: now,
     updatedAt: now
   }
-  assertDefinitionIsRunnable(workflow)
+  assertDefinitionIsStorable(workflow)
   store.replace([...store.all(), workflow])
   store.flush()
   return workflow
@@ -66,7 +66,7 @@ export function updateAgentsWorkflowDefinition(
     createdAt: current.createdAt,
     updatedAt: Date.now()
   }
-  assertDefinitionIsRunnable(updated)
+  assertDefinitionIsStorable(updated)
   store.replace(store.all().map((entry) => (entry.id === id ? updated : entry)))
   store.flush()
   return updated
@@ -105,7 +105,7 @@ function requireDefinition(
  * stored as a draft — the canvas blocks Run until it validates, but closing the window must not
  * lose the work.
  */
-function assertDefinitionIsRunnable(definition: AgentsWorkflowDefinition): void {
+function assertDefinitionIsStorable(definition: AgentsWorkflowDefinition): void {
   const errors = agentsWorkflowDefinitionWriteErrors(definition)
   if (errors.length > 0) {
     throw new AgentsWorkflowDefinitionInvalidError(errors)

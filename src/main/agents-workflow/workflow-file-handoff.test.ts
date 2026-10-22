@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
   AGENTS_WORKFLOW_OUTPUT_CONTRACT_MARKER,
-  agentsWorkflowHandoffDirectory,
   agentsWorkflowHandoffPath,
   parseAgentsWorkflowHandoff,
   withAgentsWorkflowOutputContract
@@ -30,7 +29,6 @@ describe('workflow output contract', () => {
     })
 
     expect(path).toBe('/repo/.orca-workflow/run_.._escape/.._etc_passwd-1_2.md')
-    expect(agentsWorkflowHandoffDirectory('/repo', 'run-1')).toBe('/repo/.orca-workflow/run-1')
   })
 
   it('reads the Markdown answer as written', () => {

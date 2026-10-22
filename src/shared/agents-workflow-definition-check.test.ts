@@ -23,6 +23,16 @@ describe('agentsWorkflowScheduleIssues', () => {
     expect(issues.map((issue) => issue.message).join(' ')).toContain('INTERVAL')
   })
 
+  it('rejects a BYDAY the parser would only honor on a weekly rule', () => {
+    // Why: `FREQ=HOURLY;BYDAY=MO` would otherwise run every hour instead of Mondays.
+    const issues = agentsWorkflowScheduleIssues({
+      ...base,
+      rrule: 'FREQ=HOURLY;BYDAY=MO;BYMINUTE=0'
+    })
+    expect(issues.map((issue) => issue.code)).toContain('schedule_rrule_unsupported')
+    expect(issues.map((issue) => issue.message).join(' ')).toContain('BYDAY')
+  })
+
   it('rejects unknown timezones and cron syntax', () => {
     const codes = agentsWorkflowScheduleIssues({
       ...base,

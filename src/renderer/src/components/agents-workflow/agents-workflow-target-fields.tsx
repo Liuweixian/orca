@@ -45,9 +45,15 @@ export function AgentsWorkflowTargetFields({
 
   const hostId = definition.runContext.hostId
   const hostIds = React.useMemo(() => {
+    // Why keep the current id: a definition stored before this filter must still show, and edit,
+    // the host it names. Only the local host is offered otherwise — a remote one would save as a
+    // draft and then fail every scheduled occurrence with `run_context_not_local`.
     const ids = new Set<string>([hostId])
     for (const repo of repos) {
-      ids.add(getRepoExecutionHostId(repo))
+      const repoHostId = getRepoExecutionHostId(repo)
+      if (normalizeExecutionHostId(repoHostId) === LOCAL_EXECUTION_HOST_ID) {
+        ids.add(repoHostId)
+      }
     }
     return [...ids].sort((left, right) =>
       workflowHostLabel(left, sshTargetLabels).localeCompare(

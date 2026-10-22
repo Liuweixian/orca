@@ -157,6 +157,32 @@ describe('workflow graph validation and compilation', () => {
     })
   })
 
+  it('rejects a loop body that dead-ends before the aggregate exit', () => {
+    const loop: AgentsWorkflowNode = {
+      id: 'loop',
+      kind: 'loop',
+      title: 'Loop',
+      position: { x: 100, y: 0 },
+      count: 3
+    }
+    const workflow = definition(
+      [start(), loop, node('body'), node('exit'), node('done')],
+      [
+        edge('start-loop', 'start', 'loop'),
+        edge('loop-body', 'loop', 'body', { fromPort: 'each' }),
+        edge('loop-done', 'loop', 'done', { fromPort: 'done' }),
+        edge('exit-loop', 'exit', 'loop', { toPort: 'aggregate' }),
+        edge('start-exit', 'start', 'exit')
+      ]
+    )
+
+    // Why rejected here: the body can never reach `exit`, so every iteration would fail at run
+    // time with `loop_output_missing` instead of being caught on the canvas.
+    expect(validateWorkflowDefinition(workflow).map((issue) => issue.code)).toContain(
+      'loop_body_escape'
+    )
+  })
+
   it('rejects loop body cross-boundary edges and nested loops', () => {
     const outer: AgentsWorkflowNode = {
       id: 'outer',

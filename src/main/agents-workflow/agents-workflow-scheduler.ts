@@ -1,3 +1,4 @@
+import { agentsWorkflowDefinitionErrors } from '../../shared/agents-workflow-definition-check'
 import type { AgentsWorkflowDefinition } from '../../shared/agents-workflow-types'
 import {
   agentsWorkflowOccurrencesDescending,
@@ -6,8 +7,6 @@ import {
 
 const DEFAULT_TICK_MS = 60_000
 const MINUTE_MS = 60_000
-/** How many missed occurrences one tick may record; the rest wait for the next tick. */
-const MAX_MISSED_OCCURRENCES_PER_TICK = 50
 
 export type AgentsWorkflowSchedulerDependencies = {
   listWorkflows: () => AgentsWorkflowDefinition[]
@@ -25,6 +24,13 @@ export class AgentsWorkflowScheduler {
   private timer: ReturnType<typeof setInterval> | null = null
   private evaluating = false
   private stopped = false
+  /**
+   * Definitions already reported as unrunnable. Why keyed by id and revision: the store accepts an
+   * invalid graph as a draft, so a scheduled run of one used to fail on every occurrence with no
+   * explanation. The log line is a diagnostic, not a per-tick promise, and editing the workflow
+   * must be able to report it again.
+   */
+  private readonly invalidDefinitionsReported = new Set<string>()
 
   constructor(
     private readonly dependencies: AgentsWorkflowSchedulerDependencies,
@@ -76,6 +82,9 @@ export class AgentsWorkflowScheduler {
     if (!schedule) {
       return
     }
+    if (!this.definitionIsRunnable(workflow)) {
+      return
+    }
     const scheduledFor = latestAgentsWorkflowOccurrence(schedule, now)
     if (scheduledFor === null) {
       return
@@ -83,26 +92,48 @@ export class AgentsWorkflowScheduler {
     if (this.dependencies.hasScheduledRun(workflow.id, scheduledFor)) {
       // Why still walk back: the newest occurrence is recorded, but a capped backfill may have
       // left older holes that no later tick would ever revisit.
-      await this.recordMissedOccurrences(workflow, now)
+      await this.recordMissedOccurrence(workflow, now)
       return
     }
     if (now - scheduledFor > schedule.missedRunGraceMinutes * MINUTE_MS) {
-      await this.recordMissedOccurrences(workflow, now)
+      await this.recordMissedOccurrence(workflow, now)
       return
     }
     await this.dependencies.runScheduled(workflow, scheduledFor)
   }
 
   /**
-   * Records every occurrence nobody claimed while the app was down.
-   *
-   * Why not just the latest: after a three-day outage only the newest occurrence was recorded, and
-   * the run history showed an unexplained hole where the earlier ones should have been. Walking
-   * back skips occurrences that already have a run instead of stopping at them — the newest one
-   * is often recorded first — and stops at the workflow's own creation, so a long-lived schedule
-   * does not backfill rows it never owed.
+   * Why the check here and not only in the editor: a definition stored before `run_context_not_local`
+   * (or any other run-blocking error) was accepted kept failing unattended. Skipping it leaves the
+   * canvas, which shows the same errors, as the place to fix it.
    */
-  private async recordMissedOccurrences(
+  private definitionIsRunnable(workflow: AgentsWorkflowDefinition): boolean {
+    const errors = agentsWorkflowDefinitionErrors(workflow)
+    if (errors.length === 0) {
+      this.invalidDefinitionsReported.delete(workflow.id)
+      return true
+    }
+    const key = `${workflow.id}:${workflow.revision}`
+    if (!this.invalidDefinitionsReported.has(key)) {
+      this.invalidDefinitionsReported.add(key)
+      console.warn(
+        `[agents-workflow] Skipping scheduled runs of "${workflow.name}": ${errors
+          .map((issue) => issue.message)
+          .join('; ')}`
+      )
+    }
+    return false
+  }
+
+  /**
+   * Records the newest occurrence nobody claimed.
+   *
+   * Why one per tick: walking back to `createdAt` every time a schedule was enabled turned a
+   * month-old draft into dozens of `skipped` rows in one pass, each flushed and broadcast, which
+   * pushed real failures out of the retained history. A later tick revisits the remaining holes,
+   * so the backfill still completes without a burst.
+   */
+  private async recordMissedOccurrence(
     workflow: AgentsWorkflowDefinition,
     now: number
   ): Promise<void> {
@@ -110,7 +141,6 @@ export class AgentsWorkflowScheduler {
     if (!schedule) {
       return
     }
-    let recorded = 0
     for (const occurrence of agentsWorkflowOccurrencesDescending(schedule, now)) {
       if (occurrence < workflow.createdAt) {
         return
@@ -119,10 +149,7 @@ export class AgentsWorkflowScheduler {
         continue
       }
       await this.dependencies.recordSkipped(workflow, occurrence, 'missed_grace')
-      recorded += 1
-      if (recorded >= MAX_MISSED_OCCURRENCES_PER_TICK) {
-        return
-      }
+      return
     }
   }
 }

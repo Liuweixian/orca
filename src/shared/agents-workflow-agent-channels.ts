@@ -316,7 +316,7 @@ export function agentsWorkflowEffectiveChannel(
 }
 
 /** Whether this plan may take a node's value through `channel`. */
-export function agentsWorkflowPlanUsesChannel(
+function agentsWorkflowPlanUsesChannel(
   plan: AgentsWorkflowAgentChannelPlan,
   channel: AgentsWorkflowAgentChannel
 ): boolean {

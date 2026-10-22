@@ -4,6 +4,11 @@ import type {
   AgentsWorkflowNode
 } from '../../shared/agents-workflow-types'
 import type { AgentsWorkflowNodeAttempt } from '../../shared/agents-workflow-run-types'
+import {
+  AGENTS_WORKFLOW_RUN_OUTPUT_LIMIT_BYTES,
+  AGENTS_WORKFLOW_TERMINAL_ATTEMPT_OUTPUT_LIMIT_BYTES
+} from '../../shared/agents-workflow-run-limits'
+import { clampUtf8TextPrefix, isUtf8ByteLengthWithinLimit } from '../../shared/utf8-byte-limits'
 import type { AgentsWorkflowRuntimeValues } from './workflow-runtime-values'
 import type {
   AgentsWorkflowScheduleCheckpoint,
@@ -16,8 +21,6 @@ import {
   type WorkflowRegionContext
 } from './workflow-region-types'
 import { runWorkflowRegion } from './workflow-region-runner'
-
-const AGENTS_WORKFLOW_RUN_OUTPUT_LIMIT_BYTES = 20 * 1024 * 1024
 
 export type {
   AgentsWorkflowScheduleCheckpoint,
@@ -65,11 +68,39 @@ export async function executeAgentsWorkflowSchedule(input: {
     signal: input.signal,
     now: input.now ?? Date.now,
     checkpoint: async () => {
+      truncateAttemptOutputs(attempts)
       await input.checkpoint?.({ attempts, executionTrace })
     },
     captureOutputBytes: (bytes) => {
       capturedOutputBytes += bytes
       return capturedOutputBytes <= AGENTS_WORKFLOW_RUN_OUTPUT_LIMIT_BYTES
+    }
+  }
+
+  // Why trim before every checkpoint and not at the end: checkpoints are the only writes to run
+  // history, so this bounds what is stored at each step instead of leaving a full copy of every
+  // answer behind on a run that later crashes. The untrimmed text already reached the next node
+  // through its handoff file, so nothing downstream loses it.
+  function truncateAttemptOutputs(pending: AgentsWorkflowNodeAttempt[]): void {
+    for (const attempt of pending) {
+      const output = attempt.output
+      if (
+        !output ||
+        isUtf8ByteLengthWithinLimit(
+          output.content,
+          AGENTS_WORKFLOW_TERMINAL_ATTEMPT_OUTPUT_LIMIT_BYTES
+        )
+      ) {
+        continue
+      }
+      attempt.output = {
+        ...output,
+        content: clampUtf8TextPrefix(
+          output.content,
+          AGENTS_WORKFLOW_TERMINAL_ATTEMPT_OUTPUT_LIMIT_BYTES
+        ),
+        truncated: true
+      }
     }
   }
 

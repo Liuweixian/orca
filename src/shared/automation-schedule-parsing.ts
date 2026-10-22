@@ -54,9 +54,17 @@ function rruleEntries(rrule: string): Map<string, string> {
 /**
  * The RRULE parts this parser cannot honor. Callers that must not silently change a user's intent
  * (an `INTERVAL=2` weekly rule would otherwise run weekly) reject the rule on these.
+ *
+ * Why the frequency matters: the parser only reads BYDAY for a weekly rule, so `FREQ=HOURLY;BYDAY=MO`
+ * would otherwise run every hour instead of Mondays — exactly the silent reinterpretation this
+ * check exists to prevent.
  */
 export function unsupportedRruleParts(rrule: string): string[] {
-  return [...rruleEntries(rrule).keys()].filter((key) => !SUPPORTED_RRULE_PARTS.has(key))
+  const entries = rruleEntries(rrule)
+  const freq = entries.get('FREQ')?.toUpperCase()
+  return [...entries.keys()].filter(
+    (key) => !SUPPORTED_RRULE_PARTS.has(key) || (key === 'BYDAY' && freq !== 'WEEKLY')
+  )
 }
 
 function parseRrule(rrule: string): ParsedRrule {

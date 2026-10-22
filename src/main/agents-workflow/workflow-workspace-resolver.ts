@@ -124,16 +124,8 @@ export function createAgentsWorkflowWorkspaceResolver(
         }
       }
       await waitForStructuredSetup(runtime, created.setupReceipt, signal)
-      if (signal?.aborted) {
-        // Why report the workspace anyway: it exists and the run's cleanup is the layer that
-        // knows whether to reclaim it.
-        return {
-          ok: true,
-          workspaceId: created.worktree.id,
-          workspacePath: created.worktree.path,
-          displayName: created.worktree.displayName
-        }
-      }
+      // Why report the workspace even when cancelled: it exists, and the run's cleanup is the
+      // layer that knows whether to reclaim it.
       return {
         ok: true,
         workspaceId: created.worktree.id,

@@ -11,7 +11,7 @@ import { scanAiVaultSessions } from '../ai-vault/session-scanner'
 import { parseAgentSessionFile } from '../ai-vault/session-scanner-agent-parser'
 import type { SessionFileCandidate } from '../ai-vault/session-scanner-types'
 import type { TranscriptMessageSink } from '../ai-vault/session-transcript-consumers'
-import { AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES } from './structured-agent-output-capture'
+import { AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES } from '../../shared/agents-workflow-run-limits'
 
 /** A transcript may be written a moment after the pane settled, and clocks drift slightly. */
 const TRANSCRIPT_CLOCK_SLACK_MS = 60_000
