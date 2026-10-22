@@ -94,58 +94,9 @@ function loopRegionIssues(
   return issues
 }
 
-function terminalPathIssues(
-  definition: AgentsWorkflowDefinition,
-  analysis: AgentsWorkflowGraphAnalysis
-): AgentsWorkflowValidationIssue[] {
-  const targets = new Map<string, string[]>()
-  for (const node of definition.nodes) {
-    targets.set(
-      node.id,
-      (analysis.outgoing.get(node.id) ?? []).map((edge) => edge.toNodeId)
-    )
-  }
-  for (const region of analysis.loopRegions) {
-    targets.get(region.exitNodeId)?.push(region.doneTargetNodeId)
-  }
-  const memo = new Map<string, boolean>()
-  const visiting = new Set<string>()
-  const reachesTerminal = (nodeId: string): boolean => {
-    const known = memo.get(nodeId)
-    if (known !== undefined) {
-      return known
-    }
-    if (visiting.has(nodeId)) {
-      return false
-    }
-    const node = analysis.nodesById.get(nodeId)
-    if (node?.kind === 'agent' && node.terminal) {
-      memo.set(nodeId, true)
-      return true
-    }
-    visiting.add(nodeId)
-    const next = targets.get(nodeId) ?? []
-    const result = next.length > 0 && next.every(reachesTerminal)
-    visiting.delete(nodeId)
-    memo.set(nodeId, result)
-    return result
-  }
-  return definition.nodes.flatMap((node) =>
-    analysis.reachableNodeIds.has(node.id) && !reachesTerminal(node.id)
-      ? [
-          issue({
-            code: 'path_without_terminal',
-            message: 'Every control-flow path must end at a terminal agent.',
-            nodeId: node.id
-          })
-        ]
-      : []
-  )
-}
-
 export function validateAgentsWorkflowControlRegions(
   definition: AgentsWorkflowDefinition,
   analysis: AgentsWorkflowGraphAnalysis
 ): AgentsWorkflowValidationIssue[] {
-  return [...loopRegionIssues(definition, analysis), ...terminalPathIssues(definition, analysis)]
+  return loopRegionIssues(definition, analysis)
 }

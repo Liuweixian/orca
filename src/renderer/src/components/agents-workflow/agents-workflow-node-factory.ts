@@ -38,8 +38,7 @@ export function newNode(
       title: translate('auto.components.agents-workflow.newAgent', 'New agent'),
       position,
       agentId: 'claude',
-      prompt: { source: '' },
-      terminal: false
+      prompt: { source: '' }
     }
   }
   if (kind === 'condition') {

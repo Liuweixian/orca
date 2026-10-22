@@ -18,8 +18,7 @@ function node(id: string, kind: AgentsWorkflowNode['kind']): AgentsWorkflowNode 
       title: id,
       position: { x: 0, y: 0 },
       agentId: 'claude',
-      prompt: { source: `${id} prompt` },
-      terminal: false
+      prompt: { source: `${id} prompt` }
     }
   }
   if (kind === 'condition') {

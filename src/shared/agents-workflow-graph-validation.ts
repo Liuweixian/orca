@@ -1,5 +1,6 @@
 import { parseExecutionHostId } from './execution-host'
 import {
+  agentsWorkflowNodeIsTerminal,
   analyzeAgentsWorkflowGraph,
   type AgentsWorkflowGraphAnalysis
 } from './agents-workflow-graph-analysis'
@@ -113,6 +114,31 @@ function edgeIssues(
   return issues
 }
 
+function terminalNodeIssues(definition: AgentsWorkflowDefinition): AgentsWorkflowValidationIssue[] {
+  const terminals = definition.nodes.filter((node) =>
+    agentsWorkflowNodeIsTerminal(definition, node.id)
+  )
+  if (terminals.length !== 1) {
+    return [
+      issue({
+        code: 'terminal_node_count',
+        message: 'A workflow must end at exactly one node with no outgoing connection.'
+      })
+    ]
+  }
+  const terminal = terminals[0]
+  if (terminal.kind !== 'agent') {
+    return [
+      issue({
+        code: 'terminal_node_kind',
+        message: 'The node that ends a workflow must be an agent.',
+        nodeId: terminal.id
+      })
+    ]
+  }
+  return []
+}
+
 function nodePortIssues(definition: AgentsWorkflowDefinition): AgentsWorkflowValidationIssue[] {
   const issues: AgentsWorkflowValidationIssue[] = []
   const starts = definition.nodes.filter((node) => node.kind === 'start')
@@ -139,15 +165,6 @@ function nodePortIssues(definition: AgentsWorkflowDefinition): AgentsWorkflowVal
           })
         )
       }
-    }
-    if (node.kind === 'agent' && node.terminal && outgoing.length > 0) {
-      issues.push(
-        issue({
-          code: 'terminal_agent_has_outgoing',
-          message: 'A terminal agent cannot have outgoing edges.',
-          nodeId: node.id
-        })
-      )
     }
     if (node.kind === 'condition') {
       // The agent's answer is parsed as JSON, so a prompt that never asks for it cannot succeed.
@@ -211,7 +228,11 @@ export function validateParsedAgentsWorkflowDefinition(
   definition: AgentsWorkflowDefinition
 ): AgentsWorkflowValidationIssue[] {
   const analysis = analyzeAgentsWorkflowGraph(definition)
-  const issues = [...edgeIssues(definition, analysis), ...nodePortIssues(definition)]
+  const issues = [
+    ...edgeIssues(definition, analysis),
+    ...nodePortIssues(definition),
+    ...terminalNodeIssues(definition)
+  ]
   if (!definition.name.trim()) {
     issues.push(issue({ code: 'workflow_name_required', message: 'Workflow name is required.' }))
   }

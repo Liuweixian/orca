@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { compileWorkflowGraph, validateWorkflowDefinition } from './agents-workflow-graph'
+import { agentsWorkflowNodeIsTerminal } from './agents-workflow-graph-analysis'
 import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowEdge,
@@ -16,7 +17,6 @@ function node(id: string, overrides: Partial<AgentNode> = {}): AgentNode {
     position: { x: 0, y: 0 },
     agentId: 'claude',
     prompt: { source: '' },
-    terminal: false,
     ...overrides
   }
 }
@@ -77,8 +77,8 @@ function start(): AgentsWorkflowNode {
 describe('workflow graph validation and compilation', () => {
   it('compiles a deterministic ordinary DAG', () => {
     const workflow = definition(
-      [start(), node('b', { terminal: true }), node('a', { terminal: true })],
-      [edge('to-b', 'start', 'b'), edge('to-a', 'start', 'a')]
+      [start(), node('b'), node('a')],
+      [edge('to-b', 'start', 'b'), edge('to-a', 'start', 'a'), edge('a-to-b', 'a', 'b')]
     )
 
     expect(validateWorkflowDefinition(workflow)).toEqual([])
@@ -91,6 +91,35 @@ describe('workflow graph validation and compilation', () => {
     })
   })
 
+  it('rejects a graph that ends at more than one node', () => {
+    const workflow = definition(
+      [start(), node('a'), node('b')],
+      [edge('to-a', 'start', 'a'), edge('to-b', 'start', 'b')]
+    )
+    const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
+
+    expect(codes).toContain('terminal_node_count')
+    expect(compileWorkflowGraph(workflow)).toMatchObject({ ok: false })
+  })
+
+  it('rejects a workflow whose only sink is not an agent', () => {
+    const workflow = definition([start()], [])
+    const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
+
+    expect(codes).toContain('terminal_node_kind')
+  })
+
+  it('treats the node no edge leaves as terminal, including a loop exit', () => {
+    expect(agentsWorkflowNodeIsTerminal(definition([start(), node('a')], []), 'a')).toBe(true)
+    const loopExit = definition(
+      [start(), node('exit'), node('after')],
+      [edge('exit-after', 'exit', 'after', { toPort: 'aggregate' })]
+    )
+
+    expect(agentsWorkflowNodeIsTerminal(loopExit, 'exit')).toBe(false)
+    expect(agentsWorkflowNodeIsTerminal(loopExit, 'after')).toBe(true)
+  })
+
   it('compiles a single-layer loop', () => {
     const loop: AgentsWorkflowNode = {
       id: 'loop',
@@ -100,7 +129,7 @@ describe('workflow graph validation and compilation', () => {
       count: 3
     }
     const body = node('body', { prompt: { source: 'Handle this turn.' } })
-    const done = node('done', { terminal: true, prompt: { source: 'Summarize.' } })
+    const done = node('done', { prompt: { source: 'Summarize.' } })
     const workflow = definition(
       [start(), loop, body, done],
       [
@@ -144,7 +173,7 @@ describe('workflow graph validation and compilation', () => {
       count: 2
     }
     const workflow = definition(
-      [start(), outer, inner, node('exit'), node('done', { terminal: true })],
+      [start(), outer, inner, node('exit'), node('done')],
       [
         edge('start-outer', 'start', 'outer'),
         edge('outer-inner', 'outer', 'inner', { fromPort: 'each' }),
@@ -182,7 +211,7 @@ describe('workflow graph validation and compilation', () => {
           agentId: 'claude',
           prompt: { source: 'Decide whether the change is small.' }
         },
-        node('done', { terminal: true })
+        node('done')
       ],
       [
         edge('start-check', 'start', 'check'),
@@ -213,7 +242,7 @@ describe('workflow graph validation and compilation', () => {
               'Read the answer this node inherits, then decide whether it meets this condition:\n\n<write the condition here>\n\nAnswer with a single JSON object and nothing else: {"decision":"yes"} when the condition holds, {"decision":"no"} when it does not.'
           }
         },
-        node('done', { terminal: true })
+        node('done')
       ],
       [
         edge('start-check', 'start', 'check'),
@@ -240,7 +269,7 @@ describe('workflow graph validation and compilation', () => {
               'Decide whether the change is small. Answer with {"decision":"yes"} or {"decision":"no"}.'
           }
         },
-        node('done', { terminal: true })
+        node('done')
       ],
       [edge('start-check', 'start', 'check'), edge('check-done', 'check', 'done')]
     )

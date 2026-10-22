@@ -1,6 +1,7 @@
 import React from 'react'
 import { toast } from 'sonner'
 import { validateWorkflowDefinition } from '../../../../shared/agents-workflow-graph'
+import { agentsWorkflowNodeIsTerminal } from '../../../../shared/agents-workflow-graph-analysis'
 import { agentsWorkflowScheduleIssues } from '../../../../shared/agents-workflow-definition-check'
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
 import { useAppStore } from '@/store'
@@ -74,6 +75,8 @@ function AgentsWorkflowLoadedSurface({
   )
   const selectedNode = definition.nodes.find((node) => node.id === selectedNodeId) ?? null
   const selectedIssues = issues.filter((entry) => entry.nodeId === selectedNodeId)
+  const selectedTerminal =
+    selectedNode !== null && agentsWorkflowNodeIsTerminal(definition, selectedNode.id)
 
   const onSelectNode = React.useCallback((nodeId: string | null) => {
     setSelectedNodeId(nodeId)
@@ -155,6 +158,7 @@ function AgentsWorkflowLoadedSurface({
         </div>
         <AgentsWorkflowInspector
           node={selectedNode}
+          terminal={selectedTerminal}
           issues={selectedIssues}
           agentChannel={
             selectedNode && selectedNode.kind !== 'start' && selectedNode.kind !== 'loop'

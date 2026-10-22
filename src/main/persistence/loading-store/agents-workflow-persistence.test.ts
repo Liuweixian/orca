@@ -48,8 +48,7 @@ function workflowInput(creationKey = 'create-1'): AgentsWorkflowCreateInput {
         title: 'Report',
         position: { x: 1, y: 0 },
         agentId: 'claude',
-        prompt: { source: 'report' },
-        terminal: true
+        prompt: { source: 'report' }
       }
     ],
     edges: [
@@ -122,7 +121,7 @@ describe('agent workflow persistence', () => {
 
     // Why refuse the write: a stored definition that cannot compile fails on every scheduled
     // occurrence, where nobody sees the error.
-    expect(() => store.createAgentsWorkflow(input)).toThrow(/terminal agent/)
+    expect(() => store.createAgentsWorkflow(input)).toThrow(/must be an agent/)
   })
 
   it('refuses an unparseable schedule instead of letting the ticker throw every minute', () => {
@@ -199,6 +198,9 @@ describe('agent workflow persistence', () => {
 
   it('runs through an injected structured adapter and persists the completed trace', async () => {
     const { store } = createStore()
+    // Why a real directory: an agent with a downstream node has to write its answer file.
+    const workspacePath = mkdtempSync(join(tmpdir(), 'orca-agents-workflow-run-'))
+    temporaryDirectories.push(workspacePath)
     const input = workflowInput('executable')
     input.nodes.push({
       id: 'agent',
@@ -206,16 +208,24 @@ describe('agent workflow persistence', () => {
       title: 'Agent',
       position: { x: 1, y: 0 },
       agentId: 'claude',
-      prompt: { source: 'Report the workspace status.' },
-      terminal: true
+      prompt: { source: 'Report the workspace status.' }
     })
-    input.edges.push({
-      id: 'start-agent',
-      fromNodeId: 'start',
-      toNodeId: 'agent',
-      fromPort: 'default',
-      toPort: 'default'
-    })
+    input.edges.push(
+      {
+        id: 'start-agent',
+        fromNodeId: 'start',
+        toNodeId: 'agent',
+        fromPort: 'default',
+        toPort: 'default'
+      },
+      {
+        id: 'agent-report',
+        fromNodeId: 'agent',
+        toNodeId: 'report',
+        fromPort: 'default',
+        toPort: 'default'
+      }
+    )
     const workflow = store.createAgentsWorkflow(input)
     const service = new AgentsWorkflowRunService(
       store,
@@ -236,7 +246,7 @@ describe('agent workflow persistence', () => {
       async () => ({
         ok: true,
         workspaceId: 'workspace-1',
-        workspacePath: '/repo/workspace-1',
+        workspacePath,
         displayName: 'Workspace'
       }),
       () => 30

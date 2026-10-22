@@ -35,8 +35,7 @@ function definition(): AgentsWorkflowDefinition {
         title: 'Agent',
         position: { x: 1, y: 0 },
         agentId: 'claude',
-        prompt: { source: 'work' },
-        terminal: true
+        prompt: { source: 'work' }
       }
     ],
     edges: [

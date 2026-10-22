@@ -15,8 +15,7 @@ function validDefinition(): Record<string, unknown> {
         title: 'Draft',
         position: { x: 200, y: 0 },
         agentId: 'claude',
-        prompt: { source: 'Summarize the workspace changes.' },
-        terminal: true
+        prompt: { source: 'Summarize the workspace changes.' }
       }
     ],
     edges: [
@@ -65,7 +64,7 @@ describe('AgentsWorkflowDefinitionSchema', () => {
       kind: 'start',
       title: 'Start',
       position: { x: 0, y: 0 },
-      terminal: true
+      agentId: 'claude'
     }
 
     expect(AgentsWorkflowDefinitionSchema.safeParse(definition).success).toBe(false)
@@ -109,8 +108,7 @@ describe('AgentsWorkflowDefinitionSchema', () => {
       title: 'Draft',
       position: { x: 200, y: 0 },
       agentId: 'unknown-agent',
-      prompt: { source: '' },
-      terminal: true
+      prompt: { source: '' }
     }
 
     expect(AgentsWorkflowDefinitionSchema.safeParse(definition).success).toBe(false)

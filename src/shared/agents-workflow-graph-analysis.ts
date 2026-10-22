@@ -232,3 +232,15 @@ export function agentsWorkflowNodesReachableFrom(
 ): Set<string> {
   return reachableFrom(nodeId, analysis.outgoing)
 }
+
+/**
+ * A node is terminal when no edge leaves it — including a loop's aggregate edge, which is still a
+ * connection the author drew. Terminal is derived, never stored: the canvas is the single source
+ * of truth, and validation requires exactly one such node.
+ */
+export function agentsWorkflowNodeIsTerminal(
+  definition: Pick<AgentsWorkflowDefinition, 'edges'>,
+  nodeId: string
+): boolean {
+  return !definition.edges.some((edge) => edge.fromNodeId === nodeId)
+}

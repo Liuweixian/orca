@@ -26,8 +26,7 @@ function legacyDefinition(): Record<string, unknown> {
             input: { kind: 'run_input' },
             upstream: { kind: 'node_output', nodeId: 'start' }
           }
-        },
-        terminal: false
+        }
       },
       {
         id: 'check',
@@ -133,8 +132,7 @@ describe('legacy agents workflow migration', () => {
           position: { x: 200, y: 0 },
           agentId: 'claude',
           prompt: { source: 'Summarize the change.' },
-          extraAgentArgs: '--model opus',
-          terminal: false
+          extraAgentArgs: '--model opus'
         },
         {
           id: 'check',
@@ -159,6 +157,35 @@ describe('legacy agents workflow migration', () => {
     for (const node of parsed.data.nodes) {
       expect(node).not.toHaveProperty('extraAgentArgs')
     }
+  })
+
+  it('drops the terminal flag, which the graph now derives from its edges', () => {
+    const definition: Record<string, unknown> = {
+      ...legacyDefinition(),
+      trigger: { manual: true, schedule: null },
+      nodes: [
+        { id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } },
+        {
+          id: 'draft',
+          kind: 'agent',
+          title: 'Draft',
+          position: { x: 200, y: 0 },
+          agentId: 'claude',
+          prompt: { source: 'Summarize the change.' },
+          terminal: true
+        }
+      ]
+    }
+
+    const parsed = AgentsWorkflowDefinitionSchema.safeParse(
+      migrateLegacyAgentsWorkflowDefinition(definition)
+    )
+
+    expect(parsed.success).toBe(true)
+    if (!parsed.success) {
+      return
+    }
+    expect(parsed.data.nodes[1]).not.toHaveProperty('terminal')
   })
 
   it('drops the stored run input and migrates the snapshot', () => {

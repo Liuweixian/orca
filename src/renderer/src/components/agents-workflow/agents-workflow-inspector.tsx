@@ -1,7 +1,6 @@
 import AgentCombobox from '@/components/agent/AgentCombobox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { translate } from '@/i18n/i18n'
 import { getAgentCatalog } from '@/lib/agent-catalog'
@@ -12,11 +11,14 @@ import type { AgentsWorkflowNode } from '../../../../shared/agents-workflow-type
 
 export function AgentsWorkflowInspector({
   node,
+  terminal,
   issues,
   agentChannel,
   onChange
 }: {
   node: AgentsWorkflowNode | null
+  /** Whether the node ends the workflow; derived from the graph, because the canvas draws it. */
+  terminal: boolean
   issues: AgentsWorkflowValidationIssue[]
   /** What this host can do for the node's agent; null while it is unknown. */
   agentChannel: AgentsWorkflowAgentChannelView | null
@@ -56,7 +58,7 @@ export function AgentsWorkflowInspector({
                 allowNarrowTrigger
                 triggerClassName="w-full min-w-0"
               />
-              <AgentsWorkflowAgentChannelHint channel={agentChannel} terminal={node.terminal} />
+              <AgentsWorkflowAgentChannelHint channel={agentChannel} terminal={terminal} />
             </div>
             <div className="space-y-2">
               <Label htmlFor="agents-workflow-node-prompt">
@@ -80,16 +82,6 @@ export function AgentsWorkflowInspector({
                   'The previous node\u2019s answer is saved to a file, and this prompt names that file so the agent reads it first.'
                 )}
               </p>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <Label htmlFor="agents-workflow-node-terminal">
-                {translate('auto.components.agents-workflow.inspector.terminal', 'Terminal node')}
-              </Label>
-              <Switch
-                id="agents-workflow-node-terminal"
-                checked={node.terminal}
-                onCheckedChange={(terminal) => onChange({ ...node, terminal })}
-              />
             </div>
           </>
         ) : null}

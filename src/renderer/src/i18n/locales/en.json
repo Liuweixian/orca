@@ -18233,7 +18233,6 @@
           "conditionPrompt": "Judging prompt",
           "conditionDecision": "The agent must answer with {\"decision\":\"yes\"} or {\"decision\":\"no\"}; anything else fails the run instead of guessing a branch.",
           "loopIterationNote": "Each turn writes its iteration number to a file and the body’s prompt reads that file first.",
-          "terminal": "Terminal node",
           "count": "Count",
           "issues": "Issues",
           "channelProtocol": "This host runs the node in a structured session and passes its answer downstream.",

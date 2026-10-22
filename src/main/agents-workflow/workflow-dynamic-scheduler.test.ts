@@ -23,8 +23,7 @@ afterEach(async () => {
 
 function agent(
   id: string,
-  prompt: Extract<AgentsWorkflowNode, { kind: 'agent' }>['prompt'],
-  terminal = false
+  prompt: Extract<AgentsWorkflowNode, { kind: 'agent' }>['prompt']
 ): AgentsWorkflowNode {
   return {
     id,
@@ -32,8 +31,7 @@ function agent(
     title: id,
     position: { x: 0, y: 0 },
     agentId: 'claude',
-    prompt,
-    terminal
+    prompt
   }
 }
 
@@ -94,7 +92,7 @@ describe('executeAgentsWorkflowSchedule', () => {
       [
         loop,
         agent('body', { source: 'Handle this turn.' }),
-        agent('done', { source: 'Summarize the turns.' }, true)
+        agent('done', { source: 'Summarize the turns.' })
       ],
       [
         edge('start-loop', 'start', 'loop'),
@@ -138,7 +136,7 @@ describe('executeAgentsWorkflowSchedule', () => {
       [
         { id: 'loop', kind: 'loop', title: 'Loop', position: { x: 0, y: 0 }, count: 2 },
         agent('body', { source: 'Handle this turn.' }),
-        agent('done', { source: 'Summarize the turns.' }, true)
+        agent('done', { source: 'Summarize the turns.' })
       ],
       [
         edge('start-loop', 'start', 'loop'),
@@ -194,13 +192,16 @@ describe('executeAgentsWorkflowSchedule', () => {
               'Decide whether the change is small. Answer with {"decision":"yes"} or {"decision":"no"}.'
           }
         },
-        agent('small', { source: 'small branch' }, true),
-        agent('large', { source: 'large branch' }, true)
+        agent('small', { source: 'small branch' }),
+        agent('large', { source: 'large branch' }),
+        agent('summary', { source: 'summarize the branch' })
       ],
       [
         edge('start-check', 'start', 'check'),
         edge('check-small', 'check', 'small', { fromPort: 'yes' }),
-        edge('check-large', 'check', 'large', { fromPort: 'no' })
+        edge('check-large', 'check', 'large', { fromPort: 'no' }),
+        edge('small-summary', 'small', 'summary'),
+        edge('large-summary', 'large', 'summary')
       ]
     )
 
@@ -219,7 +220,7 @@ describe('executeAgentsWorkflowSchedule', () => {
     })
 
     expect(result.ok).toBe(true)
-    expect(result.executionTrace).toEqual(['start', 'check', 'large'])
+    expect(result.executionTrace).toEqual(['start', 'check', 'large', 'summary'])
     expect(result.attempts.find((attempt) => attempt.nodeId === 'small')).toMatchObject({
       status: 'skipped'
     })
@@ -239,13 +240,16 @@ describe('executeAgentsWorkflowSchedule', () => {
               'Decide whether the change is small. Answer with {"decision":"yes"} or {"decision":"no"}.'
           }
         },
-        agent('small', { source: 'small branch' }, true),
-        agent('large', { source: 'large branch' }, true)
+        agent('small', { source: 'small branch' }),
+        agent('large', { source: 'large branch' }),
+        agent('summary', { source: 'summarize the branch' })
       ],
       [
         edge('start-check', 'start', 'check'),
         edge('check-small', 'check', 'small', { fromPort: 'yes' }),
-        edge('check-large', 'check', 'large', { fromPort: 'no' })
+        edge('check-large', 'check', 'large', { fromPort: 'no' }),
+        edge('small-summary', 'small', 'summary'),
+        edge('large-summary', 'large', 'summary')
       ]
     )
 
@@ -268,7 +272,7 @@ describe('executeAgentsWorkflowSchedule', () => {
 
   it('fails closed when a value node only yields a terminal snapshot', async () => {
     const workflow = definition(
-      [agent('work', { source: 'work' }), agent('done', { source: 'done' }, true)],
+      [agent('work', { source: 'work' }), agent('done', { source: 'done' })],
       [edge('start-work', 'start', 'work'), edge('work-done', 'work', 'done')]
     )
 
@@ -291,7 +295,7 @@ describe('executeAgentsWorkflowSchedule', () => {
 
   it('completes a terminal node from a pane snapshot without publishing a value', async () => {
     const workflow = definition(
-      [agent('first', { source: 'work' }), agent('report', { source: 'report' }, true)],
+      [agent('first', { source: 'work' }), agent('report', { source: 'report' })],
       [edge('start-first', 'start', 'first'), edge('first-report', 'first', 'report')]
     )
 
@@ -332,10 +336,7 @@ describe('executeAgentsWorkflowSchedule', () => {
 
   it('saves the previous answer to a file and points the next prompt at it', async () => {
     const workflow = definition(
-      [
-        agent('first', { source: 'work' }),
-        agent('second', { source: 'turn it into a todo list' }, true)
-      ],
+      [agent('first', { source: 'work' }), agent('second', { source: 'turn it into a todo list' })],
       [edge('start-first', 'start', 'first'), edge('first-second', 'first', 'second')]
     )
     const prompts: string[] = []
@@ -371,7 +372,7 @@ describe('executeAgentsWorkflowSchedule', () => {
 
   it('checkpoints a running attempt before invoking the agent', async () => {
     const workflow = definition(
-      [agent('done', { source: 'work' }, true)],
+      [agent('done', { source: 'work' })],
       [edge('start-done', 'start', 'done')]
     )
     const events: string[] = []
@@ -404,7 +405,7 @@ describe('executeAgentsWorkflowSchedule', () => {
   // `running` forever.
   it('settles the attempt when the executor throws', async () => {
     const workflow = definition(
-      [agent('done', { source: 'work' }, true)],
+      [agent('done', { source: 'work' })],
       [edge('start-done', 'start', 'done')]
     )
 

@@ -63,9 +63,6 @@ function SourceHandles({
 }: {
   node: AgentsWorkflowCanvasNode['data']['workflowNode']
 }): React.JSX.Element | null {
-  if (node.kind === 'agent' && node.terminal) {
-    return null
-  }
   if (node.kind === 'condition') {
     return (
       <>

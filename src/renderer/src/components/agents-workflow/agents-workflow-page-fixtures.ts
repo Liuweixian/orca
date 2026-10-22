@@ -19,8 +19,7 @@ export function createAgentsWorkflowPageFixture(now = Date.now()): AgentsWorkflo
         title: 'Research changes',
         position: { x: 340, y: 180 },
         agentId: 'claude',
-        prompt: { source: 'Review the repository changes in this workspace.' },
-        terminal: false
+        prompt: { source: 'Review the repository changes in this workspace.' }
       },
       {
         id: 'publish',
@@ -28,8 +27,7 @@ export function createAgentsWorkflowPageFixture(now = Date.now()): AgentsWorkflo
         title: 'Draft release notes',
         position: { x: 620, y: 180 },
         agentId: 'claude',
-        prompt: { source: 'Write the release notes for this change.' },
-        terminal: true
+        prompt: { source: 'Write the release notes for this change.' }
       }
     ],
     edges: [

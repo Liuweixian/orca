@@ -1,7 +1,8 @@
 // Why this exists: workflows and runs written before the editor dropped variables still carry
 // `trigger.defaultInput`, prompt bindings, `{{binding:…}}` tokens, condition operators and loop
 // `iteration` objects. Nodes also used to carry `extraAgentArgs`, which the editor no longer
-// offers. The current schemas are strict, so parsing those records unchanged drops them —
+// offers, and agent nodes carried a `terminal` flag that the graph now derives. The current
+// schemas are strict, so parsing those records unchanged drops them —
 // migration rewrites the legacy shape before validation instead of losing the user's data.
 
 const LEGACY_BINDING_TOKEN = /\{\{binding:([A-Za-z0-9._-]+)\}\}/g
@@ -44,7 +45,8 @@ function migrateNode(value: unknown): unknown {
     return value
   }
   if (value.kind === 'agent') {
-    const { extraAgentArgs: _extraAgentArgs, ...rest } = value
+    // `terminal` went away with the toggle: the graph derives it from whether an edge leaves.
+    const { extraAgentArgs: _extraAgentArgs, terminal: _terminal, ...rest } = value
     return { ...rest, prompt: migratePrompt(rest.prompt) }
   }
   if (value.kind === 'condition') {

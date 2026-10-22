@@ -1,21 +1,16 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { AgentsWorkflowDefinition } from '../../shared/agents-workflow-types'
+import type { AgentsWorkflowAgentTurnNode } from './workflow-schedule-types'
 import type { AgentsWorkflowStructuredTurnRunner } from './workflow-agent-execution-adapter'
 import { createAgentsWorkflowExecutionAdapter } from './workflow-agent-execution-adapter'
 import type { AgentsWorkflowFileHandoffTurnRunner } from './workflow-file-handoff-runner'
 import type { AgentsWorkflowTranscriptTurnRunner } from './workflow-transcript-turn-runner'
 import type { AgentsWorkflowReportTurnRunner } from './workflow-report-turn-runner'
 
-type AgentNode = Extract<AgentsWorkflowDefinition['nodes'][number], { kind: 'agent' }>
-
-function node(agentId: AgentNode['agentId']): AgentNode {
+function node(agentId: AgentsWorkflowAgentTurnNode['agentId']): AgentsWorkflowAgentTurnNode {
   return {
     id: 'agent-1',
-    kind: 'agent',
     title: 'Agent',
-    position: { x: 0, y: 0 },
     agentId,
-    prompt: { source: 'work' },
     terminal: false
   }
 }

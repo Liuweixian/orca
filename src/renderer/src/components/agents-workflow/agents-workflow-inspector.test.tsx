@@ -39,6 +39,7 @@ function renderInspector(agentChannel: AgentsWorkflowAgentChannelView | null) {
   return render(
     <AgentsWorkflowInspector
       node={agentNode('gemini')}
+      terminal={false}
       issues={[]}
       agentChannel={agentChannel}
       onChange={vi.fn()}
@@ -70,7 +71,8 @@ describe('AgentsWorkflowInspector channel hint', () => {
   it('does not claim a file for a terminal node, which ends the branch', () => {
     render(
       <AgentsWorkflowInspector
-        node={{ ...agentNode('gemini'), terminal: true }}
+        node={agentNode('gemini')}
+        terminal
         issues={[]}
         agentChannel={channel({ channels: ['file', 'snapshot'] })}
         onChange={vi.fn()}
@@ -85,5 +87,11 @@ describe('AgentsWorkflowInspector channel hint', () => {
     renderInspector(null)
 
     expect(screen.queryByText(/agent transcript|workflow file|quiet pane/i)).toBeNull()
+  })
+
+  it('offers no terminal toggle: the graph decides which node ends the workflow', () => {
+    renderInspector(channel())
+
+    expect(screen.queryByText(/terminal node/i)).toBeNull()
   })
 })

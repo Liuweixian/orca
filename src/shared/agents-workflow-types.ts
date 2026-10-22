@@ -23,8 +23,7 @@ const AgentNodeSchema = z.strictObject({
   title: z.string(),
   position: Position,
   agentId: TuiAgentSchema,
-  prompt: AgentsWorkflowPromptSchema,
-  terminal: z.boolean()
+  prompt: AgentsWorkflowPromptSchema
 })
 
 /** A condition asks an agent to answer yes or no, so it carries its own agent turn. */
