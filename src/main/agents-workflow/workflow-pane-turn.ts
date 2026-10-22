@@ -37,7 +37,6 @@ export type WorkflowPaneLaunch = {
   agent: TuiAgent
   prompt: string
   title?: string
-  extraAgentArgs?: string
 }
 
 export function paneTurnRefusal(
@@ -73,8 +72,7 @@ export class WorkflowPaneTurns {
       launched = await this.runtime.launchAgentTerminal(`id:${launch.workspaceId}`, {
         agent: launch.agent,
         prompt: launch.prompt,
-        ...(launch.title ? { title: launch.title } : {}),
-        ...(launch.extraAgentArgs ? { extraAgentArgs: launch.extraAgentArgs } : {})
+        ...(launch.title ? { title: launch.title } : {})
       })
     } catch (error) {
       return paneTurnRefusal(

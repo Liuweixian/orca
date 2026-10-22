@@ -45,8 +45,7 @@ const CHANNEL_UNAVAILABLE_CODES: Readonly<
   protocol: new Set([
     'structured_agent_unsupported',
     'structured_agent_location_unsupported',
-    'structured_agent_host_unavailable',
-    'structured_agent_arguments_unsupported'
+    'structured_agent_host_unavailable'
   ]),
   // `transcript_turn_unavailable` is deliberately absent: the pane already ran and only the read
   // failed, so the node is a failure, not an invitation to re-run it through the file contract.

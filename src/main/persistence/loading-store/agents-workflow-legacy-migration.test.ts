@@ -120,6 +120,47 @@ describe('legacy agents workflow migration', () => {
     expect(migrateLegacyAgentsWorkflowDefinition(definition)).toEqual(definition)
   })
 
+  it('drops node extra agent arguments, which the editor no longer offers', () => {
+    const definition: Record<string, unknown> = {
+      ...legacyDefinition(),
+      trigger: { manual: true, schedule: null },
+      nodes: [
+        { id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } },
+        {
+          id: 'draft',
+          kind: 'agent',
+          title: 'Draft',
+          position: { x: 200, y: 0 },
+          agentId: 'claude',
+          prompt: { source: 'Summarize the change.' },
+          extraAgentArgs: '--model opus',
+          terminal: false
+        },
+        {
+          id: 'check',
+          kind: 'condition',
+          title: 'Check',
+          position: { x: 300, y: 0 },
+          agentId: 'claude',
+          prompt: { source: 'Decide whether the change is small.' },
+          extraAgentArgs: '--effort high'
+        }
+      ]
+    }
+
+    const parsed = AgentsWorkflowDefinitionSchema.safeParse(
+      migrateLegacyAgentsWorkflowDefinition(definition)
+    )
+
+    expect(parsed.success).toBe(true)
+    if (!parsed.success) {
+      return
+    }
+    for (const node of parsed.data.nodes) {
+      expect(node).not.toHaveProperty('extraAgentArgs')
+    }
+  })
+
   it('drops the stored run input and migrates the snapshot', () => {
     const run = {
       schemaVersion: 1,

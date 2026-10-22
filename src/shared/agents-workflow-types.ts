@@ -24,7 +24,6 @@ const AgentNodeSchema = z.strictObject({
   position: Position,
   agentId: TuiAgentSchema,
   prompt: AgentsWorkflowPromptSchema,
-  extraAgentArgs: z.string().optional(),
   terminal: z.boolean()
 })
 
@@ -35,8 +34,7 @@ const ConditionNodeSchema = z.strictObject({
   title: z.string(),
   position: Position,
   agentId: TuiAgentSchema,
-  prompt: AgentsWorkflowPromptSchema,
-  extraAgentArgs: z.string().optional()
+  prompt: AgentsWorkflowPromptSchema
 })
 
 const LoopNodeSchema = z.strictObject({

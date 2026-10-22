@@ -59,8 +59,7 @@ export class WorkflowReportTurnRunner implements AgentsWorkflowReportTurnRunner 
       workspaceId,
       agent: input.node.agentId,
       prompt: input.prompt,
-      title: input.node.title,
-      ...(input.node.extraAgentArgs ? { extraAgentArgs: input.node.extraAgentArgs } : {})
+      title: input.node.title
     })
     if (!launched.ok) {
       return launched

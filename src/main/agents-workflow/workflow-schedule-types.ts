@@ -16,7 +16,6 @@ export type AgentsWorkflowAgentTurnNode = {
   agentId: TuiAgent
   /** A terminal node ends its branch, so the channel plan may read its pane instead of a file. */
   terminal: boolean
-  extraAgentArgs?: string
 }
 
 export type AgentsWorkflowStepExecutor = (input: {

@@ -87,12 +87,6 @@ export class WorkflowStructuredTurnRunner implements AgentsWorkflowStructuredTur
         `Agent ${input.node.agentId} does not support structured sessions.`
       )
     }
-    if (input.node.extraAgentArgs) {
-      return refusal(
-        'structured_agent_arguments_unsupported',
-        'Extra terminal agent arguments cannot be applied to structured sessions.'
-      )
-    }
 
     const runId = input.runId
     const workspaceId = input.workspaceId

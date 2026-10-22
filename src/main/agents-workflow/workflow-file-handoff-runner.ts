@@ -105,8 +105,7 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
       workspaceId,
       agent: input.node.agentId,
       prompt: withAgentsWorkflowOutputContract(input.prompt, outputPath),
-      title: input.node.title,
-      ...(input.node.extraAgentArgs ? { extraAgentArgs: input.node.extraAgentArgs } : {})
+      title: input.node.title
     })
     if (!launched.ok) {
       return launched

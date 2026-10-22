@@ -17984,7 +17984,6 @@
           "conditionPrompt": "判定提示词",
           "conditionDecision": "智能体必须回答 {\"decision\":\"yes\"} 或 {\"decision\":\"no\"}，否则这次运行直接失败，而不是猜一个分支。",
           "loopIterationNote": "每一轮都会把轮次写入一个文件，循环体的 prompt 会先读取该文件。",
-          "extraArgs": "额外智能体参数",
           "terminal": "终止节点",
           "count": "次数",
           "issues": "问题",

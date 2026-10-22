@@ -81,21 +81,6 @@ export function AgentsWorkflowInspector({
                 )}
               </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="agents-workflow-node-args">
-                {translate(
-                  'auto.components.agents-workflow.inspector.extraArgs',
-                  'Extra agent arguments'
-                )}
-              </Label>
-              <Input
-                id="agents-workflow-node-args"
-                value={node.extraAgentArgs ?? ''}
-                onChange={(event) =>
-                  onChange({ ...node, extraAgentArgs: event.target.value || undefined })
-                }
-              />
-            </div>
             <div className="flex items-center justify-between gap-3">
               <Label htmlFor="agents-workflow-node-terminal">
                 {translate('auto.components.agents-workflow.inspector.terminal', 'Terminal node')}
@@ -146,21 +131,6 @@ export function AgentsWorkflowInspector({
                   'The agent must answer with {"decision":"yes"} or {"decision":"no"}; anything else fails the run instead of guessing a branch.'
                 )}
               </p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="agents-workflow-condition-args">
-                {translate(
-                  'auto.components.agents-workflow.inspector.extraArgs',
-                  'Extra agent arguments'
-                )}
-              </Label>
-              <Input
-                id="agents-workflow-condition-args"
-                value={node.extraAgentArgs ?? ''}
-                onChange={(event) =>
-                  onChange({ ...node, extraAgentArgs: event.target.value || undefined })
-                }
-              />
             </div>
           </>
         ) : null}

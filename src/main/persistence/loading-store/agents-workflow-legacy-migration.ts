@@ -1,7 +1,8 @@
 // Why this exists: workflows and runs written before the editor dropped variables still carry
 // `trigger.defaultInput`, prompt bindings, `{{binding:…}}` tokens, condition operators and loop
-// `iteration` objects. The current schemas are strict, so parsing those records unchanged drops
-// them — migration rewrites the legacy shape before validation instead of losing the user's data.
+// `iteration` objects. Nodes also used to carry `extraAgentArgs`, which the editor no longer
+// offers. The current schemas are strict, so parsing those records unchanged drops them —
+// migration rewrites the legacy shape before validation instead of losing the user's data.
 
 const LEGACY_BINDING_TOKEN = /\{\{binding:([A-Za-z0-9._-]+)\}\}/g
 
@@ -43,12 +44,14 @@ function migrateNode(value: unknown): unknown {
     return value
   }
   if (value.kind === 'agent') {
-    return { ...value, prompt: migratePrompt(value.prompt) }
+    const { extraAgentArgs: _extraAgentArgs, ...rest } = value
+    return { ...rest, prompt: migratePrompt(rest.prompt) }
   }
   if (value.kind === 'condition') {
     const { input: _input, operator: _operator, operand: _operand, ...rest } = value
+    const { extraAgentArgs: _extraAgentArgs, ...withoutExtraAgentArgs } = rest
     return {
-      ...rest,
+      ...withoutExtraAgentArgs,
       agentId: typeof rest.agentId === 'string' && rest.agentId ? rest.agentId : 'claude',
       prompt: isRecord(rest.prompt)
         ? migratePrompt(rest.prompt)
