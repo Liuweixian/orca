@@ -4,8 +4,12 @@
 // workspace. These helpers are the single place that settles the run and drops its scratch folder.
 
 import { rm } from 'node:fs/promises'
+import { isAbsolute, join, relative } from 'node:path'
 import type { AgentsWorkflowRun } from '../../shared/agents-workflow-run-types'
-import { agentsWorkflowRunDirectory } from '../../shared/agents-workflow-output-paths'
+import {
+  AGENTS_WORKFLOW_OUTPUT_DIR,
+  agentsWorkflowRunDirectory
+} from '../../shared/agents-workflow-output-paths'
 
 type FinishPersistence = {
   updateAgentsWorkflowRun(runId: string, updates: Partial<AgentsWorkflowRun>): AgentsWorkflowRun
@@ -49,6 +53,10 @@ export async function recoverInterruptedAgentsWorkflowRuns(
     const workspacePath = await resolveRunWorkspacePath(lifecycle, run)
     if (workspacePath !== null) {
       await removeAgentsWorkflowRunScratch(workspacePath, run.id)
+    }
+    // Why only when marked: a run recovered straight from `running` has nothing pending.
+    if (run.scratchCleanupPending === true) {
+      lifecycle.persistence.updateAgentsWorkflowRun(run.id, { scratchCleanupPending: false })
     }
   }
   await flushAgentsWorkflowPersistence(lifecycle.persistence)
@@ -114,8 +122,16 @@ export async function removeAgentsWorkflowRunScratch(
   workspacePath: string,
   runId: string
 ): Promise<void> {
+  const outputRoot = join(workspacePath, AGENTS_WORKFLOW_OUTPUT_DIR)
+  const target = agentsWorkflowRunDirectory(workspacePath, runId)
+  const insideOutput = relative(outputRoot, target)
+  // Why the assertion: the run id is persisted state, and a value that escapes the root would
+  // make this recursive delete reach the worktree itself.
+  if (insideOutput.length === 0 || insideOutput.startsWith('..') || isAbsolute(insideOutput)) {
+    return
+  }
   try {
-    await rm(agentsWorkflowRunDirectory(workspacePath, runId), { recursive: true, force: true })
+    await rm(target, { recursive: true, force: true })
   } catch {
     // Scratch cleanup never fails a finished run.
   }

@@ -168,6 +168,54 @@ describe('AgentsWorkflowScheduler', () => {
     expect(recordSkipped).toHaveBeenCalledWith(definition, scheduledFor, 'missed_grace')
   })
 
+  it('rolls a scheduling slot inside the spring-forward gap to the next real minute', () => {
+    // 2026-03-08 02:30 does not exist in New York; dropping it erased a whole day of the rule.
+    expect(
+      latestAgentsWorkflowOccurrence(
+        {
+          timezone: 'America/New_York',
+          rrule: 'FREQ=DAILY;BYHOUR=2;BYMINUTE=30',
+          dtstart: Date.UTC(2026, 0, 1),
+          missedRunGraceMinutes: 60
+        },
+        // 04:00 local (EDT) that day.
+        Date.UTC(2026, 2, 8, 8)
+      )
+    ).toBe(Date.UTC(2026, 2, 8, 7))
+  })
+
+  it('keeps backfilling older holes after the newest occurrence already has a run', async () => {
+    const definition = {
+      ...workflow({
+        timezone: 'UTC',
+        rrule: 'FREQ=DAILY;BYHOUR=9;BYMINUTE=0',
+        dtstart: Date.UTC(2026, 0, 1),
+        missedRunGraceMinutes: 60
+      }),
+      createdAt: Date.UTC(2026, 0, 5)
+    }
+    const now = Date.UTC(2026, 0, 8, 12)
+    const latest = Date.UTC(2026, 0, 8, 9)
+    const recordSkipped = vi.fn(async () => undefined)
+    const scheduler = new AgentsWorkflowScheduler(
+      {
+        listWorkflows: () => [definition],
+        // Only the newest occurrence was recorded before the cap stopped the earlier backfill.
+        hasScheduledRun: (_workflowId, scheduledFor) => scheduledFor === latest,
+        runScheduled: vi.fn(async () => undefined),
+        recordSkipped
+      },
+      60_000,
+      () => now
+    )
+
+    await scheduler.evaluateDueRuns()
+
+    expect(
+      recordSkipped.mock.calls.map((call) => (call as unknown as [unknown, number])[1])
+    ).toEqual([Date.UTC(2026, 0, 7, 9), Date.UTC(2026, 0, 6, 9), Date.UTC(2026, 0, 5, 9)])
+  })
+
   it('records every occurrence of an outage instead of only the newest one', async () => {
     const definition = {
       ...workflow({

@@ -77,7 +77,13 @@ export class AgentsWorkflowScheduler {
       return
     }
     const scheduledFor = latestAgentsWorkflowOccurrence(schedule, now)
-    if (scheduledFor === null || this.dependencies.hasScheduledRun(workflow.id, scheduledFor)) {
+    if (scheduledFor === null) {
+      return
+    }
+    if (this.dependencies.hasScheduledRun(workflow.id, scheduledFor)) {
+      // Why still walk back: the newest occurrence is recorded, but a capped backfill may have
+      // left older holes that no later tick would ever revisit.
+      await this.recordMissedOccurrences(workflow, now)
       return
     }
     if (now - scheduledFor > schedule.missedRunGraceMinutes * MINUTE_MS) {
@@ -92,8 +98,9 @@ export class AgentsWorkflowScheduler {
    *
    * Why not just the latest: after a three-day outage only the newest occurrence was recorded, and
    * the run history showed an unexplained hole where the earlier ones should have been. Walking
-   * back stops at the first occurrence that has a run — that is where the gap ends — and at the
-   * workflow's own creation, so a long-lived schedule does not backfill rows it never owed.
+   * back skips occurrences that already have a run instead of stopping at them — the newest one
+   * is often recorded first — and stops at the workflow's own creation, so a long-lived schedule
+   * does not backfill rows it never owed.
    */
   private async recordMissedOccurrences(
     workflow: AgentsWorkflowDefinition,
@@ -109,7 +116,7 @@ export class AgentsWorkflowScheduler {
         return
       }
       if (this.dependencies.hasScheduledRun(workflow.id, occurrence)) {
-        return
+        continue
       }
       await this.dependencies.recordSkipped(workflow, occurrence, 'missed_grace')
       recorded += 1

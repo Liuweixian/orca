@@ -276,16 +276,22 @@ export class AgentsWorkflowPersistence {
 
   markInterruptedAgentsWorkflowRunsUnverifiable(now: number): AgentsWorkflowRun[] {
     const runtime = this[agentsWorkflowPersistenceContext].runtime
-    const interrupted = (runtime.state.agentsWorkflowRuns ?? []).filter(isActiveAgentsWorkflowRun)
-    if (interrupted.length === 0) {
+    const runs = runtime.state.agentsWorkflowRuns ?? []
+    const interrupted = runs.filter(isActiveAgentsWorkflowRun)
+    // Why also return pending-cleanup rows: loading the state already marked them, so this pass
+    // must still hand them to the caller that removes their scratch folder.
+    const pendingCleanup = runs.filter(
+      (run) => run.scratchCleanupPending === true && !isActiveAgentsWorkflowRun(run)
+    )
+    if (interrupted.length === 0 && pendingCleanup.length === 0) {
       return []
     }
     const ids = new Set(interrupted.map((run) => run.id))
-    runtime.state.agentsWorkflowRuns = (runtime.state.agentsWorkflowRuns ?? []).map((run) =>
+    runtime.state.agentsWorkflowRuns = runs.map((run) =>
       ids.has(run.id) ? markAgentsWorkflowRunInterrupted(run, now) : run
     )
     flushAgentsWorkflowRuns(this)
-    return interrupted.map((run) => this.showAgentsWorkflowRun(run.id))
+    return [...interrupted, ...pendingCleanup].map((run) => this.showAgentsWorkflowRun(run.id))
   }
 }
 

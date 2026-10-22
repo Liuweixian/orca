@@ -73,7 +73,9 @@ export const AgentsWorkflowRunSchema = z.strictObject({
   finishedAt: z.number().int().nullable(),
   errorCode: z.string().min(1).optional(),
   errorMessage: z.string().optional(),
-  skipReason: z.enum(['active_run', 'missed_grace']).optional()
+  skipReason: z.enum(['active_run', 'missed_grace']).optional(),
+  /** A crash left scratch behind; recovery clears this once the folder is gone. */
+  scratchCleanupPending: z.boolean().optional()
 })
 
 export const AgentsWorkflowRunSummarySchema = AgentsWorkflowRunSchema.omit({

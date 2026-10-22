@@ -56,7 +56,7 @@ export function* agentsWorkflowOccurrencesDescending(
     }
     const candidates = hours
       .flatMap((hour) => {
-        const candidate = zonedTimestamp(formatter, {
+        const candidate = zonedTimestampRollingForward(formatter, {
           year,
           month,
           day,
@@ -120,6 +120,45 @@ function timezoneOffsetMs(formatter: Intl.DateTimeFormat, timestamp: number): nu
   const floored = Math.floor(timestamp / MINUTE_MS) * MINUTE_MS
   const parts = formatWallClock(formatter, floored)
   return Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute) - floored
+}
+
+const MAX_DST_ROLL_FORWARD_MINUTES = 3 * 60
+
+/**
+ * The epoch millisecond of a wall-clock time, or the first existing minute after it.
+ *
+ * Why roll forward: a spring-forward gap silently erased a daily rule that named 02:30. Running
+ * at 03:00 keeps the day's occurrence instead of losing it until the next day.
+ */
+function zonedTimestampRollingForward(
+  formatter: Intl.DateTimeFormat,
+  wallClock: WallClock
+): number | null {
+  const direct = zonedTimestamp(formatter, wallClock)
+  if (direct !== null) {
+    return direct
+  }
+  const start = Date.UTC(
+    wallClock.year,
+    wallClock.month - 1,
+    wallClock.day,
+    wallClock.hour,
+    wallClock.minute
+  )
+  for (let minute = 1; minute <= MAX_DST_ROLL_FORWARD_MINUTES; minute += 1) {
+    const probe = new Date(start + minute * MINUTE_MS)
+    const candidate = zonedTimestamp(formatter, {
+      year: probe.getUTCFullYear(),
+      month: probe.getUTCMonth() + 1,
+      day: probe.getUTCDate(),
+      hour: probe.getUTCHours(),
+      minute: probe.getUTCMinutes()
+    })
+    if (candidate !== null) {
+      return candidate
+    }
+  }
+  return null
 }
 
 /** The epoch millisecond of a wall-clock time in the schedule's zone, or null if it does not exist. */

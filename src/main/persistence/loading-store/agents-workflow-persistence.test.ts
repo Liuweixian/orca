@@ -258,11 +258,18 @@ describe('agent workflow persistence', () => {
       status: 'unverifiable',
       errorCode: 'execution_evidence_lost'
     })
-    reloaded.markInterruptedAgentsWorkflowRunsUnverifiable(20)
+    // Why still returned: the load already settled the run, but its scratch folder is still on disk.
+    expect(reloaded.markInterruptedAgentsWorkflowRunsUnverifiable(20)).toEqual([
+      expect.objectContaining({ id: first.run.id, scratchCleanupPending: true })
+    ])
     expect(reloaded.showAgentsWorkflowRun(first.run.id)).toMatchObject({
       status: 'unverifiable',
-      errorCode: 'execution_evidence_lost'
+      errorCode: 'execution_evidence_lost',
+      scratchCleanupPending: true
     })
+
+    reloaded.updateAgentsWorkflowRun(first.run.id, { scratchCleanupPending: false })
+    expect(reloaded.markInterruptedAgentsWorkflowRunsUnverifiable(30)).toEqual([])
   })
 
   it('runs through an injected structured adapter and persists the completed trace', async () => {

@@ -5,7 +5,10 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AgentsWorkflowRun } from '../../shared/agents-workflow-run-types'
 import { agentsWorkflowRunDirectory } from '../../shared/agents-workflow-output-paths'
-import { recoverInterruptedAgentsWorkflowRuns } from './workflow-run-lifecycle'
+import {
+  recoverInterruptedAgentsWorkflowRuns,
+  removeAgentsWorkflowRunScratch
+} from './workflow-run-lifecycle'
 
 const directories: string[] = []
 
@@ -79,5 +82,53 @@ describe('recoverInterruptedAgentsWorkflowRuns', () => {
     // A new_per_run run wrote into the worktree it created, not into the project folder.
     expect(existsSync(runDir)).toBe(false)
     expect(updateAgentsWorkflowRun).not.toHaveBeenCalled()
+  })
+
+  it('cleans the scratch folder a load-time interruption left behind', async () => {
+    const workspacePath = await mkdtemp(join(tmpdir(), 'orca-workflow-recovery-'))
+    directories.push(workspacePath)
+    const runDir = agentsWorkflowRunDirectory(workspacePath, 'run-1')
+    await mkdir(join(runDir, 'answers'), { recursive: true })
+    await writeFile(join(runDir, 'answers', 'node.md'), 'answer')
+
+    // Why this shape: loading the profile state already marked the run unverifiable, so it is no
+    // longer "active" and only the pending-cleanup marker names it.
+    const run = {
+      ...interruptedRun('/repo/project'),
+      status: 'unverifiable' as const,
+      finishedAt: 5,
+      errorCode: 'execution_evidence_lost',
+      scratchCleanupPending: true
+    }
+    const updateAgentsWorkflowRun = vi.fn(
+      (_runId: string, updates: Partial<AgentsWorkflowRun>) => ({ ...run, ...updates })
+    )
+    await recoverInterruptedAgentsWorkflowRuns({
+      persistence: {
+        markInterruptedAgentsWorkflowRunsUnverifiable: () => [run],
+        updateAgentsWorkflowRun,
+        flushPendingOrThrowAsync: async () => undefined
+      },
+      notifyChanged: vi.fn(),
+      now: () => 10,
+      resolveWorkspacePath: async () => workspacePath
+    })
+
+    expect(existsSync(runDir)).toBe(false)
+    expect(updateAgentsWorkflowRun).toHaveBeenCalledWith('run-1', {
+      scratchCleanupPending: false
+    })
+  })
+
+  it('never removes anything outside the workflow output folder', async () => {
+    const workspacePath = await mkdtemp(join(tmpdir(), 'orca-workflow-recovery-'))
+    directories.push(workspacePath)
+    const keep = join(workspacePath, 'notes.txt')
+    await writeFile(keep, 'keep me')
+
+    await removeAgentsWorkflowRunScratch(workspacePath, '..')
+
+    expect(existsSync(keep)).toBe(true)
+    expect(existsSync(workspacePath)).toBe(true)
   })
 })

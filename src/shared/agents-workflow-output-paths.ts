@@ -11,10 +11,21 @@ export const AGENTS_WORKFLOW_OUTPUT_DIR = '.orca-workflow'
 /** The engine's own copy of each answer, safe to delete once the run is over. */
 export const AGENTS_WORKFLOW_ANSWERS_DIR = 'answers'
 
-/** A path segment safe on every platform; ids come from user-authored graph nodes. */
+/** Device names Windows refuses as files, with or without an extension. */
+const WINDOWS_RESERVED_SEGMENT = /^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$/i
+
+/**
+ * A path segment safe on every platform; ids come from user-authored graph nodes.
+ *
+ * Why dots are rejected rather than kept: the segments build a folder this module later removes
+ * recursively, and a value of `.` or `..` would escape the run folder.
+ */
 export function agentsWorkflowPathSegment(value: string): string {
   const cleaned = value.replace(/[^A-Za-z0-9._-]/g, '_').slice(0, 64)
-  return cleaned.length > 0 ? cleaned : 'unnamed'
+  if (cleaned.length === 0 || /^\.+$/.test(cleaned)) {
+    return 'unnamed'
+  }
+  return WINDOWS_RESERVED_SEGMENT.test(cleaned) ? `_${cleaned}` : cleaned
 }
 
 /** Absolute folder holding one run's answers. */

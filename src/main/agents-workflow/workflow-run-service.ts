@@ -8,10 +8,7 @@ import {
   isActiveAgentsWorkflowRun
 } from '../../shared/agents-workflow-run-types'
 import { AgentsWorkflowRunConflictError } from '../../shared/agents-workflow-errors'
-import {
-  createProductionAgentsWorkflowExecutionAdapter,
-  type AgentsWorkflowExecutionAdapter
-} from './workflow-agent-execution-adapter'
+import type { AgentsWorkflowExecutionAdapter } from './workflow-agent-execution-adapter'
 import { executeAgentsWorkflowSchedule } from './workflow-dynamic-scheduler'
 import {
   failClosedAgentsWorkflowWorkspaceResolver,
@@ -67,7 +64,7 @@ export class AgentsWorkflowRunService {
   constructor(
     private readonly persistence: AgentsWorkflowRunPersistence,
     private readonly notifyChanged: () => void,
-    private readonly adapter: AgentsWorkflowExecutionAdapter = createProductionAgentsWorkflowExecutionAdapter(),
+    private readonly adapter: AgentsWorkflowExecutionAdapter,
     private readonly resolveWorkspace: AgentsWorkflowWorkspaceResolver = failClosedAgentsWorkflowWorkspaceResolver,
     private readonly now: () => number = Date.now,
     private readonly resolveWorkspacePath: AgentsWorkflowWorkspacePathResolver = async () => null,

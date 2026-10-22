@@ -21,6 +21,9 @@ export function markAgentsWorkflowRunInterrupted(
     finishedAt: now,
     errorCode: AGENTS_WORKFLOW_RECOVERY_ERROR_CODE,
     errorMessage: AGENTS_WORKFLOW_RECOVERY_ERROR_MESSAGE,
+    // Why persisted: load already marks the run, so a later recovery cannot tell from status alone
+    // that the scratch folder is still there.
+    scratchCleanupPending: true,
     attempts: run.attempts.map((attempt) =>
       attempt.status === 'running' || attempt.status === 'pending'
         ? { ...attempt, status: 'unverifiable', finishedAt: now }

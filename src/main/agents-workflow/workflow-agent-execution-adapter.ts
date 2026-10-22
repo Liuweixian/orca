@@ -164,18 +164,3 @@ export function createAgentsWorkflowExecutionAdapter(
     }
   }
 }
-
-/**
- * The shared launch pipeline does not yet expose a headless structured-turn completion contract.
- * Refuse execution until that boundary exists so PTY text can never become a trusted output.
- */
-export function createProductionAgentsWorkflowExecutionAdapter(): AgentsWorkflowExecutionAdapter {
-  return {
-    execute: async () => ({
-      ok: false,
-      code: 'structured_agent_execution_unavailable',
-      message: 'Structured agent execution is unavailable on this build.'
-    }),
-    cancel: async () => 'unverifiable'
-  }
-}

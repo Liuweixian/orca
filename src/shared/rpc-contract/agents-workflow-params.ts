@@ -32,7 +32,14 @@ export const AgentsWorkflowDelete = z.object({
 
 export const AgentsWorkflowRunNow = z.object({
   workflowId: requiredString('Missing agent workflow id'),
-  requestKey: requiredString('Missing agent workflow request key')
+  // A retry key, not free text: a bounded token keeps an injected value from becoming a huge
+  // stored idempotency key or colliding by accident.
+  requestKey: requiredString('Missing agent workflow request key').pipe(
+    z
+      .string()
+      .max(200, 'Invalid agent workflow request key')
+      .regex(/^[A-Za-z0-9_.:-]+$/, 'Invalid agent workflow request key')
+  )
 })
 
 export const AgentsWorkflowCancelRun = z.object({

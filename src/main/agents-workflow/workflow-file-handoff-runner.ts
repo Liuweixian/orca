@@ -205,12 +205,11 @@ export class WorkflowFileHandoffTurnRunner implements AgentsWorkflowFileHandoffT
         }
 
         if (pane.failure !== null) {
-          // Why wait past the read: a closed pane can still leave the answer it already wrote.
-          // An unverifiable end (a pane closed or reloaded) gets the same short grace as a
-          // finished turn, so a last write can land.
+          // Why wait past the read: any ending — a closed pane, a crashed agent — can still leave
+          // the answer it already wrote, so every failure gets the same short grace.
           const failedGraceOver =
             pane.failedAt !== null && now >= pane.failedAt + this.settleGrace(pane.settlement)
-          if (!pane.failure.unverifiable || failedGraceOver) {
+          if (failedGraceOver) {
             return pane.failure
           }
         }
