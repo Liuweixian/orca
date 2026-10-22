@@ -1,7 +1,7 @@
 import React from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
 import { AlertTriangle, Bot, CirclePlay, GitBranch, Repeat2 } from 'lucide-react'
-import { Badge } from '@/components/ui/badge'
+import { AgentIcon, getAgentLabel } from '@/lib/agent-catalog'
 import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { AgentsWorkflowCanvasNode } from './agents-workflow-canvas-model'
@@ -90,6 +90,7 @@ function AgentsWorkflowNodeCardComponent({
 }: NodeProps<AgentsWorkflowCanvasNode>): React.JSX.Element {
   const node = data.workflowNode
   const hasErrors = data.issues.some((entry) => entry.severity === 'error')
+  const agentId = node.kind === 'agent' || node.kind === 'condition' ? node.agentId : null
   return (
     <div
       className={cn(
@@ -99,21 +100,30 @@ function AgentsWorkflowNodeCardComponent({
       )}
     >
       <TargetHandles kind={node.kind} />
-      <div className="flex items-start gap-3">
+      <div className="flex items-start gap-2">
         <div className="mt-0.5 text-muted-foreground">
           <NodeKindIcon kind={node.kind} />
         </div>
-        <div className="min-w-0 flex-1">
-          <div className="truncate text-sm font-semibold">{node.title}</div>
-          <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-            <span>{nodeKindLabel(node.kind)}</span>
-            {node.kind === 'agent' || node.kind === 'condition' ? (
-              <Badge variant="secondary">{node.agentId}</Badge>
-            ) : null}
-          </div>
-        </div>
+        <div className="min-w-0 flex-1 truncate text-sm font-semibold">{node.title}</div>
         {hasErrors ? <AlertTriangle className="size-4 shrink-0 text-destructive" /> : null}
       </div>
+      {node.kind === 'start' ? null : (
+        <div
+          className={cn(
+            'mt-1 flex items-center gap-2 text-xs text-muted-foreground',
+            // Same icon width and gap as the title row, so both text columns line up.
+            agentId === null && 'pl-6'
+          )}
+        >
+          {agentId === null ? null : (
+            <>
+              <AgentIcon agent={agentId} size={16} />
+              <span>{getAgentLabel(agentId)}</span>
+            </>
+          )}
+          <span>{nodeKindLabel(node.kind)}</span>
+        </div>
+      )}
       <SourceHandles node={node} />
     </div>
   )
