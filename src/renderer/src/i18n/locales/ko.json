@@ -239,6 +239,7 @@
     "showStatusBar": "상태 표시줄 표시",
     "showTasksButton": "작업 버튼 표시",
     "showAutomationsButton": "자동화 버튼 표시",
+    "showAgentsWorkflowButton": "워크플로 버튼 표시",
     "showMobileButton": "Orca 모바일 버튼 표시",
     "showTitlebarAppName": "제목 표시줄 앱 이름 표시",
     "view": "보기",
@@ -5539,7 +5540,8 @@
           "fee535205b": "작업",
           "d599269755": "사이드바에서 숨기기",
           "artifacts": "아티팩트",
-          "skills": "스킬"
+          "skills": "스킬",
+          "agentsWorkflows": "워크플로"
         },
         "SidebarRepositoryFilterSection": {
           "d3a9c4cea1": "지우기",

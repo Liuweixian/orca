@@ -357,4 +357,9 @@ export abstract class OrcaRuntimeWithGetStatus extends OrcaRuntimeWithGetRuntime
     this.notifier?.automationsChanged?.(payload)
     this.emitClientEvent({ type: 'automationsChanged', ...payload })
   }
+
+  notifyAgentsWorkflowsChanged(payload: { reason?: 'definition' | 'run' } = {}): void {
+    this.notifier?.agentsWorkflowsChanged?.(payload)
+    this.emitClientEvent({ type: 'agentsWorkflowsChanged', ...payload })
+  }
 }

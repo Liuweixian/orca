@@ -170,6 +170,34 @@ export const getSidebarEntries = createLocalizedCatalog((): SettingsSearchEntry[
   },
   {
     title: translate(
+      'auto.components.settings.appearance.search.agentsWorkflows.title',
+      'Show Workflows Button'
+    ),
+    description: translate(
+      'auto.components.settings.appearance.search.agentsWorkflows.description',
+      'Show the Workflows button at the top of the left sidebar.'
+    ),
+    keywords: [
+      ...translateSearchKeyword(
+        'auto.components.settings.appearance.search.agentsWorkflows.workflow',
+        'workflow'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.appearance.search.agentsWorkflows.agent',
+        'agent'
+      ),
+      ...translateSearchKeyword(
+        'auto.components.settings.appearance.search.agentsWorkflows.chinese',
+        '工作流'
+      ),
+      ...translateSearchKeyword('auto.components.settings.appearance.search.5bff6a2ef0', 'sidebar'),
+      ...translateSearchKeyword('auto.components.settings.appearance.search.6cf5f54ce1', 'button'),
+      ...translateSearchKeyword('auto.components.settings.appearance.search.648eeada79', 'hide'),
+      ...translateSearchKeyword('auto.components.settings.appearance.search.ac79fe4a04', 'show')
+    ]
+  },
+  {
+    title: translate(
       'auto.components.settings.appearance.search.1de96ec8a6',
       'Show Orca Mobile Button'
     ),

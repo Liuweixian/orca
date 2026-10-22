@@ -239,6 +239,7 @@
     "showStatusBar": "显示状态栏",
     "showTasksButton": "显示任务按钮",
     "showAutomationsButton": "显示自动化按钮",
+    "showAgentsWorkflowButton": "显示工作流按钮",
     "showMobileButton": "显示 Orca 手机端按钮",
     "showTitlebarAppName": "显示标题栏应用名称",
     "view": "查看",
@@ -5539,7 +5540,8 @@
           "fee535205b": "任务",
           "d599269755": "从侧边栏隐藏",
           "artifacts": "工件",
-          "skills": "技能"
+          "skills": "技能",
+          "agentsWorkflows": "工作流"
         },
         "SidebarRepositoryFilterSection": {
           "d3a9c4cea1": "清除",
@@ -7013,7 +7015,8 @@
           "showPinnedWorktreesInGroups": {
             "title": "也在原来的列表中显示已固定的工作树",
             "description": "已固定的工作树会保留在 Pinned 中，同时也显示在全部、项目、状态和 PR 中。"
-          }
+          },
+          "agentsWorkflows": "显示工作流按钮"
         },
         "AutoRenameBranchFromWorkSetting": {
           "1626524572": "Nautilus",
@@ -9481,6 +9484,13 @@
                 "cursor": "cursor"
               },
               "title": "Cursor 用量"
+            },
+            "agentsWorkflows": {
+              "title": "显示工作流按钮",
+              "description": "在左侧边栏顶部显示工作流按钮。",
+              "workflow": "工作流",
+              "agent": "智能体",
+              "chinese": "工作流"
             },
             "zcodeUsageTitle": "Z代码使用",
             "zcodeUsageDescription": "在状态栏中显示 ZCode 编码计划配额使用情况。",
@@ -17952,6 +17962,128 @@
         "a62f9db53d": "Cancel",
         "c77189bc0c": "Update filter",
         "19af906d12": "Save filter"
+      },
+      "agents-workflow": {
+        "newAgent": "新智能体",
+        "newCondition": "新条件",
+        "conditionPromptTemplate": "先阅读该节点继承到的上游回答，再判断它是否满足下面的条件：\n\n<在这里写条件>\n\n只输出一个 JSON 对象，不要输出其他内容：满足条件时输出 {{yes}}，不满足时输出 {{no}}。",
+        "newLoop": "新循环",
+        "exported": "已复制工作流 JSON。",
+        "exportFailed": "无法复制工作流 JSON。",
+        "edge": {
+          "yes": "是",
+          "no": "否",
+          "each": "每轮",
+          "done": "完成"
+        },
+        "inspector": {
+          "empty": "选择节点以编辑其设置。",
+          "title": "标题",
+          "agent": "智能体",
+          "prompt": "提示词",
+          "conditionPrompt": "判定提示词",
+          "conditionDecision": "智能体必须回答 {\"decision\":\"yes\"} 或 {\"decision\":\"no\"}，否则这次运行直接失败，而不是猜一个分支。",
+          "loopIterationNote": "每一轮都会把轮次写入一个文件，循环体的 prompt 会先读取该文件。",
+          "count": "次数",
+          "issues": "问题",
+          "channelProtocol": "本机通过结构化会话运行该节点，并把回答传给下游。",
+          "channelTranscript": "本机从智能体的对话记录中读取该回合的回答。",
+          "channelFile": "本机会要求智能体把回答写入工作流结果文件。",
+          "channelWeakSettlement": "该智能体只能报告面板空闲，因此取值以结果文件为准。",
+          "upstreamNote": "上一个节点的输出会保存成文件，这段 prompt 开头会要求智能体先读取它。",
+          "channelSnapshot": "该节点终止分支：运行记录只保留面板输出，不会传给下游。",
+          "channelNone": "本机没有可为 {{agent}} 提供输出的通道。"
+        },
+        "node": {
+          "start": "开始",
+          "agent": "智能体",
+          "condition": "条件",
+          "loop": "循环"
+        },
+        "topbar": {
+          "valid": "可以保存",
+          "warnings": "{{count}} 个警告",
+          "export": "复制 JSON",
+          "run": "运行",
+          "delete": "删除工作流",
+          "saving": "正在保存",
+          "save": "保存",
+          "starting": "正在启动"
+        },
+        "loading": "正在加载工作流…",
+        "createFirst": "创建工作流",
+        "conflict": "此工作流已在其他窗口中更改。请重新加载后再保存。",
+        "reload": "重新加载",
+        "delete": {
+          "title": "删除工作流？",
+          "description": "运行历史会保留，直至被保留策略清理。",
+          "cancel": "取消",
+          "confirm": "删除"
+        },
+        "definition": {
+          "new": "新建工作流",
+          "name": "名称",
+          "enabled": "已启用",
+          "schedule": "定时运行",
+          "timezone": "时区",
+          "grace": "错过运行宽限时间（分钟）",
+          "noProjectSetup": "该项目在所选主机上没有就绪的配置。"
+        },
+        "history": {
+          "title": "运行历史",
+          "empty": "暂无运行记录。",
+          "more": "加载更多",
+          "select": "选择一次运行以查看尝试和输出。",
+          "revision": "定义版本 {{revision}}",
+          "cancel": "取消运行",
+          "copyError": "复制错误详情",
+          "copied": "错误详情已复制。",
+          "copyFailed": "无法复制错误详情。",
+          "skippedActive": "因另一次运行仍在进行而跳过。",
+          "skippedGrace": "因已超过错过运行宽限时间而跳过。",
+          "pending": "等待中",
+          "running": "运行中",
+          "cancelling": "正在取消",
+          "completed": "已完成",
+          "failed": "失败",
+          "cancelled": "已取消",
+          "skipped": "已跳过",
+          "unverifiable": "无法验证",
+          "attemptPending": "等待中",
+          "attemptRunning": "运行中",
+          "attemptCompleted": "已完成",
+          "attemptFailed": "失败",
+          "attemptSkipped": "已跳过",
+          "attemptCancelled": "已取消",
+          "attemptUnverifiable": "无法验证",
+          "outputStructured": "结构化回答",
+          "outputTranscript": "从智能体对话记录读取的回答",
+          "outputFile": "写入工作流结果文件的回答",
+          "outputTerminal": "终端输出（不会传给下游）",
+          "outputUnknown": "来源无法识别"
+        },
+        "controller": {
+          "loadFailed": "无法加载工作流。",
+          "listFailed": "无法加载工作流列表。",
+          "createFailed": "无法创建工作流。",
+          "saved": "工作流已保存。",
+          "saveFailed": "无法保存工作流。",
+          "deleteFailed": "无法删除工作流。",
+          "runFailed": "无法启动工作流。",
+          "runLoadFailed": "无法加载运行记录。",
+          "newName": "新建工作流",
+          "runsLoadFailed": "无法加载运行历史。",
+          "cancelFailed": "无法取消运行。",
+          "invalid": "保存前请先修复：{{issues}}"
+        },
+        "canvas": {
+          "deleteNode": "删除节点",
+          "addAgent": "智能体",
+          "addCondition": "条件",
+          "addLoop": "循环",
+          "connectionRejected": "未创建连接：这些端口已连接或无法连接。",
+          "deleteConnection": "删除连接"
+        }
       },
       "OrcaSignInProgress": {
         "waiting": "正在等待在浏览器中登录",

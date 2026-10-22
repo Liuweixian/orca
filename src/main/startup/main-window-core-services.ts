@@ -115,6 +115,7 @@ export function attachMainWindowCoreServices(
   )
   automations.setWebContents(window.webContents)
   automations.start()
+  state.agentsWorkflowScheduler?.start()
   attachMainWindowServices(
     window,
     store,

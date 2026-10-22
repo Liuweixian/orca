@@ -19,6 +19,7 @@ export function createUiTaskActions(set: UISliceSet, get: UISliceGet): Partial<U
     previousViewBeforeSettings: 'terminal',
     previousViewBeforeActivity: 'terminal',
     previousViewBeforeAutomations: 'terminal',
+    previousViewBeforeAgentsWorkflow: 'terminal',
     previousViewBeforeSpace: 'terminal',
     previousViewBeforeSkills: 'terminal',
     pendingSkillShareId: null,

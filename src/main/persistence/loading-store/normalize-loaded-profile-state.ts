@@ -29,6 +29,55 @@ import {
 } from './normalize-loaded-state-collections'
 import { normalizeRetiredNameRegistryMap } from './retired-name-registry-normalization'
 import { hydrateWorktreeMetaAliasProjection } from './worktree-meta-alias-projection'
+import { AgentsWorkflowDefinitionSchema } from '../../../shared/agents-workflow-types'
+import {
+  AgentsWorkflowRunSchema,
+  isActiveAgentsWorkflowRun
+} from '../../../shared/agents-workflow-run-types'
+import { markAgentsWorkflowRunInterrupted } from '../../../shared/agents-workflow-run-recovery'
+import {
+  migrateLegacyAgentsWorkflowDefinition,
+  migrateLegacyAgentsWorkflowRun
+} from './agents-workflow-legacy-migration'
+
+function normalizeAgentsWorkflows(value: unknown): PersistedState['agentsWorkflows'] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  return value.flatMap((entry) => {
+    const parsed = AgentsWorkflowDefinitionSchema.safeParse(
+      migrateLegacyAgentsWorkflowDefinition(entry)
+    )
+    if (!parsed.success) {
+      // Why log: silently dropping a workflow looks like data loss to the user.
+      console.warn('[agents-workflow] Dropped an unreadable workflow definition:', parsed.error)
+      return []
+    }
+    return [parsed.data]
+  })
+}
+
+function normalizeAgentsWorkflowRuns(
+  value: unknown,
+  markNeedsSave: () => void
+): PersistedState['agentsWorkflowRuns'] {
+  if (!Array.isArray(value)) {
+    return []
+  }
+  const now = Date.now()
+  return value.flatMap((entry) => {
+    const parsed = AgentsWorkflowRunSchema.safeParse(migrateLegacyAgentsWorkflowRun(entry))
+    if (!parsed.success) {
+      console.warn('[agents-workflow] Dropped an unreadable workflow run:', parsed.error)
+      return []
+    }
+    if (!isActiveAgentsWorkflowRun(parsed.data)) {
+      return [parsed.data]
+    }
+    markNeedsSave()
+    return [markAgentsWorkflowRunInterrupted(parsed.data, now)]
+  })
+}
 
 export function normalizeLoadedProfileState(
   parsed: PersistedState,
@@ -112,6 +161,8 @@ export function normalizeLoadedProfileState(
     legacyPaneKeyAliasEntries: normalizeLegacyPaneKeyAliasEntries(parsed.legacyPaneKeyAliasEntries),
     automations: Array.isArray(parsed.automations) ? parsed.automations : [],
     automationRuns: normalizeLoadedAutomationRuns(parsed, markNeedsSave),
+    agentsWorkflows: normalizeAgentsWorkflows(parsed.agentsWorkflows),
+    agentsWorkflowRuns: normalizeAgentsWorkflowRuns(parsed.agentsWorkflowRuns, markNeedsSave),
     orcadMigrationImportReceipts: normalizeOrcadMigrationImportReceipts(
       parsed.orcadMigrationImportReceipts
     ),

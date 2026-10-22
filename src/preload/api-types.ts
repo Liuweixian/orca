@@ -20,6 +20,7 @@ import type {
 import type { AiVaultApi } from './api/ai-vault-api'
 import type { AppApi, E2EApi, PlatformApi } from './api/app-api'
 import type { AutomationsApi } from './api/automation-api'
+import type { AgentsWorkflowsApi } from './api/agents-workflow-api'
 import type { BrowserApi } from './api/browser-api'
 import type { CliApi } from './api/cli-install-api'
 import type { CrashReportsApi, FeedbackApi } from './api/crash-report-api'
@@ -156,6 +157,7 @@ export type PreloadApi = {
   /** COMPAT(legacy-relay-bridge): desktop-only, revisit 2027-01-15. */
   legacyRelayBridge?: LegacyRelayBridgeApi
   automations: AutomationsApi
+  agentsWorkflows: AgentsWorkflowsApi
   wsl: RuntimeApi['wsl']
   wslMove: WslMoveApi
   pwsh: RuntimeApi['pwsh']
@@ -174,6 +176,7 @@ export type {
 } from './api/agent-usage-api'
 export type { AiVaultApi } from './api/ai-vault-api'
 export type { AutomationsApi, ExternalAutomationManagerResult } from './api/automation-api'
+export type { AgentsWorkflowsApi } from './api/agents-workflow-api'
 export type { AppApi } from './api/app-api'
 export type { BrowserApi, DetectedBrowserInfo, DetectedBrowserProfileInfo } from './api/browser-api'
 export type { EmulatorApi } from './api/emulator-api'

@@ -1,0 +1,13 @@
+@import '@xyflow/react/dist/style.css';
+
+/*
+ * The canvas theme utilities (`agents-workflow-canvas`, `agents-workflow-edge-aggregate`) live in
+ * `src/renderer/src/assets/main.css` as `@utility` declarations: their names are Tailwind-shaped,
+ * and a plain class here would be reported as dead and could silently stop generating.
+ *
+ * Why the unsuffixed --xy-* names: @xyflow/react re-declares every --xy-*-default variable on
+ * .react-flow itself, and an element's own declaration always beats one inherited from a wrapper —
+ * so -default overrides never reach Controls or MiniMap (white buttons in dark mode, washed-out
+ * minimap). The library only looks the plain names up first and never declares them, so those are
+ * the ones that actually apply.
+ */

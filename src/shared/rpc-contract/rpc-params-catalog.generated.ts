@@ -63,6 +63,18 @@ import { CurrentRequestsParams } from './agent-session-current-requests-params'
 import { CreateAgentSessionParams, EnsureAgentSessionParams } from './agent-session-params'
 import { ReadVisualParams } from './agent-session-visual-params'
 import {
+  AgentsWorkflowCancelRun,
+  AgentsWorkflowCapabilities,
+  AgentsWorkflowCreate,
+  AgentsWorkflowDelete,
+  AgentsWorkflowId,
+  AgentsWorkflowList,
+  AgentsWorkflowRunNow,
+  AgentsWorkflowRuns,
+  AgentsWorkflowShowRun,
+  AgentsWorkflowUpdate
+} from './agents-workflow-params'
+import {
   AiVaultListSessionsParams,
   AiVaultPrepareSessionResumeParams,
   AiVaultSessionTitlesParams
@@ -728,6 +740,16 @@ export const RPC_PARAMS_BY_METHOD = {
   'agentSessionAttachment.uploadStart': AttachmentUploadStartParams,
   'agentTeams.prepareLaunch': AgentTeamsPrepareLaunch,
   'agentTeams.tmuxCompat': AgentTeamsTmuxCompat,
+  'agentsWorkflow.cancelRun': AgentsWorkflowCancelRun,
+  'agentsWorkflow.capabilities': AgentsWorkflowCapabilities,
+  'agentsWorkflow.create': AgentsWorkflowCreate,
+  'agentsWorkflow.delete': AgentsWorkflowDelete,
+  'agentsWorkflow.list': AgentsWorkflowList,
+  'agentsWorkflow.runNow': AgentsWorkflowRunNow,
+  'agentsWorkflow.runs': AgentsWorkflowRuns,
+  'agentsWorkflow.show': AgentsWorkflowId,
+  'agentsWorkflow.showRun': AgentsWorkflowShowRun,
+  'agentsWorkflow.update': AgentsWorkflowUpdate,
   'aiVault.listSessions': AiVaultListSessionsParams,
   'aiVault.prepareSessionResume': AiVaultPrepareSessionResumeParams,
   'aiVault.resolveSessionTitles': AiVaultSessionTitlesParams,

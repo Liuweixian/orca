@@ -1,0 +1,307 @@
+import { describe, expect, it } from 'vitest'
+import { compileWorkflowGraph, validateWorkflowDefinition } from './agents-workflow-graph'
+import { agentsWorkflowNodeIsTerminal } from './agents-workflow-graph-analysis'
+import type {
+  AgentsWorkflowDefinition,
+  AgentsWorkflowEdge,
+  AgentsWorkflowNode
+} from './agents-workflow-types'
+
+type AgentNode = Extract<AgentsWorkflowNode, { kind: 'agent' }>
+
+function node(id: string, overrides: Partial<AgentNode> = {}): AgentNode {
+  return {
+    id,
+    kind: 'agent',
+    title: id,
+    position: { x: 0, y: 0 },
+    agentId: 'claude',
+    prompt: { source: `${id} prompt` },
+    ...overrides
+  }
+}
+
+function edge(
+  id: string,
+  fromNodeId: string,
+  toNodeId: string,
+  overrides: Partial<AgentsWorkflowEdge> = {}
+): AgentsWorkflowEdge {
+  return {
+    id,
+    fromNodeId,
+    toNodeId,
+    fromPort: 'default',
+    toPort: 'default',
+    ...overrides
+  }
+}
+
+function definition(
+  nodes: AgentsWorkflowNode[],
+  edges: AgentsWorkflowEdge[]
+): AgentsWorkflowDefinition {
+  return {
+    schemaVersion: 1,
+    id: 'workflow',
+    revision: 1,
+    name: 'Workflow',
+    nodes,
+    edges,
+    runContext: {
+      kind: 'workspace-run',
+      projectId: 'project',
+      hostId: 'local',
+      projectHostSetupId: 'setup',
+      repoId: 'repo',
+      path: '/workspace'
+    },
+    workspace: { mode: 'new_per_run', baseBranch: null, setupDecision: 'inherit' },
+    trigger: { manual: true, schedule: null },
+    schedulerOwner: 'local_host_service',
+    enabled: true,
+    createdAt: 1,
+    updatedAt: 1
+  }
+}
+
+function start(): AgentsWorkflowNode {
+  return {
+    id: 'start',
+    kind: 'start',
+    title: 'Start',
+    position: { x: 0, y: 0 }
+  }
+}
+
+describe('workflow graph validation and compilation', () => {
+  it('compiles a deterministic ordinary DAG', () => {
+    const workflow = definition(
+      [start(), node('b'), node('a')],
+      [edge('to-b', 'start', 'b'), edge('to-a', 'start', 'a'), edge('a-to-b', 'a', 'b')]
+    )
+
+    expect(validateWorkflowDefinition(workflow)).toEqual([])
+    expect(compileWorkflowGraph(workflow)).toMatchObject({
+      ok: true,
+      graph: {
+        startNodeId: 'start',
+        topologicalNodeIds: ['start', 'a', 'b']
+      }
+    })
+  })
+
+  it('rejects a graph that ends at more than one node', () => {
+    const workflow = definition(
+      [start(), node('a'), node('b')],
+      [edge('to-a', 'start', 'a'), edge('to-b', 'start', 'b')]
+    )
+    const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
+
+    expect(codes).toContain('terminal_node_count')
+    expect(compileWorkflowGraph(workflow)).toMatchObject({ ok: false })
+  })
+
+  it('rejects a workflow whose only sink is not an agent', () => {
+    const workflow = definition([start()], [])
+    const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
+
+    expect(codes).toContain('terminal_node_kind')
+  })
+
+  it('treats the node no edge leaves as terminal, including a loop exit', () => {
+    expect(agentsWorkflowNodeIsTerminal(definition([start(), node('a')], []), 'a')).toBe(true)
+    const loopExit = definition(
+      [start(), node('exit'), node('after')],
+      [edge('exit-after', 'exit', 'after', { toPort: 'aggregate' })]
+    )
+
+    expect(agentsWorkflowNodeIsTerminal(loopExit, 'exit')).toBe(false)
+    expect(agentsWorkflowNodeIsTerminal(loopExit, 'after')).toBe(true)
+  })
+
+  it('compiles a single-layer loop', () => {
+    const loop: AgentsWorkflowNode = {
+      id: 'loop',
+      kind: 'loop',
+      title: 'Loop',
+      position: { x: 100, y: 0 },
+      count: 3
+    }
+    const body = node('body', { prompt: { source: 'Handle this turn.' } })
+    const done = node('done', { prompt: { source: 'Summarize.' } })
+    const workflow = definition(
+      [start(), loop, body, done],
+      [
+        edge('start-loop', 'start', 'loop'),
+        edge('loop-body', 'loop', 'body', { fromPort: 'each' }),
+        edge('body-loop', 'body', 'loop', { toPort: 'aggregate' }),
+        edge('loop-done', 'loop', 'done', { fromPort: 'done' })
+      ]
+    )
+
+    expect(validateWorkflowDefinition(workflow)).toEqual([])
+    expect(compileWorkflowGraph(workflow)).toMatchObject({
+      ok: true,
+      graph: {
+        loopRegions: [
+          {
+            loopNodeId: 'loop',
+            eachTargetNodeId: 'body',
+            exitNodeId: 'body',
+            doneTargetNodeId: 'done',
+            bodyNodeIds: ['body']
+          }
+        ]
+      }
+    })
+  })
+
+  it('rejects a loop body that dead-ends before the aggregate exit', () => {
+    const loop: AgentsWorkflowNode = {
+      id: 'loop',
+      kind: 'loop',
+      title: 'Loop',
+      position: { x: 100, y: 0 },
+      count: 3
+    }
+    const workflow = definition(
+      [start(), loop, node('body'), node('exit'), node('done')],
+      [
+        edge('start-loop', 'start', 'loop'),
+        edge('loop-body', 'loop', 'body', { fromPort: 'each' }),
+        edge('loop-done', 'loop', 'done', { fromPort: 'done' }),
+        edge('exit-loop', 'exit', 'loop', { toPort: 'aggregate' }),
+        edge('start-exit', 'start', 'exit')
+      ]
+    )
+
+    // Why rejected here: the body can never reach `exit`, so every iteration would fail at run
+    // time with `loop_output_missing` instead of being caught on the canvas.
+    expect(validateWorkflowDefinition(workflow).map((issue) => issue.code)).toContain(
+      'loop_body_escape'
+    )
+  })
+
+  it('rejects loop body cross-boundary edges and nested loops', () => {
+    const outer: AgentsWorkflowNode = {
+      id: 'outer',
+      kind: 'loop',
+      title: 'Outer',
+      position: { x: 0, y: 0 },
+      count: 2
+    }
+    const inner: AgentsWorkflowNode = {
+      id: 'inner',
+      kind: 'loop',
+      title: 'Inner',
+      position: { x: 0, y: 0 },
+      count: 2
+    }
+    const workflow = definition(
+      [start(), outer, inner, node('exit'), node('done')],
+      [
+        edge('start-outer', 'start', 'outer'),
+        edge('outer-inner', 'outer', 'inner', { fromPort: 'each' }),
+        edge('inner-exit', 'inner', 'exit', { fromPort: 'done' }),
+        edge('exit-outer', 'exit', 'outer', { toPort: 'aggregate' }),
+        edge('outer-done', 'outer', 'done', { fromPort: 'done' }),
+        edge('inner-each', 'inner', 'exit', { fromPort: 'each' }),
+        edge('exit-inner', 'exit', 'inner', { toPort: 'aggregate' }),
+        edge('start-exit', 'start', 'exit')
+      ]
+    )
+    const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
+
+    expect(codes).toContain('nested_loop')
+    expect(codes).toContain('loop_body_external_entry')
+  })
+
+  it('rejects a judging prompt that cannot produce a decision', () => {
+    const workflow = definition(
+      [
+        start(),
+        {
+          id: 'check',
+          kind: 'condition',
+          title: 'Check',
+          position: { x: 100, y: 0 },
+          agentId: 'claude',
+          prompt: { source: '   ' }
+        },
+        {
+          id: 'other',
+          kind: 'condition',
+          title: 'Other',
+          position: { x: 100, y: 200 },
+          agentId: 'claude',
+          prompt: { source: 'Decide whether the change is small.' }
+        },
+        node('done')
+      ],
+      [
+        edge('start-check', 'start', 'check'),
+        edge('check-yes', 'check', 'done', { fromPort: 'yes' }),
+        edge('check-no', 'check', 'other', { fromPort: 'no' }),
+        edge('other-yes', 'other', 'done', { fromPort: 'yes' }),
+        edge('other-no', 'other', 'done', { fromPort: 'no' })
+      ]
+    )
+    const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
+
+    expect(codes).toContain('condition_prompt_required')
+    expect(codes).toContain('condition_decision_contract_missing')
+  })
+
+  it('accepts the template a condition starts with', () => {
+    const workflow = definition(
+      [
+        start(),
+        {
+          id: 'check',
+          kind: 'condition',
+          title: 'Check',
+          position: { x: 100, y: 0 },
+          agentId: 'claude',
+          prompt: {
+            source:
+              'Read the answer this node inherits, then decide whether it meets this condition:\n\n<write the condition here>\n\nAnswer with a single JSON object and nothing else: {"decision":"yes"} when the condition holds, {"decision":"no"} when it does not.'
+          }
+        },
+        node('done')
+      ],
+      [
+        edge('start-check', 'start', 'check'),
+        edge('check-yes', 'check', 'done', { fromPort: 'yes' }),
+        edge('check-no', 'check', 'done', { fromPort: 'no' })
+      ]
+    )
+
+    expect(validateWorkflowDefinition(workflow)).toEqual([])
+  })
+
+  it('requires exactly one yes and one no edge for a judge condition', () => {
+    const workflow = definition(
+      [
+        start(),
+        {
+          id: 'check',
+          kind: 'condition',
+          title: 'Check',
+          position: { x: 100, y: 0 },
+          agentId: 'claude',
+          prompt: {
+            source:
+              'Decide whether the change is small. Answer with {"decision":"yes"} or {"decision":"no"}.'
+          }
+        },
+        node('done')
+      ],
+      [edge('start-check', 'start', 'check'), edge('check-done', 'check', 'done')]
+    )
+    const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
+
+    expect(codes).toContain('condition_branch_count')
+    expect(compileWorkflowGraph(workflow)).toMatchObject({ ok: false })
+  })
+})

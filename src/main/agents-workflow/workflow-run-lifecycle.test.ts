@@ -1,0 +1,187 @@
+import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
+import { existsSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { AgentsWorkflowRun } from '../../shared/agents-workflow-run-types'
+import { agentsWorkflowRunDirectory } from '../../shared/agents-workflow-output-paths'
+import {
+  finishCancelledAgentsWorkflowRun,
+  recoverInterruptedAgentsWorkflowRuns,
+  removeAgentsWorkflowRunScratch
+} from './workflow-run-lifecycle'
+
+const directories: string[] = []
+
+afterEach(async () => {
+  await Promise.all(directories.splice(0).map((dir) => rm(dir, { recursive: true, force: true })))
+})
+
+function interruptedRun(runContextPath: string): AgentsWorkflowRun {
+  return {
+    schemaVersion: 1,
+    id: 'run-1',
+    workflowId: 'workflow-1',
+    workflowRevision: 1,
+    definitionSnapshot: {
+      schemaVersion: 1,
+      id: 'workflow-1',
+      revision: 1,
+      name: 'Workflow',
+      nodes: [{ id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } }],
+      edges: [],
+      runContext: {
+        kind: 'workspace-run',
+        projectId: 'project-1',
+        hostId: 'local',
+        projectHostSetupId: 'setup-1',
+        repoId: 'repo-1',
+        path: runContextPath
+      },
+      workspace: { mode: 'new_per_run', baseBranch: null, setupDecision: 'skip' },
+      trigger: { manual: true, schedule: null },
+      schedulerOwner: 'local_host_service',
+      enabled: true,
+      createdAt: 1,
+      updatedAt: 1
+    },
+    requestKey: 'r1',
+    trigger: 'manual',
+    status: 'running',
+    workspaceId: 'workspace-1',
+    workspaceDisplayName: 'Workflow run-1',
+    attempts: [],
+    executionTrace: [],
+    createdAt: 1,
+    startedAt: 1,
+    finishedAt: null
+  }
+}
+
+describe('finishCancelledAgentsWorkflowRun', () => {
+  it('keeps the evidence of a run that finished before the stop landed', async () => {
+    const requested = {
+      ...interruptedRun('/repo/project'),
+      status: 'cancel_requested' as const,
+      attempts: []
+    }
+    const finished = {
+      ...requested,
+      status: 'completed' as const,
+      finishedAt: 9,
+      attempts: [
+        {
+          id: 'finish:1',
+          nodeId: 'finish',
+          status: 'completed' as const,
+          startedAt: 2,
+          finishedAt: 8,
+          output: {
+            format: 'plain_text' as const,
+            content: 'the answer',
+            capturedAt: 8,
+            truncated: false,
+            source: 'structured_assistant_message' as const
+          }
+        }
+      ]
+    }
+    const updateAgentsWorkflowRun = vi.fn()
+
+    const settled = await finishCancelledAgentsWorkflowRun(
+      {
+        persistence: {
+          showAgentsWorkflowRun: () => finished,
+          updateAgentsWorkflowRun,
+          flushPendingOrThrowAsync: async () => undefined
+        },
+        notifyChanged: vi.fn(),
+        now: () => 10
+      },
+      requested,
+      'stopped'
+    )
+
+    // Why: the requested run's attempt snapshot predates the final node, so copying it back would
+    // erase the evidence the user needs to understand what happened.
+    expect(settled.status).toBe('completed')
+    expect(settled.attempts[0]?.output?.content).toBe('the answer')
+    expect(updateAgentsWorkflowRun).not.toHaveBeenCalled()
+  })
+})
+
+describe('recoverInterruptedAgentsWorkflowRuns', () => {
+  it('cleans the workspace the run actually used, not its project path', async () => {
+    const workspacePath = await mkdtemp(join(tmpdir(), 'orca-workflow-recovery-'))
+    directories.push(workspacePath)
+    const runDir = agentsWorkflowRunDirectory(workspacePath, 'run-1')
+    await mkdir(join(runDir, 'answers'), { recursive: true })
+    await writeFile(join(runDir, 'answers', 'node.md'), 'answer')
+
+    const run = interruptedRun('/repo/project')
+    const updateAgentsWorkflowRun = vi.fn()
+    await recoverInterruptedAgentsWorkflowRuns({
+      persistence: {
+        markInterruptedAgentsWorkflowRunsUnverifiable: () => [run],
+        updateAgentsWorkflowRun,
+        flushPendingOrThrowAsync: async () => undefined
+      },
+      notifyChanged: vi.fn(),
+      now: () => 10,
+      resolveWorkspacePath: async (workspaceId) =>
+        workspaceId === 'workspace-1' ? workspacePath : null
+    })
+
+    // A new_per_run run wrote into the worktree it created, not into the project folder.
+    expect(existsSync(runDir)).toBe(false)
+    expect(updateAgentsWorkflowRun).not.toHaveBeenCalled()
+  })
+
+  it('cleans the scratch folder a load-time interruption left behind', async () => {
+    const workspacePath = await mkdtemp(join(tmpdir(), 'orca-workflow-recovery-'))
+    directories.push(workspacePath)
+    const runDir = agentsWorkflowRunDirectory(workspacePath, 'run-1')
+    await mkdir(join(runDir, 'answers'), { recursive: true })
+    await writeFile(join(runDir, 'answers', 'node.md'), 'answer')
+
+    // Why this shape: loading the profile state already marked the run unverifiable, so it is no
+    // longer "active" and only the pending-cleanup marker names it.
+    const run = {
+      ...interruptedRun('/repo/project'),
+      status: 'unverifiable' as const,
+      finishedAt: 5,
+      errorCode: 'execution_evidence_lost',
+      scratchCleanupPending: true
+    }
+    const updateAgentsWorkflowRun = vi.fn(
+      (_runId: string, updates: Partial<AgentsWorkflowRun>) => ({ ...run, ...updates })
+    )
+    await recoverInterruptedAgentsWorkflowRuns({
+      persistence: {
+        markInterruptedAgentsWorkflowRunsUnverifiable: () => [run],
+        updateAgentsWorkflowRun,
+        flushPendingOrThrowAsync: async () => undefined
+      },
+      notifyChanged: vi.fn(),
+      now: () => 10,
+      resolveWorkspacePath: async () => workspacePath
+    })
+
+    expect(existsSync(runDir)).toBe(false)
+    expect(updateAgentsWorkflowRun).toHaveBeenCalledWith('run-1', {
+      scratchCleanupPending: false
+    })
+  })
+
+  it('never removes anything outside the workflow output folder', async () => {
+    const workspacePath = await mkdtemp(join(tmpdir(), 'orca-workflow-recovery-'))
+    directories.push(workspacePath)
+    const keep = join(workspacePath, 'notes.txt')
+    await writeFile(keep, 'keep me')
+
+    await removeAgentsWorkflowRunScratch(workspacePath, '..')
+
+    expect(existsSync(keep)).toBe(true)
+    expect(existsSync(workspacePath)).toBe(true)
+  })
+})

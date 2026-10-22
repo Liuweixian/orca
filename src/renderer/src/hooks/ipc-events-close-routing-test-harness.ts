@@ -4,6 +4,7 @@
 import type * as ReactModule from 'react'
 import { vi } from 'vitest'
 import type { TerminalSurfaceCloseTarget } from '../../../shared/terminal-surface-close-target'
+import { appLifetimeSubscriptionStubs } from './ipc-events-lifetime-subscription-stubs'
 
 export type RequestTabCloseListener = (data: {
   requestId: string
@@ -152,8 +153,7 @@ export async function useIpcEventsForCloseRouting({
   vi.stubGlobal('window', {
     dispatchEvent: vi.fn(),
     api: {
-      repos: { onChanged: () => () => {} },
-      automations: { onChanged: () => () => {} },
+      ...appLifetimeSubscriptionStubs,
       worktrees: {
         onChanged: () => () => {},
         onBaseStatus: () => () => {},

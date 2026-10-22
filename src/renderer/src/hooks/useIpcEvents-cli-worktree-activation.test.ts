@@ -109,6 +109,7 @@ describe('useIpcEvents CLI-created worktree activation', () => {
       api: {
         repos: { onChanged: () => () => {} },
         automations: { onChanged: () => () => {} },
+        agentsWorkflows: { onChanged: () => () => {} },
         worktrees: {
           onChanged: () => () => {},
           onBaseStatus: () => () => {},
@@ -384,6 +385,7 @@ describe('useIpcEvents CLI-created worktree activation', () => {
       api: {
         repos: { onChanged: () => () => {} },
         automations: { onChanged: () => () => {} },
+        agentsWorkflows: { onChanged: () => () => {} },
         worktrees: {
           onChanged: (callback: (data: { repoId: string }) => void) => {
             localWorktreesOnChanged = callback

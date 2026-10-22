@@ -429,7 +429,8 @@
     "help": "Help",
     "paste": "Paste",
     "copy": "Copy",
-    "selectAll": "Select All"
+    "selectAll": "Select All",
+    "showAgentsWorkflowButton": "Show Workflows Button"
   },
   "tray": {
     "openOrca": "Open Orca",
@@ -5828,7 +5829,8 @@
           "fee535205b": "Tasks",
           "d599269755": "Hide from sidebar",
           "artifacts": "Artifacts",
-          "skills": "Skills"
+          "skills": "Skills",
+          "agentsWorkflows": "Workflows"
         },
         "SidebarRepositoryFilterSection": {
           "d3a9c4cea1": "Clear",
@@ -7285,7 +7287,8 @@
           "showPinnedWorktreesInGroups": {
             "title": "Also show pinned worktrees in their original lists",
             "description": "Pinned worktrees stay in Pinned and also appear in All, Project, Status, and PR."
-          }
+          },
+          "agentsWorkflows": "Show Workflows Button"
         },
         "AutoRenameBranchFromWorkSetting": {
           "1626524572": "Nautilus",
@@ -9807,6 +9810,13 @@
               "kw": {
                 "cursor": "cursor"
               }
+            },
+            "agentsWorkflows": {
+              "title": "Show Workflows Button",
+              "description": "Show the Workflows button at the top of the left sidebar.",
+              "workflow": "workflow",
+              "agent": "agent",
+              "chinese": "工作流"
             }
           }
         },
@@ -18201,6 +18211,143 @@
         "a62f9db53d": "Cancel",
         "c77189bc0c": "Update filter",
         "19af906d12": "Save filter"
+      },
+      "agents-workflow": {
+        "newAgent": "New agent",
+        "newCondition": "New condition",
+        "conditionPromptTemplate": "Read the answer this node inherits, then decide whether it meets this condition:\n\n<write the condition here>\n\nAnswer with a single JSON object and nothing else: {{yes}} when the condition holds, {{no}} when it does not.",
+        "newLoop": "New loop",
+        "exported": "Workflow JSON copied.",
+        "exportFailed": "Could not copy workflow JSON.",
+        "edge": {
+          "yes": "Yes",
+          "no": "No",
+          "each": "Each",
+          "done": "Done"
+        },
+        "inspector": {
+          "empty": "Select a node to edit its settings.",
+          "title": "Title",
+          "agent": "Agent",
+          "prompt": "Prompt",
+          "conditionPrompt": "Judging prompt",
+          "conditionDecision": "The agent must answer with {\"decision\":\"yes\"} or {\"decision\":\"no\"}; anything else fails the run instead of guessing a branch.",
+          "loopIterationNote": "Each turn writes its iteration number to a file and the body’s prompt reads that file first.",
+          "count": "Count",
+          "issues": "Issues",
+          "channelProtocol": "This host runs the node in a structured session and passes its answer downstream.",
+          "channelTranscript": "This host reads the answer back from the agent transcript.",
+          "channelFile": "This host asks the agent to write its answer to a workflow file.",
+          "channelWeakSettlement": "The agent only reports a quiet pane, so the value comes from the output file.",
+          "upstreamNote": "The previous node’s answer is saved to a file, and this prompt names that file so the agent reads it first.",
+          "channelSnapshot": "This node ends the branch: the run only keeps what its pane printed, and nothing downstream binds it.",
+          "channelNone": "This host has no output channel for {{agent}}."
+        },
+        "node": {
+          "start": "Start",
+          "agent": "Agent",
+          "condition": "Condition",
+          "loop": "Loop"
+        },
+        "topbar": {
+          "valid": "Ready to run",
+          "warnings": "{{count}} warnings",
+          "draft": "{{count}} issues · saved as draft, Run is disabled",
+          "export": "Copy JSON",
+          "run": "Run",
+          "delete": "Delete workflow",
+          "saving": "Saving",
+          "save": "Save",
+          "starting": "Starting"
+        },
+        "loading": "Loading workflows…",
+        "createFirst": "Create workflow",
+        "conflict": "This workflow changed in another window. Reload it before saving.",
+        "reload": "Reload",
+        "discard": {
+          "title": "Discard unsaved changes?",
+          "description": "This workflow has edits that were not saved. Switching now loses them.",
+          "cancel": "Keep editing",
+          "confirm": "Discard"
+        },
+        "delete": {
+          "title": "Delete workflow?",
+          "description": "The workflow and its run history are deleted. Workspaces created by previous runs are left in place.",
+          "cancel": "Cancel",
+          "confirm": "Delete"
+        },
+        "definition": {
+          "new": "New workflow",
+          "name": "Name",
+          "enabled": "Enabled",
+          "schedule": "Scheduled runs",
+          "timezone": "Timezone",
+          "grace": "Missed-run grace (minutes)",
+          "noProjectSetup": "This project has no ready setup on the selected host."
+        },
+        "history": {
+          "title": "Run history",
+          "empty": "No runs yet.",
+          "more": "Load more",
+          "select": "Select a run to inspect attempts and output.",
+          "revision": "Definition revision {{revision}}",
+          "cancel": "Cancel run",
+          "copyError": "Copy error details",
+          "copied": "Error details copied.",
+          "copyFailed": "Could not copy error details.",
+          "skippedActive": "Skipped because another run was active.",
+          "skippedGrace": "Skipped because the missed-run grace period elapsed.",
+          "pending": "Pending",
+          "running": "Running",
+          "cancelling": "Cancelling",
+          "completed": "Completed",
+          "failed": "Failed",
+          "cancelled": "Cancelled",
+          "skipped": "Skipped",
+          "unverifiable": "Unverifiable",
+          "attemptPending": "Pending",
+          "attemptRunning": "Running",
+          "attemptCompleted": "Completed",
+          "attemptFailed": "Failed",
+          "attemptSkipped": "Skipped",
+          "attemptCancelled": "Cancelled",
+          "attemptUnverifiable": "Unverifiable",
+          "outputStructured": "Structured answer",
+          "outputTranscript": "Answer read from the agent transcript",
+          "outputFile": "Answer written to the workflow output file",
+          "outputTerminal": "Terminal output (not passed downstream)",
+          "outputUnknown": "Answer from an unrecognised source"
+        },
+        "controller": {
+          "loadFailed": "Could not load the workflow.",
+          "listFailed": "Could not load workflows.",
+          "createFailed": "Could not create the workflow.",
+          "noTarget": "Open a project workspace before creating a workflow.",
+          "saved": "Workflow saved.",
+          "saveFailed": "Could not save the workflow.",
+          "deleteFailed": "Could not delete the workflow.",
+          "runFailed": "Could not start the workflow.",
+          "runConflict": "This workflow or its workspace already has an active run. Wait for it to finish.",
+          "runLoadFailed": "Could not load the run.",
+          "newName": "New workflow",
+          "runsLoadFailed": "Could not load the run history.",
+          "cancelFailed": "Could not cancel the run.",
+          "invalid": "Fix these before saving: {{issues}}"
+        },
+        "canvas": {
+          "deleteNode": "Delete node",
+          "addAgent": "Agent",
+          "addCondition": "Condition",
+          "addLoop": "Loop",
+          "connectionRejected": "Connection not created: these ports are already linked or cannot be connected.",
+          "deleteConnection": "Delete connection",
+          "deleteNodesTitle": "Delete selected nodes?",
+          "deleteNodesDescription": "The nodes, their prompts, and every connected edge are removed. This cannot be undone.",
+          "deleteEdgeTitle": "Delete this connection?",
+          "deleteEdgeDescription": "The two nodes stay, but the run can no longer follow this connection.",
+          "deleteCancel": "Cancel",
+          "deleteConfirm": "Delete"
+        }
       },
       "OrcaSignInProgress": {
         "waiting": "Waiting for sign-in in your browser",

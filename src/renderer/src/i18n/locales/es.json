@@ -239,6 +239,7 @@
     "showStatusBar": "Mostrar barra de estado",
     "showTasksButton": "Botón Mostrar tareas",
     "showAutomationsButton": "Botón Mostrar automatizaciones",
+    "showAgentsWorkflowButton": "Botón Mostrar flujos de trabajo",
     "showMobileButton": "Mostrar botón móvil de Orca",
     "showTitlebarAppName": "Mostrar el nombre de la aplicación de la barra de título",
     "view": "Vista",
@@ -5553,7 +5554,8 @@
           "fee535205b": "Tareas",
           "d599269755": "Ocultar de la barra lateral",
           "artifacts": "Artefactos",
-          "skills": "Habilidades"
+          "skills": "Habilidades",
+          "agentsWorkflows": "Flujos de trabajo"
         },
         "SidebarRepositoryFilterSection": {
           "d3a9c4cea1": "Limpiar",

@@ -16,6 +16,8 @@ export type ParsedRrule = {
   freq: 'HOURLY' | 'DAILY' | 'WEEKLY'
   byDay: string[]
   byHour: number
+  /** False when the rule omitted BYHOUR, so `byHour` is only the parser's default. */
+  byHourDeclared: boolean
   byMinute: number
 }
 
@@ -35,8 +37,10 @@ export type { CronParseOptions }
 
 const DAY_CODES = ['SU', 'MO', 'TU', 'WE', 'TH', 'FR', 'SA'] as const
 const WEEKDAY_CODES = ['MO', 'TU', 'WE', 'TH', 'FR'] as const
+/** The only RRULE parts the parser reads; anything else would be silently ignored. */
+const SUPPORTED_RRULE_PARTS: ReadonlySet<string> = new Set(['FREQ', 'BYDAY', 'BYHOUR', 'BYMINUTE'])
 
-function parseRrule(rrule: string): ParsedRrule {
+function rruleEntries(rrule: string): Map<string, string> {
   const entries = new Map<string, string>()
   for (const part of rrule.split(';')) {
     const [key, value] = part.split('=')
@@ -44,10 +48,32 @@ function parseRrule(rrule: string): ParsedRrule {
       entries.set(key.toUpperCase(), value)
     }
   }
+  return entries
+}
+
+/**
+ * The RRULE parts this parser cannot honor. Callers that must not silently change a user's intent
+ * (an `INTERVAL=2` weekly rule would otherwise run weekly) reject the rule on these.
+ *
+ * Why the frequency matters: the parser only reads BYDAY for a weekly rule, so `FREQ=HOURLY;BYDAY=MO`
+ * would otherwise run every hour instead of Mondays — exactly the silent reinterpretation this
+ * check exists to prevent.
+ */
+export function unsupportedRruleParts(rrule: string): string[] {
+  const entries = rruleEntries(rrule)
+  const freq = entries.get('FREQ')?.toUpperCase()
+  return [...entries.keys()].filter(
+    (key) => !SUPPORTED_RRULE_PARTS.has(key) || (key === 'BYDAY' && freq !== 'WEEKLY')
+  )
+}
+
+function parseRrule(rrule: string): ParsedRrule {
+  const entries = rruleEntries(rrule)
   const freq = entries.get('FREQ')
   if (freq !== 'HOURLY' && freq !== 'DAILY' && freq !== 'WEEKLY') {
     throw new Error('Unsupported automation recurrence.')
   }
+  const byHourDeclared = entries.has('BYHOUR')
   const byHour = Number(entries.get('BYHOUR') ?? '9')
   const byMinute = Number(entries.get('BYMINUTE') ?? '0')
   if (!Number.isInteger(byHour) || byHour < 0 || byHour > 23) {
@@ -64,7 +90,7 @@ function parseRrule(rrule: string): ParsedRrule {
   ) {
     throw new Error('Invalid recurrence day.')
   }
-  return { kind: 'rrule', freq, byDay, byHour, byMinute }
+  return { kind: 'rrule', freq, byDay, byHour, byHourDeclared, byMinute }
 }
 
 export function parseCronExpression(

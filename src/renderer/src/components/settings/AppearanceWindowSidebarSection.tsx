@@ -22,6 +22,7 @@ import {
 } from './appearance-search'
 import { USAGE_PERCENTAGE_DISPLAY_SETTING_ID } from './appearance-usage-percentage-search'
 import { LeftSidebarAppearanceSetting } from './LeftSidebarAppearanceSetting'
+import { AppearanceWorkflowsButtonRow } from './AppearanceWorkflowsButtonRow'
 import {
   getLeftSidebarAppearanceEntry,
   getShowPinnedWorktreesInGroupsEntry,
@@ -286,13 +287,19 @@ export function AppearanceWindowSidebarSection({
                     />
                   </SearchableSetting>
 
+                  <AppearanceWorkflowsButtonRow
+                    settings={settings}
+                    entry={sidebarEntries[2]}
+                    updateSettings={updateSettings}
+                  />
+
                   <SearchableSetting
                     title={translate(
                       'auto.components.settings.AppearancePane.9da1020447',
                       'Show Orca Mobile Button'
                     )}
-                    description={sidebarEntries[2]?.description}
-                    keywords={sidebarEntries[2]?.keywords ?? ['mobile', 'phone', 'sidebar']}
+                    description={sidebarEntries[3]?.description}
+                    keywords={sidebarEntries[3]?.keywords ?? ['mobile', 'phone', 'sidebar']}
                   >
                     <SettingsSwitchRow
                       label={translate(
