@@ -22,7 +22,7 @@ function workflow(
       path: '/repo'
     },
     workspace: { mode: 'existing', workspaceId: 'folder-workspace-1' },
-    trigger: { manual: true, defaultInput: 'scheduled input', schedule },
+    trigger: { manual: true, schedule },
     schedulerOwner: 'local_host_service',
     enabled: true,
     createdAt: 1,

@@ -107,7 +107,9 @@ function AgentsWorkflowNodeCardComponent({
           <div className="truncate text-sm font-semibold">{node.title}</div>
           <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
             <span>{nodeKindLabel(node.kind)}</span>
-            {node.kind === 'agent' ? <Badge variant="secondary">{node.agentId}</Badge> : null}
+            {node.kind === 'agent' || node.kind === 'condition' ? (
+              <Badge variant="secondary">{node.agentId}</Badge>
+            ) : null}
           </div>
         </div>
         {hasErrors ? <AlertTriangle className="size-4 shrink-0 text-destructive" /> : null}

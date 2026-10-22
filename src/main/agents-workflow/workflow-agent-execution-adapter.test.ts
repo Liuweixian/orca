@@ -15,7 +15,7 @@ function node(agentId: AgentNode['agentId']): AgentNode {
     title: 'Agent',
     position: { x: 0, y: 0 },
     agentId,
-    prompt: { source: 'work', bindings: {} },
+    prompt: { source: 'work' },
     terminal: false
   }
 }

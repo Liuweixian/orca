@@ -37,9 +37,7 @@ export type AgentsWorkflowPageController = {
   conflict: boolean
   /** What this host can do per agent, or null while it is unknown. */
   agentChannels: AgentsWorkflowAgentChannelMap | null
-  runInput: string
   setDefinition: (definition: AgentsWorkflowDefinition) => void
-  setRunInput: (input: string) => void
   selectWorkflow: (id: string) => Promise<void>
   createWorkflow: () => Promise<void>
   saveWorkflow: () => Promise<void>
@@ -60,7 +58,6 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
   const [loading, setLoading] = React.useState(true)
   const [saving, setSaving] = React.useState(false)
   const [conflict, setConflict] = React.useState(false)
-  const [runInput, setRunInput] = React.useState('')
   const agentChannels = useAgentsWorkflowAgentChannels()
   const runsPage = useAgentsWorkflowRuns(savedDefinition?.id ?? null)
   const {
@@ -79,7 +76,6 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
         const selected = await showAgentsWorkflow(id)
         setDefinitionState(selected)
         setSavedDefinition(selected)
-        setRunInput(selected.trigger.defaultInput)
         setConflict(false)
         setSelectedRun(null)
         await refreshRuns(id)
@@ -153,7 +149,6 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
       setWorkflows((current) => [created, ...current])
       setDefinitionState(created)
       setSavedDefinition(created)
-      setRunInput(created.trigger.defaultInput)
       clearRuns()
     } catch (error) {
       reportDefinitionFailure(
@@ -275,18 +270,12 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
     ),
     conflict,
     agentChannels,
-    runInput,
     setDefinition: setDefinitionState,
-    setRunInput,
     selectWorkflow,
     createWorkflow,
     saveWorkflow,
     deleteWorkflow,
-    runNow: () =>
-      runsPage.runNow(
-        savedDefinition?.id ?? '',
-        runInput || savedDefinition?.trigger.defaultInput || ''
-      ),
+    runNow: () => runsPage.runNow(savedDefinition?.id ?? ''),
     cancelRun,
     selectRun,
     loadMoreRuns,

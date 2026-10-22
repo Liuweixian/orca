@@ -69,14 +69,9 @@ export async function deleteAgentsWorkflow(id: string, expectedRevision: number)
 
 export function runAgentsWorkflow(
   workflowId: string,
-  input: string,
   requestKey: string
 ): Promise<AgentsWorkflowRun> {
-  return callRuntimeRpc(LOCAL_TARGET, 'agentsWorkflow.runNow', {
-    workflowId,
-    input,
-    requestKey
-  })
+  return callRuntimeRpc(LOCAL_TARGET, 'agentsWorkflow.runNow', { workflowId, requestKey })
 }
 
 export function cancelAgentsWorkflowRun(runId: string): Promise<AgentsWorkflowRun> {

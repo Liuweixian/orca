@@ -30,7 +30,7 @@ export type AgentsWorkflowRunsState = {
   refreshRuns: (workflowId: string) => Promise<void>
   clearRuns: () => void
   selectRun: (runId: string) => Promise<void>
-  runNow: (workflowId: string, input: string) => Promise<void>
+  runNow: (workflowId: string) => Promise<void>
   cancelRun: (runId: string, workflowId: string | null) => Promise<void>
   loadMoreRuns: (workflowId: string | null) => Promise<void>
 }
@@ -68,13 +68,13 @@ export function useAgentsWorkflowRuns(workflowId: string | null): AgentsWorkflow
 
   /** Starts a run, then shows it: the page never waits for the agent's first node. */
   const runNow = React.useCallback(
-    async (workflowId: string, input: string) => {
+    async (workflowId: string) => {
       if (!workflowId) {
         return
       }
       setRunning(true)
       try {
-        const run = await runAgentsWorkflow(workflowId, input, createBrowserUuid())
+        const run = await runAgentsWorkflow(workflowId, createBrowserUuid())
         await refreshRuns(workflowId)
         setSelectedRun(run)
       } catch {

@@ -35,7 +35,7 @@ function interruptedRun(runContextPath: string): AgentsWorkflowRun {
         path: runContextPath
       },
       workspace: { mode: 'new_per_run', baseBranch: null, setupDecision: 'skip' },
-      trigger: { manual: true, defaultInput: '', schedule: null },
+      trigger: { manual: true, schedule: null },
       schedulerOwner: 'local_host_service',
       enabled: true,
       createdAt: 1,
@@ -43,7 +43,6 @@ function interruptedRun(runContextPath: string): AgentsWorkflowRun {
     },
     requestKey: 'r1',
     trigger: 'manual',
-    input: '',
     status: 'running',
     workspaceId: 'workspace-1',
     workspaceDisplayName: 'Workflow run-1',

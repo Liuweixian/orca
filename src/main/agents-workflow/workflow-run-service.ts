@@ -28,7 +28,6 @@ export type AgentsWorkflowRunPersistence = {
   showAgentsWorkflow(id: string): AgentsWorkflowDefinition
   createAgentsWorkflowRun(input: {
     workflow: AgentsWorkflowDefinition
-    runInput: string
     requestKey: string
     now: number
     trigger?: 'manual' | 'schedule'
@@ -92,16 +91,11 @@ export class AgentsWorkflowRunService {
     }
   }
 
-  async runNow(input: {
-    workflowId: string
-    input: string
-    requestKey: string
-  }): Promise<AgentsWorkflowRun> {
+  async runNow(input: { workflowId: string; requestKey: string }): Promise<AgentsWorkflowRun> {
     await this.recoverInterrupted()
     const workflow = this.persistence.showAgentsWorkflow(input.workflowId)
     const created = this.persistence.createAgentsWorkflowRun({
       workflow,
-      runInput: input.input,
       requestKey: input.requestKey,
       now: this.now()
     })
@@ -125,7 +119,6 @@ export class AgentsWorkflowRunService {
     try {
       created = this.persistence.createAgentsWorkflowRun({
         workflow,
-        runInput: workflow.trigger.defaultInput,
         requestKey: agentsWorkflowScheduleRequestKey(scheduledFor),
         now: this.now(),
         trigger: 'schedule',
@@ -245,7 +238,6 @@ export class AgentsWorkflowRunService {
       try {
         result = await executeAgentsWorkflowSchedule({
           definition: initial.definitionSnapshot,
-          runInput: initial.input,
           executeAgent: this.adapter.execute,
           signal: controller.signal,
           now: this.now,

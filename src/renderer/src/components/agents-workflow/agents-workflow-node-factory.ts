@@ -1,6 +1,10 @@
 import type { SnapGrid } from '@xyflow/react'
 import { createBrowserUuid } from '@/lib/browser-uuid'
 import { translate } from '@/i18n/i18n'
+import {
+  AGENTS_WORKFLOW_DECISION_NO,
+  AGENTS_WORKFLOW_DECISION_YES
+} from '../../../../shared/agents-workflow-decision'
 import type {
   AgentsWorkflowEdge,
   AgentsWorkflowNode
@@ -34,7 +38,7 @@ export function newNode(
       title: translate('auto.components.agents-workflow.newAgent', 'New agent'),
       position,
       agentId: 'claude',
-      prompt: { source: '', bindings: {} },
+      prompt: { source: '' },
       terminal: false
     }
   }
@@ -44,9 +48,14 @@ export function newNode(
       kind,
       title: translate('auto.components.agents-workflow.newCondition', 'New condition'),
       position,
-      input: { kind: 'run_input' },
-      operator: 'contains',
-      operand: ''
+      agentId: 'claude',
+      prompt: {
+        source: translate(
+          'auto.components.agents-workflow.conditionPromptTemplate',
+          'Read the answer this node inherits, then decide whether it meets this condition:\n\n<write the condition here>\n\nAnswer with a single JSON object and nothing else: {{yes}} when the condition holds, {{no}} when it does not.',
+          { yes: AGENTS_WORKFLOW_DECISION_YES, no: AGENTS_WORKFLOW_DECISION_NO }
+        )
+      }
     }
   }
   return {
@@ -54,6 +63,6 @@ export function newNode(
     kind,
     title: translate('auto.components.agents-workflow.newLoop', 'New loop'),
     position,
-    iteration: { mode: 'fixed', count: 1 }
+    count: 1
   }
 }

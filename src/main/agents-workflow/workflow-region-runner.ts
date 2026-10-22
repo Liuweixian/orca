@@ -1,13 +1,11 @@
 // Executing one region of the graph: pick the next node, run it, settle its outgoing edges.
 
 import type { AgentsWorkflowEdge, AgentsWorkflowNode } from '../../shared/agents-workflow-types'
-import {
-  evaluateAgentsWorkflowCondition,
-  resolveAgentsWorkflowLoopItems,
-  resolveAgentsWorkflowVariable
-} from './workflow-runtime-values'
+import { agentsWorkflowLoopCount } from './workflow-runtime-values'
 import { saveAgentsWorkflowNodeAnswer } from './workflow-node-answer'
 import { runWorkflowAgentNode } from './workflow-agent-node-runner'
+import { runWorkflowConditionNode } from './workflow-condition-node-runner'
+import { writeAgentsWorkflowLoopIteration } from './workflow-upstream-files'
 import {
   createWorkflowAttempt,
   workflowRegionFailure,
@@ -103,22 +101,11 @@ export async function runWorkflowRegion(
         return agentFailure
       }
     } else if (node.kind === 'condition') {
-      const value = resolveAgentsWorkflowVariable(node.input, context.values)
-      const branch = value === null ? null : evaluateAgentsWorkflowCondition(node, value)
-      if (!branch) {
-        return workflowRegionFailure(
-          context,
-          'condition_evaluation_failed',
-          `Condition ${node.id} could not be evaluated.`
-        )
+      const judged = await runWorkflowConditionNode(context, node, loopContext)
+      if (!judged.ok) {
+        return judged.failure
       }
-      context.attempts.push({
-        ...createWorkflowAttempt(context, node.id, 'completed', loopContext),
-        selectedBranch: branch
-      })
-      context.executionTrace.push(node.id)
-      await context.checkpoint()
-      settleEdges(node.id, (edge) => edge.fromPort === branch)
+      settleEdges(node.id, (edge) => edge.fromPort === judged.decision)
       settledNodes.add(node.id)
       continue
     } else {
@@ -151,19 +138,23 @@ async function runWorkflowLoopNode(
       `Loop region ${node.id} is unavailable.`
     )
   }
-  const resolved = resolveAgentsWorkflowLoopItems(node, context.values)
-  if (!resolved.ok) {
-    return workflowRegionFailure(context, resolved.code, resolved.message)
-  }
+  const count = agentsWorkflowLoopCount(node)
   const outputs: string[] = []
-  for (const [index, item] of resolved.items.entries()) {
+  for (let index = 0; index < count; index += 1) {
     if (context.signal?.aborted) {
       return workflowRegionFailure(context, 'cancelled', 'Workflow run was cancelled.', {
         cancelled: true
       })
     }
-    context.values.loopItems.set(node.id, item)
-    context.values.loopIndexes.set(node.id, String(index))
+    const noted = await writeAgentsWorkflowLoopIteration(
+      context.executionContext,
+      node.id,
+      index,
+      count
+    )
+    if (noted !== null) {
+      return workflowRegionFailure(context, noted.code, noted.message)
+    }
     const bodyFailure = await runWorkflowRegion(
       context,
       new Set(region.bodyNodeIds),
@@ -183,8 +174,6 @@ async function runWorkflowLoopNode(
     }
     outputs.push(output)
   }
-  context.values.loopItems.delete(node.id)
-  context.values.loopIndexes.delete(node.id)
   const aggregate = JSON.stringify(outputs)
   context.values.loopOutputs.set(node.id, aggregate)
   const saved = await saveAgentsWorkflowNodeAnswer(context.executionContext, node.id, aggregate)

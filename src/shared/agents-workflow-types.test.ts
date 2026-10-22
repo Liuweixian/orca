@@ -15,10 +15,7 @@ function validDefinition(): Record<string, unknown> {
         title: 'Draft',
         position: { x: 200, y: 0 },
         agentId: 'claude',
-        prompt: {
-          source: 'Summarize {{binding:input}}',
-          bindings: { input: { kind: 'run_input' } }
-        },
+        prompt: { source: 'Summarize the workspace changes.' },
         terminal: true
       }
     ],
@@ -40,7 +37,7 @@ function validDefinition(): Record<string, unknown> {
       path: '/workspace'
     },
     workspace: { mode: 'new_per_run', baseBranch: null, setupDecision: 'inherit' },
-    trigger: { manual: true, defaultInput: '', schedule: null },
+    trigger: { manual: true, schedule: null },
     schedulerOwner: 'local_host_service',
     enabled: true,
     createdAt: 1,
@@ -112,7 +109,7 @@ describe('AgentsWorkflowDefinitionSchema', () => {
       title: 'Draft',
       position: { x: 200, y: 0 },
       agentId: 'unknown-agent',
-      prompt: { source: '', bindings: {} },
+      prompt: { source: '' },
       terminal: true
     }
 

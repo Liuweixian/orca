@@ -1,21 +1,13 @@
 import {
-  agentsWorkflowAvailableVariableRefs,
   analyzeAgentsWorkflowGraph,
   type AgentsWorkflowGraphAnalysis,
   type AgentsWorkflowLoopRegion
 } from './agents-workflow-graph-analysis'
 import { validateParsedAgentsWorkflowDefinition } from './agents-workflow-graph-validation'
 import {
-  AGENTS_WORKFLOW_BINDING_TOKEN,
-  agentsWorkflowPromptBindingKeys,
-  hasInvalidAgentsWorkflowPromptToken
-} from './agents-workflow-prompt-tokens'
-import {
   AgentsWorkflowDefinitionSchema,
   type AgentsWorkflowDefinition,
-  type AgentsWorkflowEdge,
-  type AgentsWorkflowPrompt,
-  type AgentsWorkflowVariableRef
+  type AgentsWorkflowEdge
 } from './agents-workflow-types'
 
 export type AgentsWorkflowValidationIssue = {
@@ -43,43 +35,6 @@ export type AgentsWorkflowCompiledGraph = {
 export type AgentsWorkflowCompileResult =
   | { ok: true; graph: AgentsWorkflowCompiledGraph }
   | { ok: false; issues: AgentsWorkflowValidationIssue[] }
-
-export type AgentsWorkflowPromptValues = {
-  runInput: string
-  nodeOutputs: Readonly<Record<string, string>>
-  loopItems: Readonly<Record<string, string>>
-  loopIndexes: Readonly<Record<string, string>>
-  loopOutputs: Readonly<Record<string, string>>
-}
-
-export type AgentsWorkflowRenderPromptResult =
-  | { ok: true; value: string }
-  | {
-      ok: false
-      code: 'invalid_token' | 'missing_binding' | 'missing_value'
-      bindingKey?: string
-      ref?: AgentsWorkflowVariableRef
-    }
-
-export function agentsWorkflowVariableRefKey(ref: AgentsWorkflowVariableRef): string {
-  switch (ref.kind) {
-    case 'run_input':
-      return ref.kind
-    case 'node_output':
-      return `${ref.kind}:${ref.nodeId}`
-    case 'loop_item':
-    case 'loop_index':
-    case 'loop_output':
-      return `${ref.kind}:${ref.loopNodeId}`
-  }
-}
-
-export function availableVariableRefs(
-  definition: AgentsWorkflowDefinition,
-  targetNodeId: string
-): AgentsWorkflowVariableRef[] {
-  return agentsWorkflowAvailableVariableRefs(definition, targetNodeId)
-}
 
 export function validateWorkflowDefinition(input: unknown): AgentsWorkflowValidationIssue[] {
   const parsed = AgentsWorkflowDefinitionSchema.safeParse(input)
@@ -176,50 +131,3 @@ export function compileWorkflowGraph(
     }
   }
 }
-
-function valueForRef(
-  ref: AgentsWorkflowVariableRef,
-  values: AgentsWorkflowPromptValues
-): string | undefined {
-  switch (ref.kind) {
-    case 'run_input':
-      return values.runInput
-    case 'node_output':
-      return values.nodeOutputs[ref.nodeId]
-    case 'loop_item':
-      return values.loopItems[ref.loopNodeId]
-    case 'loop_index':
-      return values.loopIndexes[ref.loopNodeId]
-    case 'loop_output':
-      return values.loopOutputs[ref.loopNodeId]
-  }
-}
-
-export function renderPrompt(
-  prompt: AgentsWorkflowPrompt,
-  values: AgentsWorkflowPromptValues
-): AgentsWorkflowRenderPromptResult {
-  if (hasInvalidAgentsWorkflowPromptToken(prompt.source)) {
-    return { ok: false, code: 'invalid_token' }
-  }
-  let failure: Exclude<AgentsWorkflowRenderPromptResult, { ok: true }> | null = null
-  const value = prompt.source.replace(
-    AGENTS_WORKFLOW_BINDING_TOKEN,
-    (_token, bindingKey: string) => {
-      const ref = prompt.bindings[bindingKey]
-      if (!ref) {
-        failure ??= { ok: false, code: 'missing_binding', bindingKey }
-        return ''
-      }
-      const resolved = valueForRef(ref, values)
-      if (resolved === undefined) {
-        failure ??= { ok: false, code: 'missing_value', bindingKey, ref }
-        return ''
-      }
-      return resolved
-    }
-  )
-  return failure ?? { ok: true, value }
-}
-
-export { agentsWorkflowPromptBindingKeys, hasInvalidAgentsWorkflowPromptToken }

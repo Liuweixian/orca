@@ -24,7 +24,7 @@ const workflow = {
     path: '/repo'
   },
   workspace: { mode: 'existing', workspaceId: 'workspace-1' },
-  trigger: { manual: true, defaultInput: '', schedule: null },
+  trigger: { manual: true, schedule: null },
   enabled: true
 } as const
 
@@ -62,11 +62,7 @@ describe('agent workflow RPC methods', () => {
       request('agentsWorkflow.delete', { id: 'workflow-1', expectedRevision: 2 })
     )
     await dispatcher.dispatch(
-      request('agentsWorkflow.runNow', {
-        workflowId: 'workflow-1',
-        input: 'review',
-        requestKey: 'request-1'
-      })
+      request('agentsWorkflow.runNow', { workflowId: 'workflow-1', requestKey: 'request-1' })
     )
     await dispatcher.dispatch(request('agentsWorkflow.cancelRun', { runId: 'run-1' }))
     await dispatcher.dispatch(
@@ -84,7 +80,6 @@ describe('agent workflow RPC methods', () => {
     expect(methods.deleteAgentsWorkflow).toHaveBeenCalledWith('workflow-1', 2)
     expect(methods.runAgentsWorkflowNow).toHaveBeenCalledWith({
       workflowId: 'workflow-1',
-      input: 'review',
       requestKey: 'request-1'
     })
     expect(methods.cancelAgentsWorkflowRun).toHaveBeenCalledWith('run-1')

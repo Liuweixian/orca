@@ -28,6 +28,23 @@ export function agentsWorkflowRunAnswersDirectory(workspacePath: string, runId: 
 }
 
 /**
+ * The iteration note for one loop turn, relative to the worktree the agent runs in. A loop body has
+ * no other way to learn which turn it is on, so each iteration writes one before the body runs.
+ */
+export function agentsWorkflowLoopIterationRelativePath(
+  runId: string,
+  loopNodeId: string,
+  index: number
+): string {
+  return [
+    AGENTS_WORKFLOW_OUTPUT_DIR,
+    agentsWorkflowPathSegment(runId),
+    AGENTS_WORKFLOW_ANSWERS_DIR,
+    `${agentsWorkflowPathSegment(loopNodeId)}.${index}.md`
+  ].join('/')
+}
+
+/**
  * The answer file for one node, relative to the worktree the agent runs in. Forward slashes on
  * purpose: the value goes into a prompt, and agents read `/` on every platform.
  */

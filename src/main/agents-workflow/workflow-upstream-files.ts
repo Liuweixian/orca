@@ -7,6 +7,7 @@
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import {
+  agentsWorkflowLoopIterationRelativePath,
   agentsWorkflowPathSegment,
   agentsWorkflowRunAnswersDirectory,
   agentsWorkflowUpstreamRelativePath
@@ -42,4 +43,41 @@ export async function writeAgentsWorkflowNodeAnswer(input: {
     }
   }
   return { ok: true, relativePath: agentsWorkflowUpstreamRelativePath(input.runId, input.nodeId) }
+}
+
+/**
+ * Writes one loop turn's note before its body runs. The body's prompt names this file, so a fixed
+ * count loop still tells its agent which turn it is on without any in-memory variable plumbing.
+ */
+export async function writeAgentsWorkflowLoopIteration(
+  context: { runId: string; workspacePath: string } | undefined,
+  loopNodeId: string,
+  index: number,
+  count: number
+): Promise<{ code: string; message: string } | null> {
+  if (!context) {
+    return null
+  }
+  try {
+    await ensureAgentsWorkflowRunDirectory(context.workspacePath, context.runId)
+    await mkdir(agentsWorkflowRunAnswersDirectory(context.workspacePath, context.runId), {
+      recursive: true
+    })
+    await writeFile(
+      join(
+        context.workspacePath,
+        agentsWorkflowLoopIterationRelativePath(context.runId, loopNodeId, index)
+      ),
+      `${JSON.stringify({ iteration: index + 1, total: count })}\n`,
+      'utf8'
+    )
+  } catch (error) {
+    return {
+      code: 'loop_iteration_unavailable',
+      message: `The run could not note loop iteration ${index}: ${
+        error instanceof Error ? error.message : String(error)
+      }`
+    }
+  }
+  return null
 }

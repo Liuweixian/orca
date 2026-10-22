@@ -1,6 +1,5 @@
 import { Play, Save, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { translate } from '@/i18n/i18n'
 
 export function AgentsWorkflowTopBar({
@@ -11,10 +10,8 @@ export function AgentsWorkflowTopBar({
   dirty,
   saving,
   running,
-  runInput,
   onSave,
   onDelete,
-  onRunInputChange,
   onRun,
   onExport
 }: {
@@ -25,10 +22,8 @@ export function AgentsWorkflowTopBar({
   dirty: boolean
   saving: boolean
   running: boolean
-  runInput: string
   onSave: () => void
   onDelete: () => void
-  onRunInputChange: (input: string) => void
   onRun: () => void
   onExport: () => void
 }): React.JSX.Element {
@@ -68,16 +63,6 @@ export function AgentsWorkflowTopBar({
           ? translate('auto.components.agents-workflow.topbar.saving', 'Saving')
           : translate('auto.components.agents-workflow.topbar.save', 'Save')}
       </Button>
-      <Input
-        className="h-6 w-48"
-        value={runInput}
-        aria-label={translate('auto.components.agents-workflow.topbar.runInput', 'Run input')}
-        placeholder={translate(
-          'auto.components.agents-workflow.topbar.runInputPlaceholder',
-          'Manual run input'
-        )}
-        onChange={(event) => onRunInputChange(event.target.value)}
-      />
       <Button size="xs" disabled={errorCount > 0 || dirty || running} onClick={onRun}>
         <Play />
         {running

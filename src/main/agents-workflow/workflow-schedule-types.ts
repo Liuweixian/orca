@@ -1,17 +1,30 @@
 // The contracts a workflow schedule offers its caller and its agent executor.
 
-import type { AgentsWorkflowNode } from '../../shared/agents-workflow-types'
+import type { TuiAgent } from '../../shared/tui-agent'
 import type {
   AgentsWorkflowNodeAttempt,
   AgentsWorkflowNodeOutput
 } from '../../shared/agents-workflow-run-types'
+
+/**
+ * The node facts an agent turn needs. A condition node runs the same turn as an agent node — it
+ * just reads the answer as a yes/no decision — so executors take this shape, not the agent node.
+ */
+export type AgentsWorkflowAgentTurnNode = {
+  id: string
+  title: string
+  agentId: TuiAgent
+  /** A terminal node ends its branch, so the channel plan may read its pane instead of a file. */
+  terminal: boolean
+  extraAgentArgs?: string
+}
 
 export type AgentsWorkflowStepExecutor = (input: {
   runId?: string
   workspaceId?: string
   /** The worktree on disk; the file channel writes its output contract here. */
   workspacePath?: string
-  node: Extract<AgentsWorkflowNode, { kind: 'agent' }>
+  node: AgentsWorkflowAgentTurnNode
   prompt: string
   loopNodeId?: string
   loopIteration?: number

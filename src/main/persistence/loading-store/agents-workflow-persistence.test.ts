@@ -48,7 +48,7 @@ function workflowInput(creationKey = 'create-1'): AgentsWorkflowCreateInput {
         title: 'Report',
         position: { x: 1, y: 0 },
         agentId: 'claude',
-        prompt: { source: 'report', bindings: {} },
+        prompt: { source: 'report' },
         terminal: true
       }
     ],
@@ -70,7 +70,7 @@ function workflowInput(creationKey = 'create-1'): AgentsWorkflowCreateInput {
       path: '/repo'
     },
     workspace: { mode: 'existing', workspaceId: 'workspace-1' },
-    trigger: { manual: true, defaultInput: '', schedule: null },
+    trigger: { manual: true, schedule: null },
     enabled: true
   }
 }
@@ -130,7 +130,6 @@ describe('agent workflow persistence', () => {
     const input = workflowInput('invalid-schedule')
     input.trigger = {
       manual: true,
-      defaultInput: '',
       schedule: {
         timezone: 'Mars/Olympus',
         rrule: 'NOT-AN-RRULE',
@@ -147,7 +146,6 @@ describe('agent workflow persistence', () => {
     const workflow = store.createAgentsWorkflow(workflowInput('terminal-run'))
     const created = store.createAgentsWorkflowRun({
       workflow,
-      runInput: '',
       requestKey: 'terminal-run',
       now: 1
     })
@@ -167,7 +165,6 @@ describe('agent workflow persistence', () => {
     const workflow = store.createAgentsWorkflow(workflowInput('run-workflow'))
     const first = store.createAgentsWorkflowRun({
       workflow,
-      runInput: 'review',
       requestKey: 'request-1',
       now: 10
     })
@@ -175,7 +172,6 @@ describe('agent workflow persistence', () => {
     expect(
       store.createAgentsWorkflowRun({
         workflow,
-        runInput: 'ignored retry',
         requestKey: 'request-1',
         now: 11
       })
@@ -183,7 +179,6 @@ describe('agent workflow persistence', () => {
     expect(() =>
       store.createAgentsWorkflowRun({
         workflow,
-        runInput: 'conflict',
         requestKey: 'request-2',
         now: 12
       })
@@ -211,7 +206,7 @@ describe('agent workflow persistence', () => {
       title: 'Agent',
       position: { x: 1, y: 0 },
       agentId: 'claude',
-      prompt: { source: '{{binding:input}}', bindings: { input: { kind: 'run_input' } } },
+      prompt: { source: 'Report the workspace status.' },
       terminal: true
     })
     input.edges.push({
@@ -249,7 +244,6 @@ describe('agent workflow persistence', () => {
 
     const started = await service.runNow({
       workflowId: workflow.id,
-      input: 'trusted output',
       requestKey: 'execute-1'
     })
     await vi.waitFor(() => {
@@ -272,7 +266,6 @@ describe('agent workflow persistence', () => {
     for (let index = 0; index < 102; index += 1) {
       const created = store.createAgentsWorkflowRun({
         workflow,
-        runInput: '',
         requestKey: `terminal-${index}`,
         now: index
       })
@@ -286,7 +279,6 @@ describe('agent workflow persistence', () => {
     }
     const unverifiable = store.createAgentsWorkflowRun({
       workflow,
-      runInput: '',
       requestKey: 'unverifiable',
       now: 200
     })
@@ -296,7 +288,6 @@ describe('agent workflow persistence', () => {
     })
     const active = store.createAgentsWorkflowRun({
       workflow,
-      runInput: '',
       requestKey: 'active',
       now: 201
     })

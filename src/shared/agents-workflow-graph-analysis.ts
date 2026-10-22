@@ -1,8 +1,7 @@
 import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowEdge,
-  AgentsWorkflowNode,
-  AgentsWorkflowVariableRef
+  AgentsWorkflowNode
 } from './agents-workflow-types'
 
 export type AgentsWorkflowLoopRegion = {
@@ -232,34 +231,4 @@ export function agentsWorkflowNodesReachableFrom(
   analysis: AgentsWorkflowGraphAnalysis
 ): Set<string> {
   return reachableFrom(nodeId, analysis.outgoing)
-}
-
-export function agentsWorkflowAvailableVariableRefs(
-  definition: AgentsWorkflowDefinition,
-  targetNodeId: string,
-  analysis: AgentsWorkflowGraphAnalysis = analyzeAgentsWorkflowGraph(definition)
-): AgentsWorkflowVariableRef[] {
-  const refs: AgentsWorkflowVariableRef[] = [{ kind: 'run_input' }]
-  const dominators = analysis.dominators.get(targetNodeId) ?? new Set<string>()
-  const nodeOutputIds = [...dominators]
-    .filter((nodeId) => nodeId !== targetNodeId && analysis.nodesById.get(nodeId)?.kind === 'agent')
-    .sort()
-  for (const nodeId of nodeOutputIds) {
-    refs.push({ kind: 'node_output', nodeId })
-  }
-  for (const loop of analysis.loopRegions) {
-    if (loop.bodyNodeIds.includes(targetNodeId)) {
-      refs.push({ kind: 'loop_item', loopNodeId: loop.loopNodeId })
-      refs.push({ kind: 'loop_index', loopNodeId: loop.loopNodeId })
-    }
-    const doneNodes = reachableFrom(loop.doneTargetNodeId, analysis.outgoing)
-    if (
-      doneNodes.has(targetNodeId) &&
-      targetNodeId !== loop.loopNodeId &&
-      dominators.has(loop.loopNodeId)
-    ) {
-      refs.push({ kind: 'loop_output', loopNodeId: loop.loopNodeId })
-    }
-  }
-  return refs
 }

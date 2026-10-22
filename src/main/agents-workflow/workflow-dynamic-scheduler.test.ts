@@ -73,7 +73,7 @@ function definition(
       path: '/workspace'
     },
     workspace: { mode: 'new_per_run', baseBranch: null, setupDecision: 'inherit' },
-    trigger: { manual: true, defaultInput: '', schedule: null },
+    trigger: { manual: true, schedule: null },
     schedulerOwner: 'local_host_service',
     enabled: true,
     createdAt: 1,
@@ -82,32 +82,19 @@ function definition(
 }
 
 describe('executeAgentsWorkflowSchedule', () => {
-  it('executes fixed loop iterations serially and releases the aggregate afterward', async () => {
+  it('runs a fixed loop serially and releases the aggregate afterward', async () => {
     const loop: AgentsWorkflowNode = {
       id: 'loop',
       kind: 'loop',
       title: 'Loop',
       position: { x: 0, y: 0 },
-      iteration: { mode: 'fixed', count: 3 }
+      count: 3
     }
     const workflow = definition(
       [
         loop,
-        agent('body', {
-          source: '{{binding:item}} #{{binding:index}}',
-          bindings: {
-            item: { kind: 'loop_item', loopNodeId: 'loop' },
-            index: { kind: 'loop_index', loopNodeId: 'loop' }
-          }
-        }),
-        agent(
-          'done',
-          {
-            source: '{{binding:results}}',
-            bindings: { results: { kind: 'loop_output', loopNodeId: 'loop' } }
-          },
-          true
-        )
+        agent('body', { source: 'Handle this turn.' }),
+        agent('done', { source: 'Summarize the turns.' }, true)
       ],
       [
         edge('start-loop', 'start', 'loop'),
@@ -133,27 +120,160 @@ describe('executeAgentsWorkflowSchedule', () => {
 
     const result = await executeAgentsWorkflowSchedule({
       definition: workflow,
-      runInput: '',
       executeAgent
     })
 
     expect(result.ok).toBe(true)
-    expect(prompts).toEqual(['1 #0', '2 #1', '3 #2', '["1 #0","2 #1","3 #2"]'])
+    expect(prompts).toEqual([
+      'Handle this turn.',
+      'Handle this turn.',
+      'Handle this turn.',
+      'Summarize the turns.'
+    ])
     expect(result.executionTrace).toEqual(['start', 'loop', 'body', 'body', 'body', 'done'])
+  })
+
+  it('writes an iteration note and points the body prompt at it', async () => {
+    const workflow = definition(
+      [
+        { id: 'loop', kind: 'loop', title: 'Loop', position: { x: 0, y: 0 }, count: 2 },
+        agent('body', { source: 'Handle this turn.' }),
+        agent('done', { source: 'Summarize the turns.' }, true)
+      ],
+      [
+        edge('start-loop', 'start', 'loop'),
+        edge('loop-body', 'loop', 'body', { fromPort: 'each' }),
+        edge('body-loop', 'body', 'loop', { toPort: 'aggregate' }),
+        edge('loop-done', 'loop', 'done', { fromPort: 'done' })
+      ]
+    )
+    const prompts: string[] = []
+    const workspacePath = await tempWorkspace()
+
+    const result = await executeAgentsWorkflowSchedule({
+      definition: workflow,
+      executionContext: { runId: 'run-1', workspaceId: 'workspace-1', workspacePath },
+      executeAgent: async ({ prompt }) => {
+        prompts.push(prompt)
+        return {
+          ok: true,
+          output: {
+            format: 'plain_text',
+            content: 'turn done',
+            capturedAt: 10,
+            truncated: false,
+            source: 'structured_assistant_message'
+          }
+        }
+      }
+    })
+
+    expect(result.ok).toBe(true)
+    expect(prompts[0]).toBe(
+      '<!-- orca:upstream:loop -->\nread .orca-workflow/run-1/answers/loop.0.md first, then\n\nHandle this turn.'
+    )
+    expect(prompts[1]).toBe(
+      '<!-- orca:upstream:loop -->\nread .orca-workflow/run-1/answers/loop.1.md first, then\n\nHandle this turn.'
+    )
+    await expect(
+      readFile(join(workspacePath, '.orca-workflow/run-1/answers/loop.1.md'), 'utf8')
+    ).resolves.toBe('{"iteration":2,"total":2}\n')
+  })
+
+  it('settles the branch a judge agent decides', async () => {
+    const workflow = definition(
+      [
+        {
+          id: 'check',
+          kind: 'condition',
+          title: 'Check',
+          position: { x: 0, y: 0 },
+          agentId: 'claude',
+          prompt: {
+            source:
+              'Decide whether the change is small. Answer with {"decision":"yes"} or {"decision":"no"}.'
+          }
+        },
+        agent('small', { source: 'small branch' }, true),
+        agent('large', { source: 'large branch' }, true)
+      ],
+      [
+        edge('start-check', 'start', 'check'),
+        edge('check-small', 'check', 'small', { fromPort: 'yes' }),
+        edge('check-large', 'check', 'large', { fromPort: 'no' })
+      ]
+    )
+
+    const result = await executeAgentsWorkflowSchedule({
+      definition: workflow,
+      executeAgent: async ({ node }) => ({
+        ok: true,
+        output: {
+          format: 'plain_text',
+          content: node.id === 'check' ? '{"decision":"no"}' : 'branch',
+          capturedAt: 10,
+          truncated: false,
+          source: 'structured_assistant_message'
+        }
+      })
+    })
+
+    expect(result.ok).toBe(true)
+    expect(result.executionTrace).toEqual(['start', 'check', 'large'])
+    expect(result.attempts.find((attempt) => attempt.nodeId === 'small')).toMatchObject({
+      status: 'skipped'
+    })
+  })
+
+  it('fails instead of guessing when the judge does not answer with a decision', async () => {
+    const workflow = definition(
+      [
+        {
+          id: 'check',
+          kind: 'condition',
+          title: 'Check',
+          position: { x: 0, y: 0 },
+          agentId: 'claude',
+          prompt: {
+            source:
+              'Decide whether the change is small. Answer with {"decision":"yes"} or {"decision":"no"}.'
+          }
+        },
+        agent('small', { source: 'small branch' }, true),
+        agent('large', { source: 'large branch' }, true)
+      ],
+      [
+        edge('start-check', 'start', 'check'),
+        edge('check-small', 'check', 'small', { fromPort: 'yes' }),
+        edge('check-large', 'check', 'large', { fromPort: 'no' })
+      ]
+    )
+
+    const result = await executeAgentsWorkflowSchedule({
+      definition: workflow,
+      executeAgent: async () => ({
+        ok: true,
+        output: {
+          format: 'plain_text',
+          content: 'It depends, probably yes.',
+          capturedAt: 10,
+          truncated: false,
+          source: 'structured_assistant_message'
+        }
+      })
+    })
+
+    expect(result).toMatchObject({ ok: false, code: 'condition_decision_invalid' })
   })
 
   it('fails closed when a value node only yields a terminal snapshot', async () => {
     const workflow = definition(
-      [
-        agent('work', { source: 'work', bindings: {} }),
-        agent('done', { source: 'done', bindings: {} }, true)
-      ],
+      [agent('work', { source: 'work' }), agent('done', { source: 'done' }, true)],
       [edge('start-work', 'start', 'work'), edge('work-done', 'work', 'done')]
     )
 
     const result = await executeAgentsWorkflowSchedule({
       definition: workflow,
-      runInput: '',
       executeAgent: async () => ({
         ok: true,
         output: {
@@ -169,59 +289,14 @@ describe('executeAgentsWorkflowSchedule', () => {
     expect(result).toMatchObject({ ok: false, code: 'output_untrusted' })
   })
 
-  it('accepts the output file as a value a downstream node can bind', async () => {
-    const workflow = definition(
-      [
-        agent('first', { source: 'work', bindings: {} }),
-        agent(
-          'second',
-          {
-            source: 'use {{binding:value}}',
-            bindings: { value: { kind: 'node_output', nodeId: 'first' } }
-          },
-          true
-        )
-      ],
-      [edge('start-first', 'start', 'first'), edge('first-second', 'first', 'second')]
-    )
-    const prompts: string[] = []
-    const workspacePath = await tempWorkspace()
-
-    const result = await executeAgentsWorkflowSchedule({
-      definition: workflow,
-      runInput: '',
-      executionContext: { runId: 'run-1', workspaceId: 'workspace-1', workspacePath },
-      executeAgent: async ({ prompt }) => {
-        prompts.push(prompt)
-        return {
-          ok: true,
-          output: {
-            format: 'plain_text',
-            content: 'from the handoff file',
-            capturedAt: 10,
-            truncated: false,
-            source: 'agent_file_handoff'
-          }
-        }
-      }
-    })
-
-    expect(result.ok).toBe(true)
-    expect(prompts).toEqual(['work', 'use from the handoff file'])
-  })
-
   it('completes a terminal node from a pane snapshot without publishing a value', async () => {
     const workflow = definition(
-      [
-        agent('first', { source: 'work', bindings: {} }),
-        agent('report', { source: 'report', bindings: {} }, true)
-      ],
+      [agent('first', { source: 'work' }), agent('report', { source: 'report' }, true)],
       [edge('start-first', 'start', 'first'), edge('first-report', 'first', 'report')]
     )
 
     const result = await executeAgentsWorkflowSchedule({
       definition: workflow,
-      runInput: '',
       executeAgent: async ({ node }) =>
         node.id === 'report'
           ? {
@@ -258,8 +333,8 @@ describe('executeAgentsWorkflowSchedule', () => {
   it('saves the previous answer to a file and points the next prompt at it', async () => {
     const workflow = definition(
       [
-        agent('first', { source: 'work', bindings: {} }),
-        agent('second', { source: 'turn it into a todo list', bindings: {} }, true)
+        agent('first', { source: 'work' }),
+        agent('second', { source: 'turn it into a todo list' }, true)
       ],
       [edge('start-first', 'start', 'first'), edge('first-second', 'first', 'second')]
     )
@@ -268,7 +343,6 @@ describe('executeAgentsWorkflowSchedule', () => {
 
     const result = await executeAgentsWorkflowSchedule({
       definition: workflow,
-      runInput: '',
       executionContext: { runId: 'run-1', workspaceId: 'workspace-1', workspacePath },
       executeAgent: async ({ prompt }) => {
         prompts.push(prompt)
@@ -297,14 +371,13 @@ describe('executeAgentsWorkflowSchedule', () => {
 
   it('checkpoints a running attempt before invoking the agent', async () => {
     const workflow = definition(
-      [agent('done', { source: 'work', bindings: {} }, true)],
+      [agent('done', { source: 'work' }, true)],
       [edge('start-done', 'start', 'done')]
     )
     const events: string[] = []
 
     await executeAgentsWorkflowSchedule({
       definition: workflow,
-      runInput: '',
       checkpoint: async ({ attempts }) => {
         events.push(`persist:${attempts.at(-1)?.status ?? 'none'}`)
       },
@@ -331,13 +404,12 @@ describe('executeAgentsWorkflowSchedule', () => {
   // `running` forever.
   it('settles the attempt when the executor throws', async () => {
     const workflow = definition(
-      [agent('done', { source: 'work', bindings: {} }, true)],
+      [agent('done', { source: 'work' }, true)],
       [edge('start-done', 'start', 'done')]
     )
 
     const result = await executeAgentsWorkflowSchedule({
       definition: workflow,
-      runInput: '',
       executeAgent: async () => {
         throw new Error('terminal_handle_stale')
       }

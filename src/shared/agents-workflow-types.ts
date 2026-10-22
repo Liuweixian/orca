@@ -6,17 +6,8 @@ const NonEmptyId = z.string().trim().min(1)
 const Position = z.strictObject({ x: z.number().finite(), y: z.number().finite() })
 const TuiAgentSchema = z.custom<TuiAgent>(isTuiAgent)
 
-export const AgentsWorkflowVariableRefSchema = z.discriminatedUnion('kind', [
-  z.strictObject({ kind: z.literal('run_input') }),
-  z.strictObject({ kind: z.literal('node_output'), nodeId: NonEmptyId }),
-  z.strictObject({ kind: z.literal('loop_item'), loopNodeId: NonEmptyId }),
-  z.strictObject({ kind: z.literal('loop_index'), loopNodeId: NonEmptyId }),
-  z.strictObject({ kind: z.literal('loop_output'), loopNodeId: NonEmptyId })
-])
-
 export const AgentsWorkflowPromptSchema = z.strictObject({
-  source: z.string(),
-  bindings: z.record(z.string().min(1), AgentsWorkflowVariableRefSchema)
+  source: z.string()
 })
 
 const StartNodeSchema = z.strictObject({
@@ -37,14 +28,15 @@ const AgentNodeSchema = z.strictObject({
   terminal: z.boolean()
 })
 
+/** A condition asks an agent to answer yes or no, so it carries its own agent turn. */
 const ConditionNodeSchema = z.strictObject({
   id: NonEmptyId,
   kind: z.literal('condition'),
   title: z.string(),
   position: Position,
-  input: AgentsWorkflowVariableRefSchema,
-  operator: z.enum(['contains', 'not_contains', 'empty', 'not_empty', 'length_gte']),
-  operand: z.string().optional()
+  agentId: TuiAgentSchema,
+  prompt: AgentsWorkflowPromptSchema,
+  extraAgentArgs: z.string().optional()
 })
 
 const LoopNodeSchema = z.strictObject({
@@ -52,10 +44,7 @@ const LoopNodeSchema = z.strictObject({
   kind: z.literal('loop'),
   title: z.string(),
   position: Position,
-  iteration: z.discriminatedUnion('mode', [
-    z.strictObject({ mode: z.literal('fixed'), count: z.number().int().min(1).max(20) }),
-    z.strictObject({ mode: z.literal('list'), items: AgentsWorkflowVariableRefSchema })
-  ])
+  count: z.number().int().min(1).max(20)
 })
 
 export const AgentsWorkflowNodeSchema = z.discriminatedUnion('kind', [
@@ -110,7 +99,6 @@ export const AgentsWorkflowDefinitionSchema = z.strictObject({
   workspace: AgentsWorkflowWorkspaceSchema,
   trigger: z.strictObject({
     manual: z.literal(true),
-    defaultInput: z.string(),
     schedule: AgentsWorkflowScheduleSchema.nullable()
   }),
   schedulerOwner: z.literal('local_host_service'),
@@ -119,7 +107,6 @@ export const AgentsWorkflowDefinitionSchema = z.strictObject({
   updatedAt: z.number().int()
 })
 
-export type AgentsWorkflowVariableRef = z.infer<typeof AgentsWorkflowVariableRefSchema>
 export type AgentsWorkflowPrompt = z.infer<typeof AgentsWorkflowPromptSchema>
 export type AgentsWorkflowNode = z.infer<typeof AgentsWorkflowNodeSchema>
 export type AgentsWorkflowEdge = z.infer<typeof AgentsWorkflowEdgeSchema>

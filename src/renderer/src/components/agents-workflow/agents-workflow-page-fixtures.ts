@@ -19,10 +19,7 @@ export function createAgentsWorkflowPageFixture(now = Date.now()): AgentsWorkflo
         title: 'Research changes',
         position: { x: 340, y: 180 },
         agentId: 'claude',
-        prompt: {
-          source: 'Review the repository changes for {{binding:input}}.',
-          bindings: { input: { kind: 'run_input' } }
-        },
+        prompt: { source: 'Review the repository changes in this workspace.' },
         terminal: false
       },
       {
@@ -31,10 +28,7 @@ export function createAgentsWorkflowPageFixture(now = Date.now()): AgentsWorkflo
         title: 'Draft release notes',
         position: { x: 620, y: 180 },
         agentId: 'claude',
-        prompt: {
-          source: 'Write release notes from:\n\n{{binding:research}}',
-          bindings: { research: { kind: 'node_output', nodeId: 'research' } }
-        },
+        prompt: { source: 'Write the release notes for this change.' },
         terminal: true
       }
     ],
@@ -63,7 +57,7 @@ export function createAgentsWorkflowPageFixture(now = Date.now()): AgentsWorkflo
       path: '.'
     },
     workspace: { mode: 'new_per_run', baseBranch: null, setupDecision: 'inherit' },
-    trigger: { manual: true, defaultInput: '', schedule: null },
+    trigger: { manual: true, schedule: null },
     schedulerOwner: 'local_host_service',
     enabled: true,
     createdAt: now,

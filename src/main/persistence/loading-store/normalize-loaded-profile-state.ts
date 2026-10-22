@@ -31,13 +31,19 @@ import { normalizeRetiredNameRegistryMap } from './retired-name-registry-normali
 import { hydrateWorktreeMetaAliasProjection } from './worktree-meta-alias-projection'
 import { AgentsWorkflowDefinitionSchema } from '../../../shared/agents-workflow-types'
 import { AgentsWorkflowRunSchema } from '../../../shared/agents-workflow-run-types'
+import {
+  migrateLegacyAgentsWorkflowDefinition,
+  migrateLegacyAgentsWorkflowRun
+} from './agents-workflow-legacy-migration'
 
 function normalizeAgentsWorkflows(value: unknown): PersistedState['agentsWorkflows'] {
   if (!Array.isArray(value)) {
     return []
   }
   return value.flatMap((entry) => {
-    const parsed = AgentsWorkflowDefinitionSchema.safeParse(entry)
+    const parsed = AgentsWorkflowDefinitionSchema.safeParse(
+      migrateLegacyAgentsWorkflowDefinition(entry)
+    )
     if (!parsed.success) {
       // Why log: silently dropping a workflow looks like data loss to the user.
       console.warn('[agents-workflow] Dropped an unreadable workflow definition:', parsed.error)
@@ -56,7 +62,7 @@ function normalizeAgentsWorkflowRuns(
   }
   const now = Date.now()
   return value.flatMap((entry) => {
-    const parsed = AgentsWorkflowRunSchema.safeParse(entry)
+    const parsed = AgentsWorkflowRunSchema.safeParse(migrateLegacyAgentsWorkflowRun(entry))
     if (!parsed.success) {
       console.warn('[agents-workflow] Dropped an unreadable workflow run:', parsed.error)
       return []

@@ -18,7 +18,7 @@ function node(id: string, kind: AgentsWorkflowNode['kind']): AgentsWorkflowNode 
       title: id,
       position: { x: 0, y: 0 },
       agentId: 'claude',
-      prompt: { source: `${id} prompt`, bindings: {} },
+      prompt: { source: `${id} prompt` },
       terminal: false
     }
   }
@@ -28,8 +28,8 @@ function node(id: string, kind: AgentsWorkflowNode['kind']): AgentsWorkflowNode 
       kind,
       title: id,
       position: { x: 0, y: 0 },
-      input: { kind: 'run_input' },
-      operator: 'not_empty'
+      agentId: 'claude',
+      prompt: { source: 'judge prompt' }
     }
   }
   return {
@@ -37,7 +37,7 @@ function node(id: string, kind: AgentsWorkflowNode['kind']): AgentsWorkflowNode 
     kind: 'loop',
     title: id,
     position: { x: 0, y: 0 },
-    iteration: { mode: 'fixed', count: 1 }
+    count: 1
   }
 }
 
@@ -69,7 +69,7 @@ function definition(
       path: '/workspace'
     },
     workspace: { mode: 'new_per_run', baseBranch: null, setupDecision: 'inherit' },
-    trigger: { manual: true, defaultInput: '', schedule: null },
+    trigger: { manual: true, schedule: null },
     schedulerOwner: 'local_host_service',
     enabled: true,
     createdAt: 1,
@@ -83,13 +83,11 @@ function upstream(
   produced: string[],
   runId = 'run-1'
 ): string | null {
-  const target = workflow.nodes.find((candidate) => candidate.id === nodeId)
   return agentsWorkflowUpstreamPrompt({
     definition: workflow,
     nodeId,
     runId,
-    hasValue: (id) => produced.includes(id),
-    prompt: target?.kind === 'agent' ? target.prompt : { source: '', bindings: {} }
+    hasValue: (id) => produced.includes(id)
   })
 }
 
@@ -130,21 +128,16 @@ describe('agents workflow upstream prompt', () => {
     )
   })
 
-  it('does not repeat an answer the prompt already spells out', () => {
+  it('names every predecessor that produced an answer', () => {
     const workflow = definition(
-      [node('a', 'agent'), node('b', 'agent')],
-      [edge('start', 'a'), edge('a', 'b')]
+      [node('a', 'agent'), node('b', 'agent'), node('c', 'agent')],
+      [edge('start', 'a'), edge('start', 'b'), edge('a', 'c'), edge('b', 'c')]
     )
-    const b = workflow.nodes.find((candidate) => candidate.id === 'b')
-    if (b?.kind !== 'agent') {
-      throw new Error('fixture is missing b')
-    }
-    b.prompt = {
-      source: 'summarize {{binding:a_output}}',
-      bindings: { a_output: { kind: 'node_output', nodeId: 'a' } }
-    }
 
-    expect(upstream(workflow, 'b', ['a'])).toBeNull()
+    expect(upstream(workflow, 'c', ['a', 'b'])).toBe(
+      `${agentsWorkflowUpstreamMarker('a')}\nread .orca-workflow/run-1/answers/a.md first, then\n\n` +
+        `${agentsWorkflowUpstreamMarker('b')}\nread .orca-workflow/run-1/answers/b.md first, then`
+    )
   })
 
   it('gives the first node nothing to inherit', () => {

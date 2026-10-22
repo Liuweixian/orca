@@ -63,7 +63,6 @@ export const AgentsWorkflowRunSchema = z.strictObject({
   requestKey: z.string().min(1),
   trigger: z.enum(['manual', 'schedule']),
   scheduledFor: z.number().int().optional(),
-  input: z.string(),
   status: AgentsWorkflowRunStatusSchema,
   workspaceId: z.string().min(1).nullable(),
   workspaceDisplayName: z.string().nullable(),

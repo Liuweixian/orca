@@ -10,7 +10,6 @@ import {
   SelectValue
 } from '@/components/ui/select'
 import { Switch } from '@/components/ui/switch'
-import { Textarea } from '@/components/ui/textarea'
 import { translate } from '@/i18n/i18n'
 import type {
   AgentsWorkflowDefinition,
@@ -74,25 +73,6 @@ export function AgentsWorkflowDefinitionPanel({
           />
         </div>
         <AgentsWorkflowTargetFields definition={definition} onChange={onChange} />
-        <div className="space-y-2">
-          <Label htmlFor="agents-workflow-default-input">
-            {translate(
-              'auto.components.agents-workflow.definition.defaultInput',
-              'Default scheduled input'
-            )}
-          </Label>
-          <Textarea
-            id="agents-workflow-default-input"
-            value={definition.trigger.defaultInput}
-            onChange={(event) =>
-              onChange({
-                ...definition,
-                trigger: { ...definition.trigger, defaultInput: event.target.value },
-                updatedAt: Date.now()
-              })
-            }
-          />
-        </div>
         <div className="flex items-center justify-between gap-3">
           <Label htmlFor="agents-workflow-enabled">
             {translate('auto.components.agents-workflow.definition.enabled', 'Enabled')}

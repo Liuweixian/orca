@@ -20,7 +20,7 @@ function definition(): AgentsWorkflowDefinition {
       path: '/repo/workspace-1'
     },
     workspace: { mode: 'existing', workspaceId: 'workspace-1' },
-    trigger: { manual: true, defaultInput: '', schedule: null },
+    trigger: { manual: true, schedule: null },
     schedulerOwner: 'local_host_service',
     nodes: [
       {
@@ -35,7 +35,7 @@ function definition(): AgentsWorkflowDefinition {
         title: 'Agent',
         position: { x: 1, y: 0 },
         agentId: 'claude',
-        prompt: { source: 'work', bindings: {} },
+        prompt: { source: 'work' },
         terminal: true
       }
     ],
@@ -72,7 +72,6 @@ function persistence(): AgentsWorkflowRunPersistence & { run: () => AgentsWorkfl
         definitionSnapshot: input.workflow,
         requestKey: input.requestKey,
         trigger: input.trigger ?? 'manual',
-        input: input.runInput,
         status: 'pending',
         workspaceId: null,
         workspaceDisplayName: null,
@@ -125,7 +124,7 @@ describe('AgentsWorkflowRunService execution guards', () => {
       () => 10
     )
 
-    const started = await service.runNow({ workflowId: 'workflow-1', input: '', requestKey: 'r1' })
+    const started = await service.runNow({ workflowId: 'workflow-1', requestKey: 'r1' })
     await vi.waitFor(() => {
       expect(store.showAgentsWorkflowRun(started.id)).toMatchObject({
         status: 'failed',
@@ -160,7 +159,7 @@ describe('AgentsWorkflowRunService execution guards', () => {
       () => 10
     )
 
-    const started = await service.runNow({ workflowId: 'workflow-1', input: '', requestKey: 'r1' })
+    const started = await service.runNow({ workflowId: 'workflow-1', requestKey: 'r1' })
     await vi.waitFor(() => {
       // Why cancelled first: the user asked for this; unverifiable would blame the host.
       expect(store.showAgentsWorkflowRun(started.id)).toMatchObject({
@@ -239,7 +238,7 @@ describe('AgentsWorkflowRunService execution guards', () => {
       reclaim
     )
 
-    const started = await service.runNow({ workflowId: 'workflow-1', input: '', requestKey: 'r1' })
+    const started = await service.runNow({ workflowId: 'workflow-1', requestKey: 'r1' })
     await vi.waitFor(() => {
       expect(store.showAgentsWorkflowRun(started.id)).toMatchObject({ status: 'completed' })
     })
@@ -271,7 +270,7 @@ describe('AgentsWorkflowRunService execution guards', () => {
       () => 10
     )
 
-    const started = await service.runNow({ workflowId: 'workflow-1', input: '', requestKey: 'r1' })
+    const started = await service.runNow({ workflowId: 'workflow-1', requestKey: 'r1' })
     await vi.waitFor(() => {
       expect(store.showAgentsWorkflowRun(started.id)).toMatchObject({ status: 'completed' })
     })

@@ -24,7 +24,7 @@ function run(id: string, createdAt: number): AgentsWorkflowRun {
         path: '/repo'
       },
       workspace: { mode: 'existing', workspaceId: 'workspace-1' },
-      trigger: { manual: true, defaultInput: '', schedule: null },
+      trigger: { manual: true, schedule: null },
       schedulerOwner: 'local_host_service',
       enabled: true,
       createdAt: 1,
@@ -32,7 +32,6 @@ function run(id: string, createdAt: number): AgentsWorkflowRun {
     },
     requestKey: id,
     trigger: 'manual',
-    input: '',
     status: 'completed',
     workspaceId: null,
     workspaceDisplayName: null,

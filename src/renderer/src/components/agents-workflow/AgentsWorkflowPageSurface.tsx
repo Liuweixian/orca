@@ -1,9 +1,6 @@
 import React from 'react'
 import { toast } from 'sonner'
-import {
-  availableVariableRefs,
-  validateWorkflowDefinition
-} from '../../../../shared/agents-workflow-graph'
+import { validateWorkflowDefinition } from '../../../../shared/agents-workflow-graph'
 import { agentsWorkflowScheduleIssues } from '../../../../shared/agents-workflow-definition-check'
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
 import { useAppStore } from '@/store'
@@ -77,9 +74,6 @@ function AgentsWorkflowLoadedSurface({
   )
   const selectedNode = definition.nodes.find((node) => node.id === selectedNodeId) ?? null
   const selectedIssues = issues.filter((entry) => entry.nodeId === selectedNodeId)
-  const selectedAvailableRefs = selectedNode
-    ? availableVariableRefs(definition, selectedNode.id)
-    : []
 
   const onSelectNode = React.useCallback((nodeId: string | null) => {
     setSelectedNodeId(nodeId)
@@ -116,10 +110,8 @@ function AgentsWorkflowLoadedSurface({
         dirty={controller.dirty}
         saving={controller.saving}
         running={controller.running}
-        runInput={controller.runInput}
         onSave={() => void controller.saveWorkflow()}
         onDelete={() => setDeleteOpen(true)}
-        onRunInputChange={controller.setRunInput}
         onRun={() => void controller.runNow()}
         onExport={exportDefinition}
       />
@@ -164,10 +156,8 @@ function AgentsWorkflowLoadedSurface({
         <AgentsWorkflowInspector
           node={selectedNode}
           issues={selectedIssues}
-          definition={definition}
-          availableRefs={selectedAvailableRefs}
           agentChannel={
-            selectedNode?.kind === 'agent'
+            selectedNode && selectedNode.kind !== 'start' && selectedNode.kind !== 'loop'
               ? (controller.agentChannels?.get(selectedNode.agentId) ?? null)
               : null
           }

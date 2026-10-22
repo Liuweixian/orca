@@ -32,7 +32,6 @@ export const AgentsWorkflowDelete = z.object({
 
 export const AgentsWorkflowRunNow = z.object({
   workflowId: requiredString('Missing agent workflow id'),
-  input: z.string(),
   requestKey: requiredString('Missing agent workflow request key')
 })
 

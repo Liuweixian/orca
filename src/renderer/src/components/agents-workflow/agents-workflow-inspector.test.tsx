@@ -36,13 +36,10 @@ function channel(
 }
 
 function renderInspector(agentChannel: AgentsWorkflowAgentChannelView | null) {
-  const definition = createAgentsWorkflowPageFixture(100)
   return render(
     <AgentsWorkflowInspector
       node={agentNode('gemini')}
       issues={[]}
-      definition={definition}
-      availableRefs={[]}
       agentChannel={agentChannel}
       onChange={vi.fn()}
     />
@@ -71,13 +68,10 @@ describe('AgentsWorkflowInspector channel hint', () => {
   })
 
   it('does not claim a file for a terminal node, which ends the branch', () => {
-    const definition = createAgentsWorkflowPageFixture(100)
     render(
       <AgentsWorkflowInspector
         node={{ ...agentNode('gemini'), terminal: true }}
         issues={[]}
-        definition={definition}
-        availableRefs={[]}
         agentChannel={channel({ channels: ['file', 'snapshot'] })}
         onChange={vi.fn()}
       />

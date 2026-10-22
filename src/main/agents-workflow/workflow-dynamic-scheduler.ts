@@ -27,7 +27,6 @@ export type {
 
 export async function executeAgentsWorkflowSchedule(input: {
   definition: AgentsWorkflowDefinition
-  runInput: string
   executeAgent: AgentsWorkflowStepExecutor
   now?: () => number
   signal?: AbortSignal
@@ -48,10 +47,7 @@ export async function executeAgentsWorkflowSchedule(input: {
   }
 
   const values: AgentsWorkflowRuntimeValues = {
-    runInput: input.runInput,
     nodeOutputs: new Map(),
-    loopItems: new Map(),
-    loopIndexes: new Map(),
     loopOutputs: new Map()
   }
   let capturedOutputBytes = 0

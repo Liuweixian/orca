@@ -125,7 +125,6 @@ export class AgentsWorkflowPersistence {
 
   createAgentsWorkflowRun(input: {
     workflow: AgentsWorkflowDefinition
-    runInput: string
     requestKey: string
     now: number
     trigger?: 'manual' | 'schedule'
@@ -162,7 +161,6 @@ export class AgentsWorkflowPersistence {
       requestKey: input.requestKey,
       trigger: input.trigger ?? 'manual',
       ...(input.scheduledFor === undefined ? {} : { scheduledFor: input.scheduledFor }),
-      input: input.runInput,
       status: 'pending',
       workspaceId,
       workspaceDisplayName: null,
@@ -201,7 +199,6 @@ export class AgentsWorkflowPersistence {
       requestKey,
       trigger: 'schedule',
       scheduledFor: input.scheduledFor,
-      input: input.workflow.trigger.defaultInput,
       status: 'skipped',
       workspaceId:
         input.workflow.workspace.mode === 'existing' ? input.workflow.workspace.workspaceId : null,

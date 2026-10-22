@@ -2,33 +2,14 @@
 //
 // A workflow reads top to bottom, so a node's prompt names the file the previous answer was saved
 // to instead of repeating it inline: one short instruction, and the agent reads the answer itself.
-// Conditions are transparent (they produce no text), a loop's `done` port carries its aggregate,
-// and a prompt that already spells out a node's binding is not repeated.
+// Conditions are transparent (they produce no text) and a loop's `done` port carries its aggregate.
 
 import { agentsWorkflowUpstreamRelativePath } from './agents-workflow-output-paths'
-import { agentsWorkflowPromptBindingKeys } from './agents-workflow-prompt-tokens'
-import type { AgentsWorkflowDefinition, AgentsWorkflowPrompt } from './agents-workflow-types'
+import type { AgentsWorkflowDefinition } from './agents-workflow-types'
 
 /** Marks an inherited answer so an agent can tell it apart from the instruction that follows. */
 export function agentsWorkflowUpstreamMarker(nodeId: string): string {
   return `<!-- orca:upstream:${nodeId} -->`
-}
-
-function nodeIdsSpelledOutInPrompt(prompt: AgentsWorkflowPrompt): ReadonlySet<string> {
-  const ids = new Set<string>()
-  for (const key of agentsWorkflowPromptBindingKeys(prompt.source)) {
-    const ref = prompt.bindings[key]
-    if (!ref) {
-      continue
-    }
-    if (ref.kind === 'node_output') {
-      ids.add(ref.nodeId)
-    } else if (ref.kind !== 'run_input') {
-      // The prompt already names this loop's item/index/aggregate.
-      ids.add(ref.loopNodeId)
-    }
-  }
-  return ids
 }
 
 /**
@@ -40,7 +21,6 @@ function findUpstreamNodes(input: {
   definition: AgentsWorkflowDefinition
   nodeId: string
   hasValue: (nodeId: string) => boolean
-  skip: ReadonlySet<string>
 }): string[] {
   const found: string[] = []
   const visited = new Set<string>([input.nodeId])
@@ -55,9 +35,6 @@ function findUpstreamNodes(input: {
         continue
       }
       visited.add(from.id)
-      if (input.skip.has(from.id)) {
-        continue
-      }
       if (input.hasValue(from.id)) {
         found.push(from.id)
         continue
@@ -80,13 +57,11 @@ export function agentsWorkflowUpstreamPrompt(input: {
   nodeId: string
   runId: string
   hasValue: (nodeId: string) => boolean
-  prompt: AgentsWorkflowPrompt
 }): string | null {
   const nodes = findUpstreamNodes({
     definition: input.definition,
     nodeId: input.nodeId,
-    hasValue: input.hasValue,
-    skip: nodeIdsSpelledOutInPrompt(input.prompt)
+    hasValue: input.hasValue
   })
   if (nodes.length === 0) {
     return null

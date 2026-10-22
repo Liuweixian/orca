@@ -1,10 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  availableVariableRefs,
-  compileWorkflowGraph,
-  renderPrompt,
-  validateWorkflowDefinition
-} from './agents-workflow-graph'
+import { compileWorkflowGraph, validateWorkflowDefinition } from './agents-workflow-graph'
 import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowEdge,
@@ -20,7 +15,7 @@ function node(id: string, overrides: Partial<AgentNode> = {}): AgentNode {
     title: id,
     position: { x: 0, y: 0 },
     agentId: 'claude',
-    prompt: { source: '', bindings: {} },
+    prompt: { source: '' },
     terminal: false,
     ...overrides
   }
@@ -62,7 +57,7 @@ function definition(
       path: '/workspace'
     },
     workspace: { mode: 'new_per_run', baseBranch: null, setupDecision: 'inherit' },
-    trigger: { manual: true, defaultInput: '', schedule: null },
+    trigger: { manual: true, schedule: null },
     schedulerOwner: 'local_host_service',
     enabled: true,
     createdAt: 1,
@@ -96,58 +91,16 @@ describe('workflow graph validation and compilation', () => {
     })
   })
 
-  it('requires strict dominance for node output references', () => {
-    const workflow = definition(
-      [
-        start(),
-        node('a'),
-        node('b'),
-        node('merge', {
-          terminal: true,
-          prompt: {
-            source: '{{binding:a}}',
-            bindings: { a: { kind: 'node_output', nodeId: 'a' } }
-          }
-        })
-      ],
-      [
-        edge('start-a', 'start', 'a'),
-        edge('start-b', 'start', 'b'),
-        edge('a-merge', 'a', 'merge'),
-        edge('b-merge', 'b', 'merge')
-      ]
-    )
-
-    expect(availableVariableRefs(workflow, 'merge')).toEqual([{ kind: 'run_input' }])
-    expect(validateWorkflowDefinition(workflow)).toContainEqual(
-      expect.objectContaining({ code: 'variable_out_of_scope', nodeId: 'merge' })
-    )
-  })
-
-  it('compiles a single-layer loop and exposes scoped loop variables', () => {
+  it('compiles a single-layer loop', () => {
     const loop: AgentsWorkflowNode = {
       id: 'loop',
       kind: 'loop',
       title: 'Loop',
       position: { x: 100, y: 0 },
-      iteration: { mode: 'fixed', count: 3 }
+      count: 3
     }
-    const body = node('body', {
-      prompt: {
-        source: '{{binding:item}} #{{binding:index}}',
-        bindings: {
-          item: { kind: 'loop_item', loopNodeId: 'loop' },
-          index: { kind: 'loop_index', loopNodeId: 'loop' }
-        }
-      }
-    })
-    const done = node('done', {
-      terminal: true,
-      prompt: {
-        source: '{{binding:results}}',
-        bindings: { results: { kind: 'loop_output', loopNodeId: 'loop' } }
-      }
-    })
+    const body = node('body', { prompt: { source: 'Handle this turn.' } })
+    const done = node('done', { terminal: true, prompt: { source: 'Summarize.' } })
     const workflow = definition(
       [start(), loop, body, done],
       [
@@ -159,15 +112,6 @@ describe('workflow graph validation and compilation', () => {
     )
 
     expect(validateWorkflowDefinition(workflow)).toEqual([])
-    expect(availableVariableRefs(workflow, 'body')).toEqual([
-      { kind: 'run_input' },
-      { kind: 'loop_item', loopNodeId: 'loop' },
-      { kind: 'loop_index', loopNodeId: 'loop' }
-    ])
-    expect(availableVariableRefs(workflow, 'done')).toEqual([
-      { kind: 'run_input' },
-      { kind: 'loop_output', loopNodeId: 'loop' }
-    ])
     expect(compileWorkflowGraph(workflow)).toMatchObject({
       ok: true,
       graph: {
@@ -190,14 +134,14 @@ describe('workflow graph validation and compilation', () => {
       kind: 'loop',
       title: 'Outer',
       position: { x: 0, y: 0 },
-      iteration: { mode: 'fixed', count: 2 }
+      count: 2
     }
     const inner: AgentsWorkflowNode = {
       id: 'inner',
       kind: 'loop',
       title: 'Inner',
       position: { x: 0, y: 0 },
-      iteration: { mode: 'fixed', count: 2 }
+      count: 2
     }
     const workflow = definition(
       [start(), outer, inner, node('exit'), node('done', { terminal: true })],
@@ -218,57 +162,91 @@ describe('workflow graph validation and compilation', () => {
     expect(codes).toContain('loop_body_external_entry')
   })
 
-  it('rejects malformed tokens and missing bindings', () => {
+  it('rejects a judging prompt that cannot produce a decision', () => {
     const workflow = definition(
       [
         start(),
-        node('done', {
-          terminal: true,
-          prompt: { source: '{{title}} {{binding:missing}}', bindings: {} }
-        })
+        {
+          id: 'check',
+          kind: 'condition',
+          title: 'Check',
+          position: { x: 100, y: 0 },
+          agentId: 'claude',
+          prompt: { source: '   ' }
+        },
+        {
+          id: 'other',
+          kind: 'condition',
+          title: 'Other',
+          position: { x: 100, y: 200 },
+          agentId: 'claude',
+          prompt: { source: 'Decide whether the change is small.' }
+        },
+        node('done', { terminal: true })
       ],
-      [edge('start-done', 'start', 'done')]
+      [
+        edge('start-check', 'start', 'check'),
+        edge('check-yes', 'check', 'done', { fromPort: 'yes' }),
+        edge('check-no', 'check', 'other', { fromPort: 'no' }),
+        edge('other-yes', 'other', 'done', { fromPort: 'yes' }),
+        edge('other-no', 'other', 'done', { fromPort: 'no' })
+      ]
     )
     const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
 
-    expect(codes).toContain('prompt_token_invalid')
-    expect(codes).toContain('prompt_binding_missing')
+    expect(codes).toContain('condition_prompt_required')
+    expect(codes).toContain('condition_decision_contract_missing')
   })
-})
 
-describe('renderPrompt', () => {
-  const values = {
-    runInput: 'release',
-    nodeOutputs: { draft: 'notes' },
-    loopItems: {},
-    loopIndexes: {},
-    loopOutputs: {}
-  }
-
-  it('renders stable binding tokens without resolving display titles', () => {
-    expect(
-      renderPrompt(
+  it('accepts the template a condition starts with', () => {
+    const workflow = definition(
+      [
+        start(),
         {
-          source: 'Prepare {{binding:input}} from {{binding:draft}}.',
-          bindings: {
-            input: { kind: 'run_input' },
-            draft: { kind: 'node_output', nodeId: 'draft' }
+          id: 'check',
+          kind: 'condition',
+          title: 'Check',
+          position: { x: 100, y: 0 },
+          agentId: 'claude',
+          prompt: {
+            source:
+              'Read the answer this node inherits, then decide whether it meets this condition:\n\n<write the condition here>\n\nAnswer with a single JSON object and nothing else: {"decision":"yes"} when the condition holds, {"decision":"no"} when it does not.'
           }
         },
-        values
-      )
-    ).toEqual({ ok: true, value: 'Prepare release from notes.' })
+        node('done', { terminal: true })
+      ],
+      [
+        edge('start-check', 'start', 'check'),
+        edge('check-yes', 'check', 'done', { fromPort: 'yes' }),
+        edge('check-no', 'check', 'done', { fromPort: 'no' })
+      ]
+    )
+
+    expect(validateWorkflowDefinition(workflow)).toEqual([])
   })
 
-  it('fails when a binding value is unavailable', () => {
-    expect(
-      renderPrompt(
+  it('requires exactly one yes and one no edge for a judge condition', () => {
+    const workflow = definition(
+      [
+        start(),
         {
-          source: '{{binding:missing}}',
-          bindings: { missing: { kind: 'node_output', nodeId: 'missing' } }
+          id: 'check',
+          kind: 'condition',
+          title: 'Check',
+          position: { x: 100, y: 0 },
+          agentId: 'claude',
+          prompt: {
+            source:
+              'Decide whether the change is small. Answer with {"decision":"yes"} or {"decision":"no"}.'
+          }
         },
-        values
-      )
-    ).toMatchObject({ ok: false, code: 'missing_value', bindingKey: 'missing' })
+        node('done', { terminal: true })
+      ],
+      [edge('start-check', 'start', 'check'), edge('check-done', 'check', 'done')]
+    )
+    const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
+
+    expect(codes).toContain('condition_branch_count')
+    expect(compileWorkflowGraph(workflow)).toMatchObject({ ok: false })
   })
 })

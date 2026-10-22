@@ -89,7 +89,6 @@ export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends OrcaRuntim
 
   runAgentsWorkflowNow(input: {
     workflowId: string
-    input: string
     requestKey: string
   }): Promise<AgentsWorkflowRun> {
     return this.getAgentsWorkflowRunService().runNow(input)

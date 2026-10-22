@@ -20,7 +20,7 @@ function workflow(workspace: AgentsWorkflowDefinition['workspace']): AgentsWorkf
       path: '/repo'
     },
     workspace,
-    trigger: { manual: true, defaultInput: '', schedule: null },
+    trigger: { manual: true, schedule: null },
     schedulerOwner: 'local_host_service',
     enabled: true,
     createdAt: 1,

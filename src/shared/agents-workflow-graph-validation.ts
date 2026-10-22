@@ -4,13 +4,13 @@ import {
   type AgentsWorkflowGraphAnalysis
 } from './agents-workflow-graph-analysis'
 import { validateAgentsWorkflowControlRegions } from './agents-workflow-control-region-validation'
+import { agentsWorkflowPromptDeclaresDecision } from './agents-workflow-decision'
 import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowEdge,
   AgentsWorkflowNode
 } from './agents-workflow-types'
 import type { AgentsWorkflowValidationIssue } from './agents-workflow-graph'
-import { validateAgentsWorkflowVariables } from './agents-workflow-variable-validation'
 
 type IssueInput = Omit<AgentsWorkflowValidationIssue, 'severity' | 'message'> & {
   message: string
@@ -150,6 +150,25 @@ function nodePortIssues(definition: AgentsWorkflowDefinition): AgentsWorkflowVal
       )
     }
     if (node.kind === 'condition') {
+      // The agent's answer is parsed as JSON, so a prompt that never asks for it cannot succeed.
+      if (!node.prompt.source.trim()) {
+        issues.push(
+          issue({
+            code: 'condition_prompt_required',
+            message: 'A condition needs a judging prompt.',
+            nodeId: node.id
+          })
+        )
+      } else if (!agentsWorkflowPromptDeclaresDecision(node.prompt.source)) {
+        issues.push(
+          issue({
+            code: 'condition_decision_contract_missing',
+            message:
+              'The judging prompt must ask the agent for {"decision":"yes"} or {"decision":"no"}.',
+            nodeId: node.id
+          })
+        )
+      }
       for (const port of ['yes', 'no'] as const) {
         if (outgoing.filter((edge) => edge.fromPort === port).length !== 1) {
           issues.push(
@@ -160,33 +179,6 @@ function nodePortIssues(definition: AgentsWorkflowDefinition): AgentsWorkflowVal
             })
           )
         }
-      }
-      const needsOperand =
-        node.operator === 'contains' ||
-        node.operator === 'not_contains' ||
-        node.operator === 'length_gte'
-      if (needsOperand && node.operand === undefined) {
-        issues.push(
-          issue({
-            code: 'condition_operand_required',
-            message: `Operator ${node.operator} requires an operand.`,
-            nodeId: node.id
-          })
-        )
-      }
-      if (
-        node.operator === 'length_gte' &&
-        (node.operand === undefined ||
-          !Number.isSafeInteger(Number(node.operand)) ||
-          Number(node.operand) < 0)
-      ) {
-        issues.push(
-          issue({
-            code: 'condition_operand_invalid',
-            message: 'length_gte requires a non-negative integer operand.',
-            nodeId: node.id
-          })
-        )
       }
     }
     if (node.kind === 'loop') {
@@ -249,6 +241,5 @@ export function validateParsedAgentsWorkflowDefinition(
     )
   }
   issues.push(...validateAgentsWorkflowControlRegions(definition, analysis))
-  issues.push(...validateAgentsWorkflowVariables(definition, analysis))
   return issues
 }

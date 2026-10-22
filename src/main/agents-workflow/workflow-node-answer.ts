@@ -4,23 +4,11 @@
 // written to the run's answer folder so a downstream prompt can point the agent at the file.
 
 import type { AgentsWorkflowNodeOutput } from '../../shared/agents-workflow-run-types'
-import type { AgentsWorkflowRuntimeValues } from './workflow-runtime-values'
 import { writeAgentsWorkflowNodeAnswer } from './workflow-upstream-files'
 
 /** Outputs a downstream node may bind. */
 const AGENTS_WORKFLOW_VALUE_OUTPUT_SOURCES: ReadonlySet<AgentsWorkflowNodeOutput['source']> =
   new Set(['structured_assistant_message', 'agent_transcript', 'agent_file_handoff'])
-
-/** The shape `renderPrompt` reads. */
-export function agentsWorkflowPromptValues(values: AgentsWorkflowRuntimeValues) {
-  return {
-    runInput: values.runInput,
-    nodeOutputs: Object.fromEntries(values.nodeOutputs),
-    loopItems: Object.fromEntries(values.loopItems),
-    loopIndexes: Object.fromEntries(values.loopIndexes),
-    loopOutputs: Object.fromEntries(values.loopOutputs)
-  }
-}
 
 export function agentsWorkflowOutputIsValue(output: AgentsWorkflowNodeOutput): boolean {
   return !output.truncated && AGENTS_WORKFLOW_VALUE_OUTPUT_SOURCES.has(output.source)
