@@ -118,6 +118,8 @@ export function isTurnEndEvent(source: AgentHookSource, eventName: unknown): boo
     case 'devin':
       return eventName === 'Stop'
     case 'gemini':
+    case 'codely':
+      // Why: Codely is a Gemini fork; AfterAgent is its turn-end event too.
       return eventName === 'AfterAgent'
     case 'amp':
       return eventName === 'agent.end'

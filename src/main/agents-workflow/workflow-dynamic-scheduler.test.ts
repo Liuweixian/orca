@@ -519,7 +519,7 @@ describe('executeAgentsWorkflowSchedule', () => {
           source: 'structured_assistant_message'
         }
       }),
-      checkpoint: ({ attempts }) => {
+      checkpoint: async ({ attempts }) => {
         captured.length = 0
         captured.push(...attempts)
       }
