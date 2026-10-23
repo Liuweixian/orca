@@ -1,5 +1,5 @@
 import React from 'react'
-import { BookOpen, CalendarClock, EyeOff, Files, Search, Smartphone, Workflow } from 'lucide-react'
+import { BookOpen, CalendarClock, EyeOff, Files, Search, Smartphone, Waypoints } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAppStore } from '@/store'
 import { cn } from '@/lib/utils'
@@ -232,7 +232,7 @@ const SidebarNav = React.memo(function SidebarNav() {
                   : 'text-worktree-sidebar-foreground/60 hover:bg-worktree-sidebar-foreground/8'
               )}
             >
-              <Workflow
+              <Waypoints
                 className={cn(
                   'size-4 shrink-0',
                   !agentsWorkflowActive && 'text-worktree-sidebar-foreground/30'

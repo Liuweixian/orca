@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Plug, Files, GitBranch, ListChecks, ListTree, Workflow } from 'lucide-react'
+import { Plug, Files, GitBranch, ListChecks, Waypoints, Workflow } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { useRepoById } from '@/store/selectors'
 import { isFolderRepo } from '../../../../shared/repo-kind'
@@ -123,7 +123,10 @@ export function useRightSidebarActivityItems({
         ? [
             {
               id: 'workflows' as const,
-              icon: ListTree,
+              // Why its own glyph instead of SidebarNav's Workflow: that icon already stands for
+              // the Attached worktrees tab right above this one, and two identical tabs in the
+              // same strip read as the same feature.
+              icon: Waypoints,
               title: translate('auto.components.right.sidebar.index.workflows', 'Workflows'),
               shortcut: ''
             }
