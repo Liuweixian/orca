@@ -36,6 +36,15 @@ const ConditionNodeSchema = z.strictObject({
   prompt: AgentsWorkflowPromptSchema
 })
 
+/** A shell command run in the workspace; its stdout/stderr become the node's answer. */
+const CommandNodeSchema = z.strictObject({
+  id: NonEmptyId,
+  kind: z.literal('command'),
+  title: z.string(),
+  position: Position,
+  command: z.string()
+})
+
 const LoopNodeSchema = z.strictObject({
   id: NonEmptyId,
   kind: z.literal('loop'),
@@ -48,6 +57,7 @@ export const AgentsWorkflowNodeSchema = z.discriminatedUnion('kind', [
   StartNodeSchema,
   AgentNodeSchema,
   ConditionNodeSchema,
+  CommandNodeSchema,
   LoopNodeSchema
 ])
 

@@ -208,6 +208,11 @@ function outputSourceLabel(source: AgentsWorkflowNodeOutput['source']): string {
         'auto.components.agents-workflow.history.outputFile',
         'Answer written to the workflow output file'
       )
+    case 'command_output':
+      return translate(
+        'auto.components.agents-workflow.history.outputCommand',
+        'Command output (stdout and stderr)'
+      )
     case 'terminal_snapshot':
       return translate(
         'auto.components.agents-workflow.history.outputTerminal',

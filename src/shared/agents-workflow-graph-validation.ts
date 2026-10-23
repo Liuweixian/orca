@@ -41,6 +41,8 @@ function validSourcePort(node: AgentsWorkflowNode, edge: AgentsWorkflowEdge): bo
       return edge.fromPort === 'default'
     case 'condition':
       return edge.fromPort === 'yes' || edge.fromPort === 'no'
+    case 'command':
+      return edge.fromPort === 'default'
     case 'loop':
       return edge.fromPort === 'each' || edge.fromPort === 'done'
   }
@@ -127,11 +129,11 @@ function terminalNodeIssues(definition: AgentsWorkflowDefinition): AgentsWorkflo
     ]
   }
   const terminal = terminals[0]
-  if (terminal.kind !== 'agent') {
+  if (terminal.kind !== 'agent' && terminal.kind !== 'command') {
     return [
       issue({
         code: 'terminal_node_kind',
-        message: 'The node that ends a workflow must be an agent.',
+        message: 'The node that ends a workflow must be an agent or a command.',
         nodeId: terminal.id
       })
     ]
@@ -173,6 +175,17 @@ function nodePortIssues(definition: AgentsWorkflowDefinition): AgentsWorkflowVal
         issue({
           code: 'agent_prompt_required',
           message: 'An agent node needs a prompt.',
+          nodeId: node.id
+        })
+      )
+    }
+    if (node.kind === 'command' && !node.command.trim()) {
+      // Why an error: an empty command line starts a shell that exits 0 and writes nothing, so
+      // the run would continue with an empty answer instead of telling the author.
+      issues.push(
+        issue({
+          code: 'command_required',
+          message: 'A command node needs a command to run.',
           nodeId: node.id
         })
       )

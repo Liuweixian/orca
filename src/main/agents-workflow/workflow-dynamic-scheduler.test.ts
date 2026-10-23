@@ -37,6 +37,16 @@ function agent(
   }
 }
 
+function command(id: string, commandLine: string): AgentsWorkflowNode {
+  return {
+    id,
+    kind: 'command',
+    title: id,
+    position: { x: 0, y: 0 },
+    command: commandLine
+  }
+}
+
 function edge(
   id: string,
   fromNodeId: string,
@@ -531,5 +541,82 @@ describe('executeAgentsWorkflowSchedule', () => {
     const stored = captured.find((attempt) => attempt.output !== null)
     expect(stored?.output?.truncated).toBe(true)
     expect(Buffer.byteLength(stored?.output?.content ?? '', 'utf8')).toBeLessThanOrEqual(8 * 1024)
+  })
+
+  it('runs a command node and hands its output to the next prompt', async () => {
+    const workflow = definition(
+      [command('build', 'node -p 1+1'), agent('report', { source: 'report it' })],
+      [edge('start-build', 'start', 'build'), edge('build-report', 'build', 'report')]
+    )
+    const workspacePath = await tempWorkspace()
+    const prompts: string[] = []
+
+    const result = await executeAgentsWorkflowSchedule({
+      definition: workflow,
+      executionContext: { runId: 'run-1', workspaceId: 'workspace-1', workspacePath },
+      executeAgent: async ({ prompt }) => {
+        prompts.push(prompt)
+        return {
+          ok: true,
+          output: {
+            format: 'plain_text',
+            content: 'reported',
+            capturedAt: 10,
+            truncated: false,
+            source: 'structured_assistant_message'
+          }
+        }
+      }
+    })
+
+    expect(result.ok).toBe(true)
+    expect(
+      result.ok && result.attempts.find((attempt) => attempt.nodeId === 'build')
+    ).toMatchObject({
+      status: 'completed',
+      output: { source: 'command_output' }
+    })
+    expect(prompts[0]).toContain('read .orca-workflow/run-1/answers/build.md first')
+    await expect(
+      readFile(join(workspacePath, '.orca-workflow/run-1/answers/build.md'), 'utf8')
+    ).resolves.toContain('2')
+  })
+
+  it('fails the run when the command exits non-zero', async () => {
+    const workflow = definition(
+      [command('build', 'exit 3'), agent('report', { source: 'report it' })],
+      [edge('start-build', 'start', 'build'), edge('build-report', 'build', 'report')]
+    )
+    const workspacePath = await tempWorkspace()
+
+    const result = await executeAgentsWorkflowSchedule({
+      definition: workflow,
+      executionContext: { runId: 'run-1', workspaceId: 'workspace-1', workspacePath },
+      executeAgent: async () => {
+        throw new Error('the agent must not run')
+      }
+    })
+
+    expect(result).toMatchObject({ ok: false, code: 'command_failed' })
+    expect(result.attempts.find((attempt) => attempt.nodeId === 'build')).toMatchObject({
+      status: 'failed',
+      errorCode: 'command_failed'
+    })
+  })
+
+  it('fails a command node when the run has no workspace', async () => {
+    const workflow = definition(
+      [command('build', 'node -p 1+1'), agent('report', { source: 'report it' })],
+      [edge('start-build', 'start', 'build'), edge('build-report', 'build', 'report')]
+    )
+
+    const result = await executeAgentsWorkflowSchedule({
+      definition: workflow,
+      executeAgent: async () => {
+        throw new Error('the agent must not run')
+      }
+    })
+
+    expect(result).toMatchObject({ ok: false, code: 'workspace_unavailable' })
   })
 })

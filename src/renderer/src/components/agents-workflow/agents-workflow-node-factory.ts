@@ -10,7 +10,7 @@ import type {
   AgentsWorkflowNode
 } from '../../../../shared/agents-workflow-types'
 
-export type AgentsWorkflowNodeKindToAdd = 'agent' | 'condition' | 'loop'
+export type AgentsWorkflowNodeKindToAdd = 'agent' | 'condition' | 'command' | 'loop'
 
 export const CANVAS_SNAP_GRID: SnapGrid = [16, 16]
 
@@ -55,6 +55,15 @@ export function newNode(
           { yes: AGENTS_WORKFLOW_DECISION_YES, no: AGENTS_WORKFLOW_DECISION_NO }
         )
       }
+    }
+  }
+  if (kind === 'command') {
+    return {
+      id,
+      kind,
+      title: translate('auto.components.agents-workflow.newCommand', 'New command'),
+      position,
+      command: ''
     }
   }
   return {

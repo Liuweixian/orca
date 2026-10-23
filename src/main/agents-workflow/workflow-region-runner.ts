@@ -4,6 +4,7 @@ import type { AgentsWorkflowEdge, AgentsWorkflowNode } from '../../shared/agents
 import { agentsWorkflowLoopCount } from './workflow-runtime-values'
 import { saveAgentsWorkflowNodeAnswer } from './workflow-node-answer'
 import { runWorkflowAgentNode } from './workflow-agent-node-runner'
+import { runWorkflowCommandNode } from './workflow-command-node-runner'
 import { runWorkflowConditionNode } from './workflow-condition-node-runner'
 import { writeAgentsWorkflowLoopIteration } from './workflow-upstream-files'
 import {
@@ -102,6 +103,11 @@ export async function runWorkflowRegion(
       const agentFailure = await runWorkflowAgentNode(context, node, loopContext)
       if (agentFailure) {
         return agentFailure
+      }
+    } else if (node.kind === 'command') {
+      const commandFailure = await runWorkflowCommandNode(context, node, loopContext)
+      if (commandFailure) {
+        return commandFailure
       }
     } else if (node.kind === 'condition') {
       const judged = await runWorkflowConditionNode(context, node, loopContext)

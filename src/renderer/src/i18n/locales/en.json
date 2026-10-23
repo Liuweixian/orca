@@ -18637,13 +18637,17 @@
           "channelWeakSettlement": "The agent only reports a quiet pane, so the value comes from the output file.",
           "upstreamNote": "The previous node’s answer is saved to a file, and this prompt names that file so the agent reads it first.",
           "channelSnapshot": "This node ends the branch: the run only keeps what its pane printed, and nothing downstream binds it.",
-          "channelNone": "This host has no output channel for {{agent}}."
+          "channelNone": "This host has no output channel for {{agent}}.",
+          "command": "Command",
+          "commandPlaceholder": "pnpm test",
+          "commandNote": "Runs in the workflow workspace. Its stdout and stderr become this node’s answer, and a non-zero exit fails the run."
         },
         "node": {
           "start": "Start",
           "agent": "Agent",
           "condition": "Condition",
-          "loop": "Loop"
+          "loop": "Loop",
+          "command": "Command"
         },
         "topbar": {
           "valid": "Ready to run",
@@ -18720,7 +18724,8 @@
           "clearConfirm": "Clear",
           "clear": "Clear run history",
           "cleared": "Run history cleared.",
-          "clearFailed": "Could not clear the run history."
+          "clearFailed": "Could not clear the run history.",
+          "outputCommand": "Command output (stdout and stderr)"
         },
         "controller": {
           "loadFailed": "Could not load the workflow.",
@@ -18750,8 +18755,10 @@
           "deleteEdgeTitle": "Delete this connection?",
           "deleteEdgeDescription": "The two nodes stay, but the run can no longer follow this connection.",
           "deleteCancel": "Cancel",
-          "deleteConfirm": "Delete"
-        }
+          "deleteConfirm": "Delete",
+          "addCommand": "Command"
+        },
+        "newCommand": "New command"
       },
       "OrcaSignInProgress": {
         "waiting": "Waiting for sign-in in your browser",

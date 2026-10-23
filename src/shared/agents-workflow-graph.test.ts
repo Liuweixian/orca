@@ -74,6 +74,16 @@ function start(): AgentsWorkflowNode {
   }
 }
 
+function command(id: string, commandLine: string): AgentsWorkflowNode {
+  return {
+    id,
+    kind: 'command',
+    title: id,
+    position: { x: 0, y: 0 },
+    command: commandLine
+  }
+}
+
 describe('workflow graph validation and compilation', () => {
   it('compiles a deterministic ordinary DAG', () => {
     const workflow = definition(
@@ -303,5 +313,38 @@ describe('workflow graph validation and compilation', () => {
 
     expect(codes).toContain('condition_branch_count')
     expect(compileWorkflowGraph(workflow)).toMatchObject({ ok: false })
+  })
+
+  it('accepts a command node between two agent nodes', () => {
+    const workflow = definition(
+      [start(), node('first'), command('run', 'pnpm test'), node('last')],
+      [
+        edge('start-first', 'start', 'first'),
+        edge('first-run', 'first', 'run'),
+        edge('run-last', 'run', 'last')
+      ]
+    )
+
+    expect(validateWorkflowDefinition(workflow)).toEqual([])
+    expect(compileWorkflowGraph(workflow)).toMatchObject({ ok: true })
+  })
+
+  it('accepts a command node as the terminal node', () => {
+    const workflow = definition(
+      [start(), node('first'), command('run', 'pnpm build')],
+      [edge('start-first', 'start', 'first'), edge('first-run', 'first', 'run')]
+    )
+
+    expect(validateWorkflowDefinition(workflow)).toEqual([])
+  })
+
+  it('rejects a command node with an empty command', () => {
+    const workflow = definition(
+      [start(), command('run', '   '), node('done')],
+      [edge('start-run', 'start', 'run'), edge('run-done', 'run', 'done')]
+    )
+    const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
+
+    expect(codes).toContain('command_required')
   })
 })

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Bot, GitBranch, Repeat2, Trash2, Unplug } from 'lucide-react'
+import { Bot, GitBranch, Repeat2, Terminal, Trash2, Unplug } from 'lucide-react'
 import { translate } from '@/i18n/i18n'
 import { Button } from '@/components/ui/button'
 import {
@@ -72,6 +72,10 @@ export function AgentsWorkflowCanvasContextMenu({
       <ContextMenuItem onSelect={() => onAddNode('condition')}>
         <GitBranch />
         {translate('auto.components.agents-workflow.canvas.addCondition', 'Condition')}
+      </ContextMenuItem>
+      <ContextMenuItem onSelect={() => onAddNode('command')}>
+        <Terminal />
+        {translate('auto.components.agents-workflow.canvas.addCommand', 'Command')}
       </ContextMenuItem>
       <ContextMenuItem onSelect={() => onAddNode('loop')}>
         <Repeat2 />
@@ -193,6 +197,10 @@ export function AgentsWorkflowConnectionDropMenu({
         <DropdownMenuItem onSelect={() => onCreateConnectedNode('condition')}>
           <GitBranch />
           {translate('auto.components.agents-workflow.canvas.addCondition', 'Condition')}
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => onCreateConnectedNode('command')}>
+          <Terminal />
+          {translate('auto.components.agents-workflow.canvas.addCommand', 'Command')}
         </DropdownMenuItem>
         <DropdownMenuItem onSelect={() => onCreateConnectedNode('loop')}>
           <Repeat2 />

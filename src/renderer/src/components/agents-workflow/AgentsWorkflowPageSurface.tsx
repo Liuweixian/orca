@@ -189,7 +189,7 @@ function AgentsWorkflowLoadedSurface({
           terminal={selectedTerminal}
           issues={selectedIssues}
           agentChannel={
-            selectedNode && selectedNode.kind !== 'start' && selectedNode.kind !== 'loop'
+            selectedNode && (selectedNode.kind === 'agent' || selectedNode.kind === 'condition')
               ? (controller.agentChannels?.get(selectedNode.agentId) ?? null)
               : null
           }

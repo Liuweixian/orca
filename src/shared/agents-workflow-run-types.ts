@@ -34,6 +34,7 @@ export const AgentsWorkflowNodeOutputSchema = z.strictObject({
       'structured_assistant_message',
       'agent_transcript',
       'agent_file_handoff',
+      'command_output',
       'terminal_snapshot',
       'unknown'
     ])

@@ -67,7 +67,7 @@ export function AgentsWorkflowInspector({
               <Textarea
                 id="agents-workflow-node-prompt"
                 variant="code"
-                className="min-h-32"
+                className="min-h-96"
                 value={node.prompt.source}
                 onChange={(event) =>
                   onChange({
@@ -108,7 +108,7 @@ export function AgentsWorkflowInspector({
               <Textarea
                 id="agents-workflow-condition-prompt"
                 variant="code"
-                className="min-h-32"
+                className="min-h-96"
                 value={node.prompt.source}
                 onChange={(event) =>
                   onChange({
@@ -151,6 +151,30 @@ export function AgentsWorkflowInspector({
               {translate(
                 'auto.components.agents-workflow.inspector.loopIterationNote',
                 'Each turn writes its iteration number to a file and the body\u2019s prompt reads that file first.'
+              )}
+            </p>
+          </div>
+        ) : null}
+        {node.kind === 'command' ? (
+          <div className="space-y-2">
+            <Label htmlFor="agents-workflow-node-command">
+              {translate('auto.components.agents-workflow.inspector.command', 'Command')}
+            </Label>
+            <Textarea
+              id="agents-workflow-node-command"
+              variant="code"
+              className="min-h-24"
+              placeholder={translate(
+                'auto.components.agents-workflow.inspector.commandPlaceholder',
+                'pnpm test'
+              )}
+              value={node.command}
+              onChange={(event) => onChange({ ...node, command: event.target.value })}
+            />
+            <p className="text-xs text-muted-foreground">
+              {translate(
+                'auto.components.agents-workflow.inspector.commandNote',
+                'Runs in the workflow workspace. Its stdout and stderr become this node\u2019s answer, and a non-zero exit fails the run.'
               )}
             </p>
           </div>

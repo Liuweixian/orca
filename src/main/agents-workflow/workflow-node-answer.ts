@@ -8,7 +8,12 @@ import { writeAgentsWorkflowNodeAnswer } from './workflow-upstream-files'
 
 /** Outputs a downstream node may bind. */
 const AGENTS_WORKFLOW_VALUE_OUTPUT_SOURCES: ReadonlySet<AgentsWorkflowNodeOutput['source']> =
-  new Set(['structured_assistant_message', 'agent_transcript', 'agent_file_handoff'])
+  new Set([
+    'structured_assistant_message',
+    'agent_transcript',
+    'agent_file_handoff',
+    'command_output'
+  ])
 
 export function agentsWorkflowOutputIsValue(output: AgentsWorkflowNodeOutput): boolean {
   return !output.truncated && AGENTS_WORKFLOW_VALUE_OUTPUT_SOURCES.has(output.source)

@@ -1,6 +1,6 @@
 import React from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { AlertTriangle, Bot, CirclePlay, GitBranch, Repeat2 } from 'lucide-react'
+import { AlertTriangle, Bot, CirclePlay, GitBranch, Repeat2, Terminal } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { AgentIcon, getAgentLabel } from '@/lib/agent-catalog'
 import { cn } from '@/lib/utils'
@@ -17,6 +17,8 @@ function nodeKindLabel(kind: AgentsWorkflowCanvasNode['data']['workflowNode']['k
       return translate('auto.components.agents-workflow.node.agent', 'Agent')
     case 'condition':
       return translate('auto.components.agents-workflow.node.condition', 'Condition')
+    case 'command':
+      return translate('auto.components.agents-workflow.node.command', 'Command')
     case 'loop':
       return translate('auto.components.agents-workflow.node.loop', 'Loop')
   }
@@ -35,6 +37,8 @@ function NodeKindIcon({
       return <Bot className={className} />
     case 'condition':
       return <GitBranch className={className} />
+    case 'command':
+      return <Terminal className={className} />
     case 'loop':
       return <Repeat2 className={className} />
   }
@@ -122,6 +126,9 @@ function AgentsWorkflowNodeCardComponent({
           <span>{nodeKindLabel(node.kind)}</span>
         </div>
       )}
+      {node.kind === 'command' && node.command.trim() ? (
+        <div className="mt-1 truncate font-mono text-xs text-muted-foreground">{node.command}</div>
+      ) : null}
       <SourceHandles node={node} />
     </div>
   )
