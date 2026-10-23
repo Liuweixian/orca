@@ -72,9 +72,10 @@ describe('workflowTargetForNewWorkflow', () => {
       workspace: { mode: 'new_per_run' },
       creationKey: 'creation-key'
     })
-    // Why: the canvas cannot create an end node, so the starter fixture is the only source of one
-    // for a new workflow.
-    expect(input.nodes.filter((node) => node.kind === 'end')).toHaveLength(1)
+    // Why: a new workflow starts blank instead of copying the one the user was viewing, but the
+    // canvas cannot create start or end nodes, so those two must come from the input.
+    expect(input.nodes.map((node) => node.kind)).toEqual(['start', 'end'])
+    expect(input.edges).toEqual([])
   })
 
   it('refuses to invent a target when no project can run on this host', () => {

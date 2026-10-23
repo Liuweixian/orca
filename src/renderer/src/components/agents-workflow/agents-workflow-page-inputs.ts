@@ -5,6 +5,7 @@ import type { Repo } from '../../../../shared/repo-types'
 import type {
   AgentsWorkflowCreateInput,
   AgentsWorkflowDefinition,
+  AgentsWorkflowNode,
   AgentsWorkflowRunContext,
   AgentsWorkflowUpdateFields,
   AgentsWorkflowWorkspace
@@ -90,7 +91,18 @@ export function workflowTargetForNewWorkflow(args: {
   }
 }
 
-/** The input a new workflow is created from: the current one, or the starter fixture. */
+/** A blank graph: the canvas cannot create start or end nodes, so a new workflow starts with them. */
+function blankWorkflowNodes(): AgentsWorkflowNode[] {
+  return [
+    { id: 'start', kind: 'start', title: 'Start', position: { x: 80, y: 180 } },
+    { id: 'end', kind: 'end', title: 'End', position: { x: 340, y: 180 } }
+  ]
+}
+
+/**
+ * The input a new workflow is created from. Only the target and triggers carry over from `source`;
+ * the graph always starts blank so a new workflow is not a copy of the one the user was viewing.
+ */
 export function newWorkflowInput(
   source: AgentsWorkflowDefinition | null,
   target?: AgentsWorkflowNewTarget
@@ -102,6 +114,8 @@ export function newWorkflowInput(
     schedulerOwner: _schedulerOwner,
     createdAt: _createdAt,
     updatedAt: _updatedAt,
+    nodes: _nodes,
+    edges: _edges,
     ...input
   } = template
   return {
@@ -114,6 +128,8 @@ export function newWorkflowInput(
       : {}),
     creationKey: createBrowserUuid(),
     name: translate('auto.components.agents-workflow.controller.newName', 'New workflow'),
+    nodes: blankWorkflowNodes(),
+    edges: [],
     trigger: { ...input.trigger, schedule: null }
   }
 }
