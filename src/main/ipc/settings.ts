@@ -19,6 +19,7 @@ import { applyElectronProxySettings } from '../network/proxy-settings'
 import { applyBrowserSessionProxies } from '../browser/browser-session-proxy'
 import { browserSessionRegistry } from '../browser/browser-session-registry'
 import { sanitizeNetworkSettings } from './network-settings-sanitization'
+import { sanitizeRendererSettingsUpdate } from './renderer-settings-sanitization'
 import { normalizeAppIconId } from '../../shared/app-icon'
 import { normalizeUiLanguage } from '../../shared/ui-language'
 import { applyAppIcon } from '../app-icon'
@@ -46,21 +47,6 @@ import { applySessionSearchSettingsChange } from '../ai-vault-search/session-sea
 // to a Set once at module load lets the IPC handler's per-key membership
 // check stay O(1) without re-coercing the readonly tuple on every call.
 const SETTINGS_CHANGED_WHITELIST_SET = new Set<string>(SETTINGS_CHANGED_WHITELIST)
-
-type LegacyTerminalScrollbackSettingsUpdate = Partial<GlobalSettings> & {
-  terminalScrollbackBytes?: unknown
-}
-
-function sanitizeRendererSettingsUpdate(args: Partial<GlobalSettings>): Partial<GlobalSettings> {
-  const { terminalScrollbackBytes: _legacyScrollbackBytes, ...sanitizedArgs } =
-    args as LegacyTerminalScrollbackSettingsUpdate
-  void _legacyScrollbackBytes
-  // Plugin consent and enablement are main-owned authority state. Renderer
-  // writes must pass the dedicated reviewed-fingerprint handlers.
-  delete sanitizedArgs.pluginConsents
-  delete sanitizedArgs.disabledPlugins
-  return sanitizedArgs
-}
 
 // Why: fields that appear in the View > Appearance submenu need the menu
 // rebuilt after any update so the checkbox `checked` state stays in sync
@@ -204,6 +190,14 @@ export function registerSettingsHandlers(
       'alwaysForceDeletePreservedBranches' in sanitizedArgs
         ? await store.updateSettingsAndFlush(sanitizedArgs, updateOptions)
         : store.updateSettings(sanitizedArgs, updateOptions)
+    if (
+      'experimentalAgentDashboardPopout' in sanitizedArgs &&
+      before.experimentalAgentDashboardPopout !== result.experimentalAgentDashboardPopout
+    ) {
+      track('agent_dashboard_enabled', {
+        enabled: result.experimentalAgentDashboardPopout === true
+      })
+    }
     const proxySettingsChanged =
       ('httpProxyUrl' in sanitizedArgs && before.httpProxyUrl !== result.httpProxyUrl) ||
       ('httpProxyBypassRules' in sanitizedArgs &&

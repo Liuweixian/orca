@@ -55,6 +55,7 @@ import type { WorktreeSortOrderUpdate } from '../../shared/worktree/sort-order-u
 import { isDesktopBrowserBridgeHostEnabled } from './desktop-browser-bridge/desktop-browser-bridge-registry'
 import { DESKTOP_BROWSER_BRIDGE_RUNTIME_CAPABILITY } from '../../shared/desktop-browser-bridge-protocol'
 import { darkSwitchRuntimeCapabilities } from './dark-switch-runtime-capabilities'
+import { supportsDurableTerminalPromptDelivery } from './durable-terminal-prompt-delivery'
 
 type RuntimeStatusHost = {
   getAvailableAuthoritativeWindow(): unknown
@@ -63,17 +64,6 @@ type RuntimeStatusHost = {
     ptyIds: Iterable<string>,
     terminalHandlesByPtyId: Readonly<Record<string, readonly string[]>>
   ): string[]
-}
-
-function supportsDurableTerminalPromptDelivery(): boolean {
-  if (typeof process.getBuiltinModule !== 'function') {
-    return false
-  }
-  try {
-    return process.getBuiltinModule('node:sqlite') !== undefined
-  } catch {
-    return false
-  }
 }
 
 export abstract class OrcaRuntimeWithGetStatus extends OrcaRuntimeWithGetRuntimeId {
@@ -293,10 +283,11 @@ export abstract class OrcaRuntimeWithGetStatus extends OrcaRuntimeWithGetRuntime
       return { tabId: record.tabId, worktreeId: record.worktreeId }
     }
     const pty = record.ptyId ? this.ptysById.get(record.ptyId) : null
+    const pane = this.paneOfPty(pty)
     const tabId =
-      pty?.tabId && !pty.tabId.startsWith('pty:')
-        ? pty.tabId
-        : parsePaneKey(pty?.paneKey ?? '')?.tabId
+      pane.tabId && !pane.tabId.startsWith('pty:')
+        ? pane.tabId
+        : parsePaneKey(pane.paneKey ?? '')?.tabId
     if (!pty || !tabId || tabId.startsWith('pty:')) {
       return null
     }
