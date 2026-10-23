@@ -109,12 +109,10 @@ function AgentsWorkflowNodeCardComponent({
   const node = data.workflowNode
   const hasErrors = data.issues.some((entry) => entry.severity === 'error')
   const agentId = node.kind === 'agent' || node.kind === 'condition' ? node.agentId : null
-  // Why narrower: end only carries a title, so it does not need a work node's width.
   return (
     <div
       className={cn(
-        'rounded-xl border bg-card px-4 py-3 text-card-foreground shadow-xs',
-        node.kind === 'end' ? 'w-32' : 'w-56',
+        'w-32 rounded-xl border bg-card px-4 py-3 text-card-foreground shadow-xs',
         selected ? 'border-ring ring-2 ring-ring' : 'border-border',
         hasErrors && 'border-destructive'
       )}
