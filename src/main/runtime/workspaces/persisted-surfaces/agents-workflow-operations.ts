@@ -19,7 +19,7 @@ import type {
   AgentsWorkflowRun,
   AgentsWorkflowRunsPage
 } from '../../../../shared/agents-workflow-run-types'
-import { OrcaRuntimeWithAutomationOperations } from './automation-operations'
+import { OrcaRuntimeWithRestoredTerminalPlacement } from './restored-terminal-placement'
 import { AgentsWorkflowRunService } from '../../../agents-workflow/workflow-run-service'
 import { createAgentsWorkflowExecutionAdapter } from '../../../agents-workflow/workflow-agent-execution-adapter'
 import { createWorkflowStructuredTurnRunner } from '../../../agents-workflow/workflow-structured-turn-runner'
@@ -29,7 +29,7 @@ import { createWorkflowReportTurnRunner } from '../../../agents-workflow/workflo
 import { createAgentsWorkflowWorkspaceResolver } from '../../../agents-workflow/workflow-workspace-resolver'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 
-export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends OrcaRuntimeWithAutomationOperations {
+export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends OrcaRuntimeWithRestoredTerminalPlacement {
   private agentsWorkflowRunService: AgentsWorkflowRunService | null = null
 
   abstract notifyAgentsWorkflowsChanged(payload?: { reason?: 'definition' | 'run' }): void

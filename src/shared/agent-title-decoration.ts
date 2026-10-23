@@ -6,7 +6,7 @@
 // know belong to an agent.
 const LEADING_AGENT_TITLE_DECORATION_RE =
   // eslint-disable-next-line no-control-regex -- intentional unicode status-glyph ranges
-  /^(?:(?:[✳✦⏲◇✋✅⏸▲⠀-⣿◐-◓]\uFE0F?)+|[.*]\s)\s*/
+  /^(?:(?:[\u2733\u2726\u23F2\u25C7\u270B\u2705\u23F8\u25B2\u2800-\u28FF\u25D0-\u25D3]\uFE0F?)+|[.*]\s)\s*/
 
 export function stripLeadingAgentTitleDecorationOrEmpty(title: string): string {
   return title.replace(LEADING_AGENT_TITLE_DECORATION_RE, '').trimStart()
