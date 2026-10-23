@@ -100,47 +100,45 @@ export default function AgentsWorkflowSidebarPanel(): React.JSX.Element {
   }, [])
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-background">
-      <div className="border-b border-border px-4 py-3">
-        <div className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium text-foreground">
-              {translate('auto.components.right.sidebar.index.workflows', 'Workflows')}
-            </div>
-            {visibleWorkflows.length > 0 ? (
-              <div className="mt-1 truncate text-xs text-muted-foreground">
-                {translate(
-                  'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.count',
-                  '{{value0}} in this project',
-                  { value0: visibleWorkflows.length }
-                )}
-              </div>
-            ) : null}
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden bg-sidebar">
+      <div className="flex shrink-0 items-center gap-2 border-b border-sidebar-border px-3 py-2">
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-xs font-semibold text-foreground">
+            {translate('auto.components.right.sidebar.index.workflows', 'Workflows')}
           </div>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                onClick={() => void refreshList()}
-                disabled={loading}
-                aria-label={translate(
-                  'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.refresh',
-                  'Refresh workflows'
-                )}
-              >
-                <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
+          {visibleWorkflows.length > 0 ? (
+            <div className="truncate text-[11px] text-muted-foreground">
               {translate(
+                'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.count',
+                '{{value0}} in this project',
+                { value0: visibleWorkflows.length }
+              )}
+            </div>
+          ) : null}
+        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              onClick={() => void refreshList()}
+              disabled={loading}
+              aria-label={translate(
                 'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.refresh',
                 'Refresh workflows'
               )}
-            </TooltipContent>
-          </Tooltip>
-        </div>
+            >
+              <RefreshCw className={cn('size-3.5', loading && 'animate-spin')} />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent side="bottom">
+            {translate(
+              'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.refresh',
+              'Refresh workflows'
+            )}
+          </TooltipContent>
+        </Tooltip>
       </div>
 
       {visibleWorkflows.length === 0 ? (
@@ -183,64 +181,82 @@ export default function AgentsWorkflowSidebarPanel(): React.JSX.Element {
         </div>
       ) : (
         <>
-          <div className="scrollbar-sleek min-h-0 flex-1 overflow-y-auto px-2 py-2">
-            <div className="space-y-1">
+          <div className="scrollbar-sleek min-h-0 flex-1 overflow-y-auto px-1 py-1">
+            <div className="space-y-0.5">
               {visibleWorkflows.map(({ workflow, errorCount, workspace }) => (
                 <div
                   key={workflow.id}
-                  className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent/50"
+                  className="group flex items-center gap-2 rounded px-2 py-1.5 transition-colors hover:bg-sidebar-accent/55"
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium text-foreground">
+                    <div className="truncate text-[13px] font-medium text-foreground">
                       {workflow.name}
                     </div>
-                    <div className="mt-0.5 truncate text-xs text-muted-foreground">{workspace}</div>
+                    <div className="truncate text-[11px] text-muted-foreground">{workspace}</div>
                   </div>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="xs"
-                    onClick={() => openAgentsWorkflowPageOn(workflow.id)}
-                    aria-label={translate(
-                      'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.openWorkflow',
-                      'Open {{value0}}',
-                      { value0: workflow.name }
-                    )}
-                  >
-                    <SquareArrowOutUpRight className="size-3" />
-                    {translate(
-                      'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.open',
-                      'Open'
-                    )}
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="secondary"
-                    size="xs"
-                    onClick={() => void runWorkflow(workflow.id)}
-                    disabled={runningId !== null || errorCount > 0}
-                    title={
-                      errorCount > 0
-                        ? translate(
-                            'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.runBlocked',
-                            'Fix this workflow’s issues before running it.'
-                          )
-                        : undefined
-                    }
-                    aria-label={translate(
-                      'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.run',
-                      'Run {{value0}}',
-                      { value0: workflow.name }
-                    )}
-                  >
-                    <Play className={cn('size-3', runningId === workflow.id && 'animate-pulse')} />
-                    {translate('auto.components.agents-workflow.topbar.run', 'Run')}
-                  </Button>
+                  <div className="flex shrink-0 items-center gap-0.5 can-hover:opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => openAgentsWorkflowPageOn(workflow.id)}
+                          aria-label={translate(
+                            'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.openWorkflow',
+                            'Open {{value0}}',
+                            { value0: workflow.name }
+                          )}
+                        >
+                          <SquareArrowOutUpRight className="size-3.5" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={4}>
+                        {translate(
+                          'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.openWorkflow',
+                          'Open {{value0}}',
+                          { value0: workflow.name }
+                        )}
+                      </TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon-xs"
+                          onClick={() => void runWorkflow(workflow.id)}
+                          disabled={runningId !== null || errorCount > 0}
+                          aria-label={translate(
+                            'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.run',
+                            'Run {{value0}}',
+                            { value0: workflow.name }
+                          )}
+                        >
+                          <Play
+                            className={cn('size-3.5', runningId === workflow.id && 'animate-pulse')}
+                          />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" sideOffset={4}>
+                        {errorCount > 0
+                          ? translate(
+                              'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.runBlocked',
+                              'Fix this workflow’s issues before running it.'
+                            )
+                          : translate(
+                              'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.run',
+                              'Run {{value0}}',
+                              { value0: workflow.name }
+                            )}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
-          <div className="border-t border-border px-2 py-2">
+          <div className="border-t border-sidebar-border px-2 py-2">
             <Button
               type="button"
               variant="ghost"
