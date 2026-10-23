@@ -14203,7 +14203,8 @@
             "fc3095d2ed": "explorer",
             "aiVaultSessionHistory": "Agents",
             "folderWorkspaces": "Attached worktrees",
-            "parentPrChecks": "PR Checks"
+            "parentPrChecks": "PR Checks",
+            "workflows": "Workflows"
           },
           "right": {
             "panel": {
@@ -17967,6 +17968,16 @@
           "actionsUnavailable": "Plugin actions are not available in this client.",
           "messageTooLarge": "Message exceeds the size limit.",
           "tooManyRequests": "Too many requests."
+        },
+        "AgentsWorkflowSidebarPanel": {
+          "runStarted": "Workflow run started.",
+          "count": "{{value0}} in this project",
+          "refresh": "Refresh workflows",
+          "emptyTitle": "No workflows for this project",
+          "emptyCopy": "Create a workflow in the Workflows page and it will show up here.",
+          "openPage": "Open Workflows page",
+          "run": "Run {{value0}}",
+          "runBlocked": "Fix this workflow’s issues before running it."
         }
       },
       "link": {

@@ -1,9 +1,6 @@
 import React from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { createBrowserUuid } from '@/lib/browser-uuid'
-import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
-import { AGENTS_WORKFLOW_RUN_CONFLICT } from '../../../../shared/agents-workflow-errors'
 import type {
   AgentsWorkflowRun,
   AgentsWorkflowRunSummary
@@ -13,9 +10,9 @@ import {
   cancelAgentsWorkflowRun,
   clearAgentsWorkflowRuns,
   listAgentsWorkflowRuns,
-  runAgentsWorkflow,
   showAgentsWorkflowRun
 } from './agents-workflow-rpc-client'
+import { runAgentsWorkflowWithToast } from './agents-workflow-run-start'
 
 export const RUN_PAGE_SIZE = 20
 /** Only while a run is active: notifications are the fast path, this is the safety net. */
@@ -75,21 +72,11 @@ export function useAgentsWorkflowRuns(workflowId: string | null): AgentsWorkflow
       }
       setRunning(true)
       try {
-        const run = await runAgentsWorkflow(workflowId, createBrowserUuid())
-        await refreshRuns(workflowId)
-        setSelectedRun(run)
-      } catch (error) {
-        toast.error(
-          error instanceof RuntimeRpcCallError && error.code === AGENTS_WORKFLOW_RUN_CONFLICT
-            ? translate(
-                'auto.components.agents-workflow.controller.runConflict',
-                'This workflow or its workspace already has an active run. Wait for it to finish.'
-              )
-            : translate(
-                'auto.components.agents-workflow.controller.runFailed',
-                'Could not start the workflow.'
-              )
-        )
+        const run = await runAgentsWorkflowWithToast(workflowId)
+        if (run) {
+          await refreshRuns(workflowId)
+          setSelectedRun(run)
+        }
       } finally {
         setRunning(false)
       }

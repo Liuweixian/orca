@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
-import { Plug, Files, GitBranch, ListChecks, Workflow } from 'lucide-react'
+import { Plug, Files, GitBranch, ListChecks, ListTree, Workflow } from 'lucide-react'
 import { useAppStore } from '@/store'
 import { useRepoById } from '@/store/selectors'
 import { isFolderRepo } from '../../../../shared/repo-kind'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
+import { shouldShowAgentsWorkflowButton } from '../sidebar/SidebarNav'
 import { getVisibleRightSidebarActivityItems } from './right-sidebar-activity-visibility'
 import { getPluginPanelActivityItems } from './plugin-panel-activity-items'
 import {
@@ -57,6 +58,7 @@ export function useRightSidebarActivityItems({
     )
   )
   const pluginSystemEnabled = useAppStore((s) => s.settings?.pluginSystemEnabled === true)
+  const showWorkflows = useAppStore((s) => shouldShowAgentsWorkflowButton(s.settings))
   const pluginPanels = usePluginPanels()
   const visiblePluginPanels = useMemo(
     () => (pluginSystemEnabled ? pluginPanels : []),
@@ -115,6 +117,18 @@ export function useRightSidebarActivityItems({
         shortcut: checksShortcut === 'Unassigned' ? '' : checksShortcut,
         gitOnly: true
       },
+      // Why the same setting as the app sidebar: turning Workflows off must hide every entry to
+      // the page, not just the one in the main sidebar.
+      ...(showWorkflows
+        ? [
+            {
+              id: 'workflows' as const,
+              icon: ListTree,
+              title: translate('auto.components.right.sidebar.index.workflows', 'Workflows'),
+              shortcut: ''
+            }
+          ]
+        : []),
       {
         id: 'ports',
         icon: Plug,
@@ -132,6 +146,7 @@ export function useRightSidebarActivityItems({
       pluginPanelErrors,
       visiblePluginPanels,
       portsShortcut,
+      showWorkflows,
       sourceControlShortcut
     ]
   )
