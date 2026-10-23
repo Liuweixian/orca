@@ -234,13 +234,17 @@ export function agentsWorkflowNodesReachableFrom(
 }
 
 /**
- * A node is terminal when no edge leaves it — including a loop's aggregate edge, which is still a
- * connection the author drew. Terminal is derived, never stored: the canvas is the single source
- * of truth, and validation requires exactly one such node.
+ * A node feeds the end node when every edge leaving it lands on an end node: its answer is the
+ * workflow's final record, because nothing downstream binds it. Such a node may settle from a pane
+ * snapshot; any other node must deliver a value, since a later node would bind text off screen.
  */
-export function agentsWorkflowNodeIsTerminal(
-  definition: Pick<AgentsWorkflowDefinition, 'edges'>,
+export function agentsWorkflowNodeFeedsEnd(
+  definition: Pick<AgentsWorkflowDefinition, 'nodes' | 'edges'>,
   nodeId: string
 ): boolean {
-  return !definition.edges.some((edge) => edge.fromNodeId === nodeId)
+  const endIds = new Set(
+    definition.nodes.filter((node) => node.kind === 'end').map((node) => node.id)
+  )
+  const outgoing = definition.edges.filter((edge) => edge.fromNodeId === nodeId)
+  return outgoing.length > 0 && outgoing.every((edge) => endIds.has(edge.toNodeId))
 }

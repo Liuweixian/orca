@@ -97,7 +97,9 @@ export async function runWorkflowRegion(
       continue
     }
 
-    if (node.kind === 'start') {
+    if (node.kind === 'start' || node.kind === 'end') {
+      // Start and end are structural: they mark where the graph begins and settles, but run
+      // nothing of their own.
       context.executionTrace.push(node.id)
     } else if (node.kind === 'agent') {
       const agentFailure = await runWorkflowAgentNode(context, node, loopContext)

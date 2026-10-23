@@ -1,6 +1,6 @@
 import React from 'react'
 import { toast } from 'sonner'
-import { agentsWorkflowNodeIsTerminal } from '../../../../shared/agents-workflow-graph-analysis'
+import { agentsWorkflowNodeFeedsEnd } from '../../../../shared/agents-workflow-graph-analysis'
 import { agentsWorkflowDefinitionIssues } from '../../../../shared/agents-workflow-definition-check'
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
 import { useAppStore } from '@/store'
@@ -77,7 +77,7 @@ function AgentsWorkflowLoadedSurface({
   const selectedNode = definition.nodes.find((node) => node.id === selectedNodeId) ?? null
   const selectedIssues = issues.filter((entry) => entry.nodeId === selectedNodeId)
   const selectedTerminal =
-    selectedNode !== null && agentsWorkflowNodeIsTerminal(definition, selectedNode.id)
+    selectedNode !== null && agentsWorkflowNodeFeedsEnd(definition, selectedNode.id)
 
   const onSelectNode = React.useCallback((nodeId: string | null) => {
     setSelectedNodeId(nodeId)

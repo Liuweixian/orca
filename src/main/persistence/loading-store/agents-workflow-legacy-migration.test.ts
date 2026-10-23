@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest'
 import { AgentsWorkflowDefinitionSchema } from '../../../shared/agents-workflow-types'
 import { AgentsWorkflowRunSchema } from '../../../shared/agents-workflow-run-types'
 import {
+  compileWorkflowGraph,
+  validateWorkflowDefinition
+} from '../../../shared/agents-workflow-graph'
+import {
   migrateLegacyAgentsWorkflowDefinition,
   migrateLegacyAgentsWorkflowRun
 } from './agents-workflow-legacy-migration'
@@ -115,8 +119,115 @@ describe('legacy agents workflow migration', () => {
       position: { x: 400, y: 0 },
       count: 2
     }
+    nodes.push({ id: 'end', kind: 'end', title: 'End', position: { x: 500, y: 0 } })
 
     expect(migrateLegacyAgentsWorkflowDefinition(definition)).toEqual(definition)
+  })
+
+  it('adds an end node and connects every sink saved before end was explicit', () => {
+    const definition: Record<string, unknown> = {
+      ...legacyDefinition(),
+      trigger: { manual: true, schedule: null },
+      nodes: [
+        { id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } },
+        {
+          id: 'draft',
+          kind: 'agent',
+          title: 'Draft',
+          position: { x: 200, y: 0 },
+          agentId: 'claude',
+          prompt: { source: 'Summarize the change.' }
+        },
+        {
+          id: 'publish',
+          kind: 'command',
+          title: 'Publish',
+          position: { x: 300, y: 0 },
+          command: 'pnpm build'
+        }
+      ],
+      edges: [
+        {
+          id: 'start-draft',
+          fromNodeId: 'start',
+          toNodeId: 'draft',
+          fromPort: 'default',
+          toPort: 'default'
+        },
+        {
+          id: 'draft-publish',
+          fromNodeId: 'draft',
+          toNodeId: 'publish',
+          fromPort: 'default',
+          toPort: 'default'
+        }
+      ]
+    }
+
+    const migrated = migrateLegacyAgentsWorkflowDefinition(definition)
+    const parsed = AgentsWorkflowDefinitionSchema.safeParse(migrated)
+
+    expect(parsed.success).toBe(true)
+    if (!parsed.success) {
+      return
+    }
+    expect(parsed.data.nodes.filter((node) => node.kind === 'end')).toHaveLength(1)
+    // Why: the canvas uses absolute coordinates, so the new node must not land on top of Start.
+    expect(parsed.data.nodes.find((node) => node.kind === 'end')?.position).toEqual({
+      x: 540,
+      y: 0
+    })
+    expect(parsed.data.edges).toContainEqual({
+      id: 'end-edge-publish',
+      fromNodeId: 'publish',
+      toNodeId: 'end',
+      fromPort: 'default',
+      toPort: 'default'
+    })
+    expect(validateWorkflowDefinition(migrated).map((entry) => entry.code)).not.toContain(
+      'end_count'
+    )
+    expect(validateWorkflowDefinition(migrated)).toEqual([])
+    expect(compileWorkflowGraph(parsed.data)).toMatchObject({ ok: true })
+  })
+
+  it('leaves a condition branch unwired rather than guessing a branch port', () => {
+    const definition: Record<string, unknown> = {
+      ...legacyDefinition(),
+      trigger: { manual: true, schedule: null },
+      nodes: [
+        { id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } },
+        {
+          id: 'check',
+          kind: 'condition',
+          title: 'Check',
+          position: { x: 200, y: 0 },
+          agentId: 'claude',
+          prompt: { source: 'Decide whether the change is small.' }
+        }
+      ],
+      edges: [
+        {
+          id: 'start-check',
+          fromNodeId: 'start',
+          toNodeId: 'check',
+          fromPort: 'default',
+          toPort: 'default'
+        }
+      ]
+    }
+
+    const migrated = migrateLegacyAgentsWorkflowDefinition(definition)
+    const parsed = AgentsWorkflowDefinitionSchema.safeParse(migrated)
+
+    expect(parsed.success).toBe(true)
+    if (!parsed.success) {
+      return
+    }
+    expect(parsed.data.edges.filter((edge) => edge.fromNodeId === 'check')).toEqual([])
+    const codes = validateWorkflowDefinition(migrated).map((entry) => entry.code)
+    expect(codes).not.toContain('end_count')
+    expect(codes).toContain('condition_branch_count')
   })
 
   it('drops node extra agent arguments, which the editor no longer offers', () => {

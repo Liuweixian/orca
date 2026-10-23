@@ -21,13 +21,21 @@ function workflow(
         position: { x: 200, y: 0 },
         agentId: 'claude',
         prompt: { source: 'Summarize.' }
-      }
+      },
+      { id: 'end', kind: 'end', title: 'End', position: { x: 400, y: 0 } }
     ],
     edges: [
       {
         id: 'start-finish',
         fromNodeId: 'start',
         toNodeId: 'finish',
+        fromPort: 'default',
+        toPort: 'default'
+      },
+      {
+        id: 'finish-end',
+        fromNodeId: 'finish',
+        toNodeId: 'end',
         fromPort: 'default',
         toPort: 'default'
       }

@@ -1,6 +1,14 @@
 import React from 'react'
 import { Handle, Position, type NodeProps } from '@xyflow/react'
-import { AlertTriangle, Bot, CirclePlay, GitBranch, Repeat2, Terminal } from 'lucide-react'
+import {
+  AlertTriangle,
+  Bot,
+  CirclePlay,
+  CircleStop,
+  GitBranch,
+  Repeat2,
+  Terminal
+} from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { AgentIcon, getAgentLabel } from '@/lib/agent-catalog'
 import { cn } from '@/lib/utils'
@@ -13,6 +21,8 @@ function nodeKindLabel(kind: AgentsWorkflowCanvasNode['data']['workflowNode']['k
   switch (kind) {
     case 'start':
       return translate('auto.components.agents-workflow.node.start', 'Start')
+    case 'end':
+      return translate('auto.components.agents-workflow.node.end', 'End')
     case 'agent':
       return translate('auto.components.agents-workflow.node.agent', 'Agent')
     case 'condition':
@@ -33,6 +43,8 @@ function NodeKindIcon({
   switch (kind) {
     case 'start':
       return <CirclePlay className={className} />
+    case 'end':
+      return <CircleStop className={className} />
     case 'agent':
       return <Bot className={className} />
     case 'condition':
@@ -83,6 +95,10 @@ function SourceHandles({
       </>
     )
   }
+  if (node.kind === 'end') {
+    // End is the sink: no outgoing connection may leave it.
+    return null
+  }
   return <Handle id="default" type="source" position={Position.Right} className={HANDLE_CLASS} />
 }
 
@@ -93,10 +109,12 @@ function AgentsWorkflowNodeCardComponent({
   const node = data.workflowNode
   const hasErrors = data.issues.some((entry) => entry.severity === 'error')
   const agentId = node.kind === 'agent' || node.kind === 'condition' ? node.agentId : null
+  // Why narrower: end only carries a title, so it does not need a work node's width.
   return (
     <div
       className={cn(
-        'w-56 rounded-xl border bg-card px-4 py-3 text-card-foreground shadow-xs',
+        'rounded-xl border bg-card px-4 py-3 text-card-foreground shadow-xs',
+        node.kind === 'end' ? 'w-32' : 'w-56',
         selected ? 'border-ring ring-2 ring-ring' : 'border-border',
         hasErrors && 'border-destructive'
       )}
@@ -109,7 +127,7 @@ function AgentsWorkflowNodeCardComponent({
         <div className="min-w-0 flex-1 truncate text-sm font-semibold">{node.title}</div>
         {hasErrors ? <AlertTriangle className="size-4 shrink-0 text-destructive" /> : null}
       </div>
-      {node.kind === 'start' ? null : (
+      {node.kind === 'start' || node.kind === 'end' ? null : (
         <div
           className={cn(
             'mt-1 flex items-center gap-2 text-xs text-muted-foreground',

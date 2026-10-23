@@ -50,6 +50,7 @@ export function AgentsWorkflowAgentChannelHint({
   terminal
 }: {
   channel: AgentsWorkflowAgentChannelView | null
+  /** Whether the node feeds only the end node, which lets it settle from its pane. */
   terminal: boolean
 }): React.JSX.Element | null {
   if (!channel) {

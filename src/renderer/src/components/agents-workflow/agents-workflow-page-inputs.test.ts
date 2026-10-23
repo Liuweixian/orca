@@ -66,11 +66,15 @@ describe('workflowTargetForNewWorkflow', () => {
       setupDecision: 'inherit'
     })
     // The input is what the store receives, so the fake ids must not survive into it.
-    expect(newWorkflowInput(source, target ?? undefined)).toMatchObject({
+    const input = newWorkflowInput(source, target ?? undefined)
+    expect(input).toMatchObject({
       runContext: { repoId: 'repo-1' },
       workspace: { mode: 'new_per_run' },
       creationKey: 'creation-key'
     })
+    // Why: the canvas cannot create an end node, so the starter fixture is the only source of one
+    // for a new workflow.
+    expect(input.nodes.filter((node) => node.kind === 'end')).toHaveLength(1)
   })
 
   it('refuses to invent a target when no project can run on this host', () => {

@@ -68,7 +68,7 @@ describe('AgentsWorkflowInspector channel hint', () => {
     expect(screen.getByText(/only reports a quiet pane/i)).not.toBeNull()
   })
 
-  it('does not claim a file for a terminal node, which ends the branch', () => {
+  it('does not claim a file for a node that only feeds the end node', () => {
     render(
       <AgentsWorkflowInspector
         node={agentNode('gemini')}
@@ -89,7 +89,7 @@ describe('AgentsWorkflowInspector channel hint', () => {
     expect(screen.queryByText(/agent transcript|workflow file|quiet pane/i)).toBeNull()
   })
 
-  it('offers no terminal toggle: the graph decides which node ends the workflow', () => {
+  it('offers no terminal toggle: end is an explicit node in the graph', () => {
     renderInspector(channel())
 
     expect(screen.queryByText(/terminal node/i)).toBeNull()

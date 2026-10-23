@@ -18644,6 +18644,7 @@
         },
         "node": {
           "start": "Start",
+          "end": "End",
           "agent": "Agent",
           "condition": "Condition",
           "loop": "Loop",

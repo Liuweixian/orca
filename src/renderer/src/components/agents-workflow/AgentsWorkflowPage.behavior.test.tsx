@@ -93,8 +93,12 @@ describe('AgentsWorkflowPageSurface', () => {
 
     expect(onDefinitionChange).toHaveBeenCalledOnce()
     const updated = onDefinitionChange.mock.calls[0]?.[0]
-    expect(updated?.nodes.map((node: { id: string }) => node.id)).toEqual(['start', 'publish'])
-    expect(updated?.edges).toHaveLength(0)
+    expect(updated?.nodes.map((node: { id: string }) => node.id)).toEqual([
+      'start',
+      'publish',
+      'end'
+    ])
+    expect(updated?.edges.map((edge: { id: string }) => edge.id)).toEqual(['publish-end'])
   })
 
   it('does not offer a working delete for the start node', () => {
@@ -143,7 +147,10 @@ describe('AgentsWorkflowPageSurface', () => {
 
     expect(onDefinitionChange).toHaveBeenCalledOnce()
     const updated = onDefinitionChange.mock.calls[0]?.[0]
-    expect(updated?.edges.map((entry: { id: string }) => entry.id)).toEqual(['research-publish'])
+    expect(updated?.edges.map((entry: { id: string }) => entry.id)).toEqual([
+      'research-publish',
+      'publish-end'
+    ])
   })
 
   it('shows a workflow-level issue that has no node to attach to', () => {

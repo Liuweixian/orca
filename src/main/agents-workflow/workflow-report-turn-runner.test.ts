@@ -32,7 +32,7 @@ function node(): Node {
     position: { x: 0, y: 0 },
     agentId: 'aider',
     prompt: { source: 'work', bindings: {} },
-    terminal: true
+    terminal: false
   }
 }
 

@@ -67,13 +67,27 @@ function definition(
   nodes: AgentsWorkflowNode[],
   edges: AgentsWorkflowEdge[]
 ): AgentsWorkflowDefinition {
+  const withEnd = nodes.some((node) => node.kind === 'end')
+    ? nodes
+    : [...nodes, { id: 'end', kind: 'end' as const, title: 'End', position: { x: 0, y: 0 } }]
+  const withOutgoing = new Set(edges.map((entry) => entry.fromNodeId))
+  // Why wire sinks automatically: the graph must reach its end node, and this fixture keeps each
+  // case focused on the behavior under test instead of repeating a boundary edge. Conditions and
+  // loops are excluded: `default` is not a valid port for them.
+  const boundaryEdges = withEnd
+    .filter(
+      (node) =>
+        (node.kind === 'start' || node.kind === 'agent' || node.kind === 'command') &&
+        !withOutgoing.has(node.id)
+    )
+    .map((node) => edge(`to-end-${node.id}`, node.id, 'end'))
   return {
     schemaVersion: 1,
     id: 'workflow',
     revision: 1,
     name: 'Workflow',
-    nodes: [{ id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } }, ...nodes],
-    edges,
+    nodes: [{ id: 'start', kind: 'start', title: 'Start', position: { x: 0, y: 0 } }, ...withEnd],
+    edges: [...edges, ...boundaryEdges],
     runContext: {
       kind: 'workspace-run',
       projectId: 'project',
@@ -140,7 +154,7 @@ describe('executeAgentsWorkflowSchedule', () => {
       'Handle this turn.',
       'Summarize the turns.'
     ])
-    expect(result.executionTrace).toEqual(['start', 'loop', 'body', 'body', 'body', 'done'])
+    expect(result.executionTrace).toEqual(['start', 'loop', 'body', 'body', 'body', 'done', 'end'])
   })
 
   it('writes an iteration note and points the body prompt at it', async () => {
@@ -232,7 +246,7 @@ describe('executeAgentsWorkflowSchedule', () => {
     })
 
     expect(result.ok).toBe(true)
-    expect(result.executionTrace).toEqual(['start', 'check', 'large', 'summary'])
+    expect(result.executionTrace).toEqual(['start', 'check', 'large', 'summary', 'end'])
     expect(result.attempts.find((attempt) => attempt.nodeId === 'small')).toMatchObject({
       status: 'skipped'
     })
@@ -305,7 +319,7 @@ describe('executeAgentsWorkflowSchedule', () => {
     expect(result).toMatchObject({ ok: false, code: 'output_untrusted' })
   })
 
-  it('completes a terminal node from a pane snapshot without publishing a value', async () => {
+  it('completes a node that only feeds end from a pane snapshot without publishing a value', async () => {
     const workflow = definition(
       [agent('first', { source: 'work' }), agent('report', { source: 'report' })],
       [edge('start-first', 'start', 'first'), edge('first-report', 'first', 'report')]

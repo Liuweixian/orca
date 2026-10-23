@@ -1,4 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { mkdtempSync, rmSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AgentsWorkflowDefinition } from '../../shared/agents-workflow-types'
 import type { AgentsWorkflowRun } from '../../shared/agents-workflow-run-types'
 import { LOCAL_EXECUTION_HOST_ID } from '../../shared/execution-host'
@@ -36,13 +39,21 @@ function definition(): AgentsWorkflowDefinition {
         position: { x: 1, y: 0 },
         agentId: 'claude',
         prompt: { source: 'work' }
-      }
+      },
+      { id: 'end', kind: 'end', title: 'End', position: { x: 2, y: 0 } }
     ],
     edges: [
       {
         id: 'start-agent',
         fromNodeId: 'start',
         toNodeId: 'agent-1',
+        fromPort: 'default',
+        toPort: 'default'
+      },
+      {
+        id: 'agent-end',
+        fromNodeId: 'agent-1',
+        toNodeId: 'end',
         fromPort: 'default',
         toPort: 'default'
       }
@@ -100,10 +111,25 @@ function persistence(): AgentsWorkflowRunPersistence & { run: () => AgentsWorkfl
   }
 }
 
+const temporaryDirectories: string[] = []
+
+afterEach(() => {
+  for (const directory of temporaryDirectories.splice(0)) {
+    rmSync(directory, { recursive: true, force: true })
+  }
+})
+
+function temporaryWorkspacePath(): string {
+  const directory = mkdtempSync(join(tmpdir(), 'orca-agents-workflow-run-'))
+  temporaryDirectories.push(directory)
+  return directory
+}
+
 const workspace = async () => ({
   ok: true as const,
   workspaceId: 'workspace-1',
-  workspacePath: '/repo/workspace-1',
+  // Why a real directory: a node with a downstream connection saves its answer to the workspace.
+  workspacePath: temporaryWorkspacePath(),
   displayName: 'Workspace'
 })
 

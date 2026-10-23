@@ -260,10 +260,11 @@ export function AgentsWorkflowCanvas({
 
   const requestNodeDeletion = React.useCallback(
     (ids: string[]) => {
-      // The start node is structural: deleting it would leave nothing to run from.
-      const deletable = ids.filter(
-        (id) => definition.nodes.find((node) => node.id === id)?.kind !== 'start'
-      )
+      // Start and end are structural: deleting either would leave the graph without a boundary.
+      const deletable = ids.filter((id) => {
+        const kind = definition.nodes.find((node) => node.id === id)?.kind
+        return kind !== 'start' && kind !== 'end'
+      })
       if (deletable.length === 0) {
         // React Flow already removed the node locally; put it back when nothing may be deleted.
         resyncNodes()

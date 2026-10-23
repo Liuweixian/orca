@@ -49,13 +49,21 @@ function workflowInput(creationKey = 'create-1'): AgentsWorkflowCreateInput {
         position: { x: 1, y: 0 },
         agentId: 'claude',
         prompt: { source: 'report' }
-      }
+      },
+      { id: 'end', kind: 'end', title: 'End', position: { x: 2, y: 0 } }
     ],
     edges: [
       {
         id: 'start-report',
         fromNodeId: 'start',
         toNodeId: 'report',
+        fromPort: 'default',
+        toPort: 'default'
+      },
+      {
+        id: 'report-end',
+        fromNodeId: 'report',
+        toNodeId: 'end',
         fromPort: 'default',
         toPort: 'default'
       }
@@ -335,7 +343,7 @@ describe('agent workflow persistence', () => {
     await vi.waitFor(() => {
       expect(store.showAgentsWorkflowRun(started.id)).toMatchObject({
         status: 'completed',
-        executionTrace: ['start', 'agent', 'report']
+        executionTrace: ['start', 'agent', 'report', 'end']
       })
       expect(
         store

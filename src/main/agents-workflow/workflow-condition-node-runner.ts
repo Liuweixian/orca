@@ -25,6 +25,7 @@ export async function runWorkflowConditionNode(
 > {
   const turn = await runAgentsWorkflowAgentTurn({
     context,
+    // A condition always leaves through its named branches, so it never feeds only the end node.
     node: { ...node, terminal: false },
     source: node.prompt.source,
     ...(loopContext ? { loopContext } : {})

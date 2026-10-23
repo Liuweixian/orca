@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { compileWorkflowGraph, validateWorkflowDefinition } from './agents-workflow-graph'
-import { agentsWorkflowNodeIsTerminal } from './agents-workflow-graph-analysis'
 import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowEdge,
@@ -41,13 +40,25 @@ function definition(
   nodes: AgentsWorkflowNode[],
   edges: AgentsWorkflowEdge[]
 ): AgentsWorkflowDefinition {
+  const withEnd = nodes.some((node) => node.kind === 'end') ? nodes : [...nodes, end()]
+  const withOutgoing = new Set(edges.map((entry) => entry.fromNodeId))
+  // Why wire sinks automatically: every graph must reach its end node, and these fixtures focus on
+  // the rule under test instead of repeating a boundary edge. Conditions and loops are left alone:
+  // their named branches belong to the fixture, and `default` is not a valid port for them.
+  const boundaryEdges = withEnd
+    .filter(
+      (node) =>
+        (node.kind === 'start' || node.kind === 'agent' || node.kind === 'command') &&
+        !withOutgoing.has(node.id)
+    )
+    .map((node) => edge(`to-end-${node.id}`, node.id, 'end'))
   return {
     schemaVersion: 1,
     id: 'workflow',
     revision: 1,
     name: 'Workflow',
-    nodes,
-    edges,
+    nodes: withEnd,
+    edges: [...edges, ...boundaryEdges],
     runContext: {
       kind: 'workspace-run',
       projectId: 'project',
@@ -74,6 +85,15 @@ function start(): AgentsWorkflowNode {
   }
 }
 
+function end(): AgentsWorkflowNode {
+  return {
+    id: 'end',
+    kind: 'end',
+    title: 'End',
+    position: { x: 0, y: 0 }
+  }
+}
+
 function command(id: string, commandLine: string): AgentsWorkflowNode {
   return {
     id,
@@ -96,38 +116,56 @@ describe('workflow graph validation and compilation', () => {
       ok: true,
       graph: {
         startNodeId: 'start',
-        topologicalNodeIds: ['start', 'a', 'b']
+        topologicalNodeIds: ['start', 'a', 'b', 'end']
       }
     })
   })
 
-  it('rejects a graph that ends at more than one node', () => {
+  it('accepts a workflow that goes straight from start to end', () => {
     const workflow = definition(
-      [start(), node('a'), node('b')],
-      [edge('to-a', 'start', 'a'), edge('to-b', 'start', 'b')]
+      [start(), { id: 'end', kind: 'end', title: 'End', position: { x: 100, y: 0 } }],
+      [edge('start-end', 'start', 'end')]
+    )
+
+    expect(validateWorkflowDefinition(workflow)).toEqual([])
+    expect(compileWorkflowGraph(workflow)).toMatchObject({ ok: true })
+  })
+
+  it('rejects a graph with more than one end node', () => {
+    const workflow = definition(
+      [
+        start(),
+        node('a'),
+        { id: 'end-1', kind: 'end', title: 'End 1', position: { x: 0, y: 0 } },
+        { id: 'end-2', kind: 'end', title: 'End 2', position: { x: 0, y: 0 } }
+      ],
+      [edge('to-a', 'start', 'a'), edge('a-end-1', 'a', 'end-1'), edge('a-end-2', 'a', 'end-2')]
     )
     const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
 
-    expect(codes).toContain('terminal_node_count')
+    expect(codes).toContain('end_count')
     expect(compileWorkflowGraph(workflow)).toMatchObject({ ok: false })
   })
 
-  it('rejects a workflow whose only sink is not an agent', () => {
-    const workflow = definition([start()], [])
+  it('rejects an edge that leaves the end node', () => {
+    const workflow = definition(
+      [start(), node('a'), { id: 'end', kind: 'end', title: 'End', position: { x: 0, y: 0 } }],
+      [edge('to-a', 'start', 'a'), edge('a-end', 'a', 'end'), edge('end-a', 'end', 'a')]
+    )
     const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
 
-    expect(codes).toContain('terminal_node_kind')
+    expect(codes).toContain('invalid_source_port')
   })
 
-  it('treats the node no edge leaves as terminal, including a loop exit', () => {
-    expect(agentsWorkflowNodeIsTerminal(definition([start(), node('a')], []), 'a')).toBe(true)
-    const loopExit = definition(
-      [start(), node('exit'), node('after')],
-      [edge('exit-after', 'exit', 'after', { toPort: 'aggregate' })]
+  it('rejects a node whose path never reaches the end node', () => {
+    const workflow = definition(
+      [start(), node('a'), node('b')],
+      [edge('to-a', 'start', 'a'), edge('a-b', 'a', 'b'), edge('b-a', 'b', 'a')]
     )
+    const codes = validateWorkflowDefinition(workflow).map((entry) => entry.code)
 
-    expect(agentsWorkflowNodeIsTerminal(loopExit, 'exit')).toBe(false)
-    expect(agentsWorkflowNodeIsTerminal(loopExit, 'after')).toBe(true)
+    expect(codes).toContain('node_not_reaching_end')
+    expect(compileWorkflowGraph(workflow)).toMatchObject({ ok: false })
   })
 
   it('compiles a single-layer loop', () => {
@@ -329,7 +367,7 @@ describe('workflow graph validation and compilation', () => {
     expect(compileWorkflowGraph(workflow)).toMatchObject({ ok: true })
   })
 
-  it('accepts a command node as the terminal node', () => {
+  it('accepts a command node immediately before the end node', () => {
     const workflow = definition(
       [start(), node('first'), command('run', 'pnpm build')],
       [edge('start-first', 'start', 'first'), edge('first-run', 'first', 'run')]

@@ -18275,6 +18275,7 @@
         },
         "node": {
           "start": "开始",
+          "end": "结束",
           "agent": "智能体",
           "condition": "条件",
           "loop": "循环"

@@ -41,7 +41,7 @@ export function AgentsWorkflowCanvasContextMenu({
       <ContextMenuContent>
         <ContextMenuItem
           variant="destructive"
-          disabled={nodeMenuNode.kind === 'start'}
+          disabled={nodeMenuNode.kind === 'start' || nodeMenuNode.kind === 'end'}
           onSelect={() => onDeleteNode(nodeMenuNode.id)}
         >
           <Trash2 />

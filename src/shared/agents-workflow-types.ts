@@ -17,6 +17,13 @@ const StartNodeSchema = z.strictObject({
   position: Position
 })
 
+const EndNodeSchema = z.strictObject({
+  id: NonEmptyId,
+  kind: z.literal('end'),
+  title: z.string(),
+  position: Position
+})
+
 const AgentNodeSchema = z.strictObject({
   id: NonEmptyId,
   kind: z.literal('agent'),
@@ -55,6 +62,7 @@ const LoopNodeSchema = z.strictObject({
 
 export const AgentsWorkflowNodeSchema = z.discriminatedUnion('kind', [
   StartNodeSchema,
+  EndNodeSchema,
   AgentNodeSchema,
   ConditionNodeSchema,
   CommandNodeSchema,

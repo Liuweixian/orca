@@ -1,10 +1,10 @@
 import { parseExecutionHostId } from './execution-host'
 import {
-  agentsWorkflowNodeIsTerminal,
   analyzeAgentsWorkflowGraph,
   type AgentsWorkflowGraphAnalysis
 } from './agents-workflow-graph-analysis'
 import { validateAgentsWorkflowControlRegions } from './agents-workflow-control-region-validation'
+import { validateAgentsWorkflowEndNode } from './agents-workflow-end-validation'
 import { agentsWorkflowPromptDeclaresDecision } from './agents-workflow-decision'
 import type {
   AgentsWorkflowDefinition,
@@ -45,6 +45,9 @@ function validSourcePort(node: AgentsWorkflowNode, edge: AgentsWorkflowEdge): bo
       return edge.fromPort === 'default'
     case 'loop':
       return edge.fromPort === 'each' || edge.fromPort === 'done'
+    case 'end':
+      // End is the sink of the graph, so it has no source port at all.
+      return false
   }
 }
 
@@ -114,31 +117,6 @@ function edgeIssues(
     }
   }
   return issues
-}
-
-function terminalNodeIssues(definition: AgentsWorkflowDefinition): AgentsWorkflowValidationIssue[] {
-  const terminals = definition.nodes.filter((node) =>
-    agentsWorkflowNodeIsTerminal(definition, node.id)
-  )
-  if (terminals.length !== 1) {
-    return [
-      issue({
-        code: 'terminal_node_count',
-        message: 'A workflow must end at exactly one node with no outgoing connection.'
-      })
-    ]
-  }
-  const terminal = terminals[0]
-  if (terminal.kind !== 'agent' && terminal.kind !== 'command') {
-    return [
-      issue({
-        code: 'terminal_node_kind',
-        message: 'The node that ends a workflow must be an agent or a command.',
-        nodeId: terminal.id
-      })
-    ]
-  }
-  return []
 }
 
 function nodePortIssues(definition: AgentsWorkflowDefinition): AgentsWorkflowValidationIssue[] {
@@ -255,7 +233,7 @@ export function validateParsedAgentsWorkflowDefinition(
   const issues = [
     ...edgeIssues(definition, analysis),
     ...nodePortIssues(definition),
-    ...terminalNodeIssues(definition)
+    ...validateAgentsWorkflowEndNode(definition)
   ]
   if (!definition.name.trim()) {
     issues.push(issue({ code: 'workflow_name_required', message: 'Workflow name is required.' }))

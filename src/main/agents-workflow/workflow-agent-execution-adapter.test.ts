@@ -257,7 +257,7 @@ describe('agents workflow execution adapter', () => {
     expect(file.run).not.toHaveBeenCalled()
   })
 
-  it('never puts an output contract on a terminal node, even on a file-only agent', async () => {
+  it('never puts an output contract on a node that only feeds end, even on a file-only agent', async () => {
     const structured = runner()
     const file = fileRunner()
     const transcript = transcriptRunner()
@@ -278,7 +278,7 @@ describe('agents workflow execution adapter', () => {
     expect(file.run).not.toHaveBeenCalled()
   })
 
-  it('still prefers the structured channel for a terminal node that has one', async () => {
+  it('still prefers the structured channel for a node that only feeds end', async () => {
     const structured = runner()
     structured.run = vi.fn(async () => ({
       ok: false as const,

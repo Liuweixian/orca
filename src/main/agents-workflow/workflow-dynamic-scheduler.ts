@@ -114,10 +114,14 @@ export async function executeAgentsWorkflowSchedule(input: {
     new Set([compiled.graph.startNodeId])
   )
   if (scheduleFailure) {
+    // Why skip start and end: they are structural, so they never own an attempt. Synthesizing one
+    // here would make the attempt list differ between failed and successful runs.
+    const endNodeId = input.definition.nodes.find((node) => node.kind === 'end')?.id
     for (const nodeId of mainNodeIds) {
       if (
         !attempts.some((attempt) => attempt.nodeId === nodeId) &&
-        nodeId !== compiled.graph.startNodeId
+        nodeId !== compiled.graph.startNodeId &&
+        nodeId !== endNodeId
       ) {
         attempts.push({
           ...createWorkflowAttempt(context, nodeId, 'skipped'),
@@ -127,6 +131,9 @@ export async function executeAgentsWorkflowSchedule(input: {
     }
     return scheduleFailure
   }
+  // Why after the loop: the end node settles without a checkpoint of its own, so without this the
+  // stored trace would stop one node short of the boundary.
+  await context.checkpoint()
   return {
     ok: true,
     attempts,

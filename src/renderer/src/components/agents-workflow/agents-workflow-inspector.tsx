@@ -17,7 +17,7 @@ export function AgentsWorkflowInspector({
   onChange
 }: {
   node: AgentsWorkflowNode | null
-  /** Whether the node ends the workflow; derived from the graph, because the canvas draws it. */
+  /** Whether the node feeds only the end node; derived from the graph, because the canvas draws it. */
   terminal: boolean
   issues: AgentsWorkflowValidationIssue[]
   /** What this host can do for the node's agent; null while it is unknown. */

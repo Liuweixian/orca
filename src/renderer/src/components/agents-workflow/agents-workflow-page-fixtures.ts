@@ -28,6 +28,12 @@ export function createAgentsWorkflowPageFixture(now = Date.now()): AgentsWorkflo
         position: { x: 620, y: 180 },
         agentId: 'claude',
         prompt: { source: 'Write the release notes for this change.' }
+      },
+      {
+        id: 'end',
+        kind: 'end',
+        title: 'End',
+        position: { x: 900, y: 180 }
       }
     ],
     edges: [
@@ -42,6 +48,13 @@ export function createAgentsWorkflowPageFixture(now = Date.now()): AgentsWorkflo
         id: 'research-publish',
         fromNodeId: 'research',
         toNodeId: 'publish',
+        fromPort: 'default',
+        toPort: 'default'
+      },
+      {
+        id: 'publish-end',
+        fromNodeId: 'publish',
+        toNodeId: 'end',
         fromPort: 'default',
         toPort: 'default'
       }

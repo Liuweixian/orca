@@ -286,9 +286,9 @@ export function agentsWorkflowAgentChannelPlanEntries(): readonly AgentsWorkflow
 }
 
 /**
- * The channels this node may take, in registry order. A terminal node ends its branch, so it never
- * writes an output file; a non-terminal node never reads the screen, because screen text is not a
- * value a downstream node may bind.
+ * The channels this node may take, in registry order. A terminal node feeds only the end node, so
+ * it never writes an output file; any other node never reads the screen, because screen text is not
+ * a value a downstream node may bind.
  */
 export function agentsWorkflowNodeChannels(
   plan: AgentsWorkflowAgentChannelPlan,
