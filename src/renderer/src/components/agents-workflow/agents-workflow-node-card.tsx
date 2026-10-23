@@ -15,7 +15,9 @@ import { cn } from '@/lib/utils'
 import { translate } from '@/i18n/i18n'
 import type { AgentsWorkflowCanvasNode } from './agents-workflow-canvas-model'
 
-const HANDLE_CLASS = 'size-2.5 border-2 border-background bg-foreground'
+// Why `!`: the imported @xyflow stylesheet is unlayered, so its 6px `.react-flow__handle` size and
+// handle background always outrank plain Tailwind utilities.
+const HANDLE_CLASS = 'size-[15px]! border-[1.5px]! border-muted-foreground! bg-background!'
 
 function nodeKindLabel(kind: AgentsWorkflowCanvasNode['data']['workflowNode']['kind']): string {
   switch (kind) {
