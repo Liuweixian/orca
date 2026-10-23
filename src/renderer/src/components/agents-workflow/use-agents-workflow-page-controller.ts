@@ -21,6 +21,7 @@ import {
   workflowUpdateFields
 } from './agents-workflow-page-inputs'
 import { reportDefinitionFailure } from './agents-workflow-definition-errors'
+import { takeRequestedAgentsWorkflow } from './agents-workflow-pending-request'
 import {
   createAgentsWorkflow,
   deleteAgentsWorkflow,
@@ -141,7 +142,8 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
       if (disposed) {
         return
       }
-      const selected = next[0]
+      // Why through the store: another surface may have asked for a specific workflow.
+      const selected = takeRequestedAgentsWorkflow(next)
       if (selected) {
         await selectWorkflow(selected.id)
       } else {

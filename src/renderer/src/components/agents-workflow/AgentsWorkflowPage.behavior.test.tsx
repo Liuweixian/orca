@@ -1,7 +1,8 @@
 // @vitest-environment happy-dom
 
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
+import { useAppStore } from '@/store'
 import { AgentsWorkflowPageSurface } from './AgentsWorkflowPageSurface'
 import { createAgentsWorkflowPageFixture } from './agents-workflow-page-fixtures'
 import type { AgentsWorkflowPageController } from './use-agents-workflow-page-controller'
@@ -21,6 +22,8 @@ class ResizeObserverMock {
   disconnect(): void {}
 }
 
+const initialState = useAppStore.getInitialState()
+
 describe('AgentsWorkflowPageSurface', () => {
   beforeEach(() => {
     vi.stubGlobal('ResizeObserver', ResizeObserverMock)
@@ -35,6 +38,7 @@ describe('AgentsWorkflowPageSurface', () => {
   afterEach(() => {
     cleanup()
     vi.unstubAllGlobals()
+    useAppStore.setState(initialState, true)
   })
 
   it('copies the workflow JSON through the app clipboard bridge', async () => {
@@ -203,6 +207,93 @@ describe('AgentsWorkflowPageSurface', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Clear' }))
 
     expect(clearRunHistory).toHaveBeenCalledOnce()
+  })
+})
+
+describe('AgentsWorkflowPageSurface workflow requests', () => {
+  beforeEach(() => {
+    vi.stubGlobal('ResizeObserver', ResizeObserverMock)
+  })
+
+  afterEach(() => {
+    cleanup()
+    vi.unstubAllGlobals()
+    useAppStore.setState(initialState, true)
+  })
+
+  it('opens the workflow another surface asked for', async () => {
+    const definition = createAgentsWorkflowPageFixture(100)
+    const selectWorkflow = vi.fn(async () => undefined)
+    render(
+      <AgentsWorkflowPageSurface
+        controller={controller(definition, vi.fn(), { selectWorkflow, dirty: false })}
+      />
+    )
+
+    act(() => useAppStore.getState().openAgentsWorkflowPageOn('other-workflow'))
+
+    await waitFor(() => expect(selectWorkflow).toHaveBeenCalledWith('other-workflow'))
+  })
+
+  it('does not reload the workflow that is already open', async () => {
+    const definition = createAgentsWorkflowPageFixture(100)
+    const selectWorkflow = vi.fn(async () => undefined)
+    render(
+      <AgentsWorkflowPageSurface
+        controller={controller(definition, vi.fn(), { selectWorkflow, dirty: false })}
+      />
+    )
+
+    act(() => useAppStore.getState().openAgentsWorkflowPageOn(definition.id))
+
+    await waitFor(() => expect(useAppStore.getState().pendingAgentsWorkflowDefinitionId).toBeNull())
+    expect(selectWorkflow).not.toHaveBeenCalled()
+  })
+
+  it('opens a workflow again after it was opened, left, and clicked again', async () => {
+    const definition = createAgentsWorkflowPageFixture(100)
+    const selectWorkflow = vi.fn(async () => undefined)
+    const { rerender } = render(
+      <AgentsWorkflowPageSurface
+        controller={controller(definition, vi.fn(), { selectWorkflow, dirty: false })}
+      />
+    )
+
+    act(() => useAppStore.getState().openAgentsWorkflowPageOn('other-workflow'))
+    await waitFor(() => expect(selectWorkflow).toHaveBeenCalledWith('other-workflow'))
+
+    // Why rerender: the page moved on to another workflow, which is the state that used to make
+    // a second request for the original one disappear.
+    rerender(
+      <AgentsWorkflowPageSurface
+        controller={controller({ ...definition, id: 'other-workflow' }, vi.fn(), {
+          selectWorkflow,
+          dirty: false
+        })}
+      />
+    )
+    selectWorkflow.mockClear()
+
+    act(() => useAppStore.getState().openAgentsWorkflowPageOn(definition.id))
+
+    await waitFor(() => expect(selectWorkflow).toHaveBeenCalledWith(definition.id))
+  })
+
+  it('asks before dropping unsaved edits when another surface opens a workflow', async () => {
+    const definition = createAgentsWorkflowPageFixture(100)
+    const selectWorkflow = vi.fn(async () => undefined)
+    render(
+      <AgentsWorkflowPageSurface controller={controller(definition, vi.fn(), { selectWorkflow })} />
+    )
+
+    act(() => useAppStore.getState().openAgentsWorkflowPageOn('other-workflow'))
+
+    expect(await screen.findByText('Discard unsaved changes?')).not.toBeNull()
+    expect(selectWorkflow).not.toHaveBeenCalled()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
+
+    expect(selectWorkflow).toHaveBeenCalledWith('other-workflow')
   })
 })
 

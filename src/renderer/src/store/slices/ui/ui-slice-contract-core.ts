@@ -194,7 +194,12 @@ export type UISliceCore = {
   openAutomationsPage: () => void
   closeAutomationsPage: () => void
   openAgentsWorkflowPage: () => void
+  /** Opens the page on one workflow; the page consumes the request once it can select it. */
+  openAgentsWorkflowPageOn: (workflowId: string) => void
   closeAgentsWorkflowPage: () => void
+  /** Set when another surface opens the page on a specific workflow; the page consumes it. */
+  pendingAgentsWorkflowDefinitionId: string | null
+  setPendingAgentsWorkflowDefinitionId: (workflowId: string | null) => void
   openSpacePage: () => void
   closeSpacePage: () => void
   openSkillsPage: () => void

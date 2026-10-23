@@ -18011,6 +18011,8 @@
           "emptyTitle": "No workflows for this project",
           "emptyCopy": "Create a workflow in the Workflows page and it will show up here.",
           "openPage": "Open Workflows page",
+          "open": "Open",
+          "openWorkflow": "Open {{value0}}",
           "run": "Run {{value0}}",
           "runBlocked": "Fix this workflow’s issues before running it."
         }
@@ -18656,6 +18658,10 @@
       },
       "agents-workflow": {
         "newAgent": "New agent",
+        "target": {
+          "newBranchFrom": "New branch from {{value0}}",
+          "defaultBranch": "default branch"
+        },
         "newCondition": "New condition",
         "conditionPromptTemplate": "Read the answer this node inherits, then decide whether it meets this condition:\n\n<write the condition here>\n\nAnswer with a single JSON object and nothing else: {{yes}} when the condition holds, {{no}} when it does not.",
         "newLoop": "New loop",

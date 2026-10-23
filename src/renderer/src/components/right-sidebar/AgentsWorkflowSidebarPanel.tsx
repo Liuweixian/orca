@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Play, RefreshCw } from 'lucide-react'
+import { Play, RefreshCw, SquareArrowOutUpRight } from 'lucide-react'
 import { toast } from 'sonner'
 import { useAppStore } from '@/store'
 import { Button } from '@/components/ui/button'
@@ -26,6 +26,7 @@ export default function AgentsWorkflowSidebarPanel(): React.JSX.Element {
   const repos = useAppStore((s) => s.repos)
   const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
   const openAgentsWorkflowPage = useAppStore((s) => s.openAgentsWorkflowPage)
+  const openAgentsWorkflowPageOn = useAppStore((s) => s.openAgentsWorkflowPageOn)
   const [workflows, setWorkflows] = useState<AgentsWorkflowDefinition[]>([])
   const [loading, setLoading] = useState(true)
   const [loadFailed, setLoadFailed] = useState(false)
@@ -189,14 +190,29 @@ export default function AgentsWorkflowSidebarPanel(): React.JSX.Element {
                   key={workflow.id}
                   className="flex items-center gap-2 rounded-md px-2 py-1.5 hover:bg-accent/50"
                 >
-                  {/* Why not a link: the page always selects its own first workflow, so a row that
-                      looked clickable would open a different workflow and hide this sidebar. */}
                   <div className="min-w-0 flex-1">
                     <div className="truncate text-sm font-medium text-foreground">
                       {workflow.name}
                     </div>
                     <div className="mt-0.5 truncate text-xs text-muted-foreground">{workspace}</div>
                   </div>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="xs"
+                    onClick={() => openAgentsWorkflowPageOn(workflow.id)}
+                    aria-label={translate(
+                      'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.openWorkflow',
+                      'Open {{value0}}',
+                      { value0: workflow.name }
+                    )}
+                  >
+                    <SquareArrowOutUpRight className="size-3" />
+                    {translate(
+                      'auto.components.rightSidebar.AgentsWorkflowSidebarPanel.open',
+                      'Open'
+                    )}
+                  </Button>
                   <Button
                     type="button"
                     variant="secondary"

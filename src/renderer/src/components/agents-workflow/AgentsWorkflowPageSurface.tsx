@@ -56,6 +56,8 @@ function AgentsWorkflowLoadedSurface({
   const onDefinitionChange = controller.setDefinition
   const repos = useAppStore((s) => s.repos)
   const worktreesByRepo = useAppStore((s) => s.worktreesByRepo)
+  const pendingWorkflowId = useAppStore((s) => s.pendingAgentsWorkflowDefinitionId)
+  const setPendingWorkflowId = useAppStore((s) => s.setPendingAgentsWorkflowDefinitionId)
   const targetLabels = React.useMemo(
     () => describeAgentsWorkflowTarget(definition, repos, worktreesByRepo),
     [definition, repos, worktreesByRepo]
@@ -99,6 +101,18 @@ function AgentsWorkflowLoadedSurface({
     },
     [controller]
   )
+
+  // Why here: the page stays mounted while the right sidebar is open, so a row clicked there
+  // arrives as a store change. Reusing requestSwitch keeps the unsaved-edits guard in one place.
+  React.useEffect(() => {
+    if (!pendingWorkflowId) {
+      return
+    }
+    setPendingWorkflowId(null)
+    if (pendingWorkflowId !== definition.id) {
+      requestSwitch({ kind: 'select', id: pendingWorkflowId })
+    }
+  }, [definition.id, pendingWorkflowId, requestSwitch, setPendingWorkflowId])
 
   const confirmDiscard = React.useCallback(() => {
     const pending = pendingDiscard

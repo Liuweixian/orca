@@ -44,11 +44,20 @@ export function createUiViewActions(set: UISliceSet, get: UISliceGet): Partial<U
             : state.activeView
       }))
     },
+    openAgentsWorkflowPageOn: (workflowId) => {
+      // Why carry the id: the page otherwise opens its first workflow, so a row clicked
+      // elsewhere would show a different workflow than the one that was clicked.
+      set({ pendingAgentsWorkflowDefinitionId: workflowId })
+      get().openAgentsWorkflowPage()
+    },
     closeAgentsWorkflowPage: () =>
       set((state) => ({
         activeView: state.previousViewBeforeAgentsWorkflow,
+        pendingAgentsWorkflowDefinitionId: null,
         worktreeNavHistoryIndex: rewindHistoryIndexPastView(state, 'agents-workflow')
       })),
+    setPendingAgentsWorkflowDefinitionId: (workflowId) =>
+      set({ pendingAgentsWorkflowDefinitionId: workflowId }),
     openSpacePage: () => {
       get().recordFeatureInteraction?.('workspace-cleanup')
       if (typeof window !== 'undefined' && window.api?.workspaceSpace?.openWindow) {

@@ -31,9 +31,19 @@ export function describeAgentsWorkflowTarget(
       normalizeExecutionHostId(runContext.hostId) ?? LOCAL_EXECUTION_HOST_ID
     ),
     project: project?.displayName ?? runContext.projectId,
+    // Why the branch for a new run: that run starts on a branch that does not exist yet, so the
+    // meaningful detail is where it branches from.
     workspace:
       workspace.mode === 'existing'
         ? (worktree?.displayName ?? workspace.workspaceId)
-        : translate('auto.components.automations.AutomationEditorDialog.6ff66f9012', 'New run')
+        : translate(
+            'auto.components.agents-workflow.target.newBranchFrom',
+            'New branch from {{value0}}',
+            {
+              value0:
+                workspace.baseBranch ??
+                translate('auto.components.agents-workflow.target.defaultBranch', 'default branch')
+            }
+          )
   }
 }

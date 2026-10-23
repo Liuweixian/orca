@@ -1,6 +1,6 @@
 // @vitest-environment happy-dom
 
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
@@ -70,5 +70,19 @@ describe('AgentsWorkflowSidebarPanel Run guard', () => {
 
     expect((validRun as HTMLButtonElement).disabled).toBe(false)
     expect((brokenRun as HTMLButtonElement).disabled).toBe(true)
+  })
+})
+
+describe('AgentsWorkflowSidebarPanel row navigation', () => {
+  it('opens the workflows page on the workflow that was clicked', async () => {
+    const openAgentsWorkflowPageOn = vi.fn()
+    useAppStore.setState({ openAgentsWorkflowPageOn })
+    listAgentsWorkflows.mockResolvedValue([validWorkflow(), brokenWorkflow()])
+    renderPanel()
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Open Broken workflow' }))
+
+    // Why the action not the store field: the row only has to hand over the clicked id.
+    expect(openAgentsWorkflowPageOn).toHaveBeenCalledWith('broken')
   })
 })
