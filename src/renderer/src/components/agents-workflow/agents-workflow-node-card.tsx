@@ -111,10 +111,14 @@ function AgentsWorkflowNodeCardComponent({
   const node = data.workflowNode
   const hasErrors = data.issues.some((entry) => entry.severity === 'error')
   const agentId = node.kind === 'agent' || node.kind === 'condition' ? node.agentId : null
+  // Start/end keep a fixed compact size; other kinds share one wider column width so a
+  // stacked graph stays aligned, and their content wraps inside it.
+  const isTerminal = node.kind === 'start' || node.kind === 'end'
   return (
     <div
       className={cn(
-        'w-32 rounded-xl border bg-card px-4 py-3 text-card-foreground shadow-xs',
+        'rounded-xl border bg-card px-4 py-3 text-card-foreground shadow-xs',
+        isTerminal ? 'w-32' : 'w-56',
         selected ? 'border-ring ring-2 ring-ring' : 'border-border',
         hasErrors && 'border-destructive'
       )}
@@ -124,7 +128,7 @@ function AgentsWorkflowNodeCardComponent({
         <div className="mt-0.5 text-muted-foreground">
           <NodeKindIcon kind={node.kind} />
         </div>
-        <div className="min-w-0 flex-1 truncate text-sm font-semibold">{node.title}</div>
+        <div className="min-w-0 flex-1 break-words text-sm font-semibold">{node.title}</div>
         {hasErrors ? <AlertTriangle className="size-4 shrink-0 text-destructive" /> : null}
       </div>
       {node.kind === 'start' || node.kind === 'end' ? null : (
@@ -145,7 +149,7 @@ function AgentsWorkflowNodeCardComponent({
         </div>
       )}
       {node.kind === 'command' && node.command.trim() ? (
-        <div className="mt-1 truncate font-mono text-xs text-muted-foreground">{node.command}</div>
+        <div className="mt-1 break-all font-mono text-xs text-muted-foreground">{node.command}</div>
       ) : null}
       <SourceHandles node={node} />
     </div>
