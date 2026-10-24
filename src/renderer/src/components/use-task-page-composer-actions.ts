@@ -1,7 +1,7 @@
 import { useCallback } from 'react'
 import type { LinearIssue } from '../../../shared/linear/issue-types'
 import type { LinearWorkspaceSelection } from '../../../shared/linear/workspace-types'
-import type { JiraIssue } from '../../../shared/jira-types'
+import type { JiraIssue } from '../../../shared/jira/jira-types'
 import { buildLinearIssueLinkedWorkItem } from '@/lib/linear-linked-work-item'
 import { getLinearIssueWorkspaceName } from '../../../shared/workspace-name'
 import { useAppStore } from '@/store'
@@ -12,7 +12,7 @@ import { bindTaskPageJiraItemSourceContext } from './task-page-jira-item-source-
 import type { LinkedWorkItemSummary } from '@/lib/new-workspace'
 import { shouldHideTaskPageListChrome } from '@/components/task-page-list-chrome-visibility'
 import { getJiraIssueWorkspaceSeed } from './task-page-source-context'
-import { findJiraIssueDefaultRepo } from '../../../shared/jira-project-reference'
+import { findJiraIssueDefaultRepo } from '../../../shared/jira/jira-project-reference'
 import { getRepoWorkspaceCreationTargetHint } from '@/lib/project-host-workspace-target'
 import type { TaskPageBrowserTabModel } from './use-task-page-browser-tab'
 export function useTaskPageComposerActions(model: TaskPageBrowserTabModel) {

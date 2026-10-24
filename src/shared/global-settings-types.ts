@@ -1,4 +1,5 @@
 import type { TelemetrySettings } from './telemetry-settings-types'
+import type { BrowserProfileScope } from './browser-profile-scope'
 import type { GlobalSettingsBase } from './global-settings-base'
 import type { ExecutionHostId } from './execution-host'
 import type { OrcaWorkspaceLayout } from './orca-workspace-layout'
@@ -48,9 +49,6 @@ export type { WorktreeVisibilityDefaults } from './repo-types'
 
 /** MiniMax account region used to select the quota endpoint. */
 export type MiniMaxEndpoint = 'overseas' | 'cn'
-
-/** Saved page for one Tasks-page browser tab. */
-export type TaskPageBrowserTab = { id: string; url: string }
 
 export type GlobalSettings = GlobalSettingsBase & {
   workspaceDir: string
@@ -292,6 +290,8 @@ export type GlobalSettings = GlobalSettingsBase & {
   floatingTerminalEnabled: boolean
   /** Main-side new-page kill switch for paired Electron client-hosted browser placement. */
   browserClientHostedRemoteEnabled?: boolean
+  /** Browser profile new tabs in a workspace use; missing = 'shared' (the Default profile). */
+  browserProfileScope?: BrowserProfileScope
   /** Routes SSH-workspace browser pages through the workspace's SSH host; off = plain local browsing. */
   browserSshWorkspaceRoutingEnabled?: boolean
   /** Per-target opt-outs recorded from the routing error card's "Browse from this device instead". */
@@ -398,8 +398,6 @@ export type GlobalSettings = GlobalSettingsBase & {
   /** Persisted Linear team selection (tasks view). Same nullable-array pattern as
    *  defaultRepoSelection: null = sticky-all, string[] = frozen subset of team IDs. */
   defaultLinearTeamSelection: string[] | null
-  /** Saved pages shown as browser tabs in the Tasks page; each entry renders one tab button. */
-  taskPageBrowserTabs?: TaskPageBrowserTab[]
   /** Session cookie for OpenCode Go rate-limit fetching. Stored encrypted. */
   opencodeSessionCookie: string
   /** Optional OpenCode Go workspace ID override; when set, skips the workspaces lookup and fetches usage directly. */

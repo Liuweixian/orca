@@ -1,4 +1,5 @@
-import type { TaskPageBrowserTab } from '../../../../../shared/global-settings-types'
+import { createBrowserUuid } from '@/lib/browser-uuid'
+import type { TaskPageBrowserTab } from '../../../../../shared/task-page-browser-settings'
 
 /** Selection state for the Tasks-page browser strip: a tab id, the add-new-tab flow, or inactive. */
 export const TASK_PAGE_BROWSER_NEW_TAB_SELECTION = 'new'
@@ -19,10 +20,7 @@ export function readTaskPageBrowserTabs(
 }
 
 export function createTaskPageBrowserTabId(): string {
-  return (
-    globalThis.crypto?.randomUUID?.() ??
-    `task-page-browser-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
-  )
+  return `task-page-browser-${createBrowserUuid()}`
 }
 
 /** Tab button label: the hostname reads fastest; fall back to the raw URL for file:// and odd input. */

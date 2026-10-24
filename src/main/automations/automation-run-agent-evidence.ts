@@ -37,7 +37,7 @@ export function judgeIdleRun(
   const verdict = judgeIdleAgentTurn(
     {
       rows: run.terminalPaneKey ? evidence.getAgentStatusRowsForPane(run.terminalPaneKey) : [],
-      // A reused pane's earlier `done` ended before this run's prompt went in.
+      // Ignore completion evidence from before this run’s prompt.
       sentAt: run.dispatchedAt ?? runStartedAt,
       tail,
       readAgentCommands: () => evidence.agentCommandsForRun(run)

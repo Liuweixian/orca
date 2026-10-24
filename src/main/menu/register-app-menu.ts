@@ -42,8 +42,7 @@ type RegisterAppMenuOptions = {
   onToggleAppearance: (key: AppearanceMenuKey) => void
   getAppearanceState: () => AppearanceMenuState
   getKeybindings?: () => KeybindingOverrides | undefined
-  // Why: the macOS app-menu title. Passed the per-branch dev label since
-  // app.name is now pinned to a stable value for Keychain-key stability.
+  // app.name stays stable for Keychain; menus use the per-branch development label.
   appMenuLabel?: string
   onQuit?: () => void
 }
@@ -93,9 +92,7 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
     webContents.reload()
   }
 
-  // Why: modifier-click update checks are hidden power-user affordances.
-  // Extracted so the macOS app-menu entry and Windows/Linux Help entry share
-  // identical RC/perf channel routing.
+  // Share modifier-click release-channel routing across platform-specific update menu locations.
   const checkForUpdatesClick: Electron.MenuItemConstructorOptions['click'] = (
     _menuItem,
     _window,
@@ -146,11 +143,6 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
     click: (_menuItem, window) => onOpenCrashReport(window)
   }
 
-  // Why: the macOS app-menu (named after the app) is mandatory on darwin and
-  // owns hide/hideOthers/unhide/services/quit roles that only make sense in
-  // the system menu bar. On Windows/Linux that menu would render as a
-  // redundant "Orca" entry with roles that don't apply, so we omit it there
-  // and distribute its items across File / Help instead.
   const macAppMenu: Electron.MenuItemConstructorOptions = {
     label: options.appMenuLabel ?? app.name,
     submenu: [
@@ -170,13 +162,10 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
 
   const fileMenu: Electron.MenuItemConstructorOptions = {
     label: translateMain('menu.file', 'File'),
-    // Why: on Windows/Linux there is no app-named menu, so Settings and
-    // Quit live under File — matching the common platform convention and
-    // keeping all user-facing actions reachable from the in-window menu bar.
     submenu: [settingsItem, { type: 'separator' }, createAppMenuQuitItem(options.onQuit)]
   }
 
-  // Why: keep native menu hints while letting non-macOS Ctrl+Z/Ctrl+Y reach the focused terminal or DOM control.
+  // Keep menu hints while non-macOS Ctrl+Z/Ctrl+Y reach focused terminal or DOM controls.
   const undoRedoOptions: Electron.MenuItemConstructorOptions = isMac
     ? {}
     : { registerAccelerator: false }
@@ -196,11 +185,10 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
         label: translateMain('menu.paste', 'Paste'),
         accelerator: 'CmdOrCtrl+V',
         click: () => {
-          // Why: a focused terminal/native-chat pane is not a native editable
-          // control, so raw Electron paste cannot know which Orca surface owns it.
+          // Electron paste cannot resolve ownership among Orca terminal/chat surfaces.
           const focusedWindow = BrowserWindow.getFocusedWindow()
           if (focusedWindow) {
-            // Why: focused DevTools own the paste, not the terminal the renderer last focused (#16285).
+            // Focused DevTools must own paste over the renderer's last-focused terminal (#16285).
             const nativeTarget = resolveNativeEditTarget(focusedWindow)
             if (nativeTarget) {
               return nativeTarget.paste()
@@ -209,8 +197,7 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
             return
           }
 
-          // Why: a macOS native panel (open/save, Go to Folder) leaves no focused
-          // BrowserWindow, so overriding the paste role would strand Cmd+V as a no-op.
+          // Native macOS panels leave no focused BrowserWindow; preserve first-responder Cmd+V.
           if (isMac) {
             Menu.sendActionToFirstResponder('paste:')
           }
@@ -259,11 +246,7 @@ function buildAndApplyMenu(options: RegisterAppMenuOptions): void {
       },
       { type: 'separator' },
       {
-        // Why: display-only shortcut hint — do NOT set `accelerator` here.
-        // Menu accelerators intercept key events at the main-process level
-        // before the renderer's keydown handler fires. The overlay
-        // mutual-exclusion logic (which runs in the renderer) would be
-        // bypassed if this were a real accelerator binding.
+        // Native accelerators would bypass the renderer's overlay mutual-exclusion handling.
         label: `${translateMain('menu.openWorktreePalette', 'Open Worktree Palette')}\t${shortcutLabel('worktree.palette')}`
       },
       { type: 'separator' },
@@ -311,10 +294,7 @@ export function registerAppMenu(options: RegisterAppMenuOptions): void {
   buildAndApplyMenu(options)
 }
 
-/** Rebuild the application menu using the options from the most recent
- *  registerAppMenu call. Used to refresh checkbox `checked` state when
- *  settings that feed the Appearance submenu change, since Electron's
- *  menu items do not reactively re-render when the backing state updates. */
+/** Rebuild from the latest options because Electron does not reactively update checked state. */
 export function rebuildAppMenu(): void {
   if (lastRegisterOptions) {
     buildAndApplyMenu(lastRegisterOptions)
