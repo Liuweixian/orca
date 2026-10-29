@@ -13,6 +13,7 @@ import {
   structuredAgentSessionSendBody
 } from '../../shared/structured-agent-session-send-mutation'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
+import type { AgentSessionRecordStore } from '../runtime/agent-session-record-store'
 import { closeStructuredAgentSessionChild } from '../runtime/structured-agent-session-close'
 import { structuredAgentRuntimeMetadata } from '../runtime/structured-agent-runtime-metadata'
 import { observeStructuredSession } from '../runtime/structured-worker-authority'
@@ -21,7 +22,10 @@ import { getStructuredAgentSessionHost } from '../native-chat/agent-session-wire
 import type { StructuredAgentSessionHost } from '../native-chat/agent-session-wire/structured-agent-session-host'
 import type { AgentsWorkflowStructuredTurnRunner } from './workflow-agent-execution-adapter'
 import { journalTurnItemIdForProviderTurn } from './provider-turn-journal-item'
-import { waitStructuredAgentTurnCompletion } from './wait-structured-agent-turn-completion'
+import {
+  AgentsWorkflowAgentSessionClosedError,
+  waitStructuredAgentTurnCompletion
+} from './wait-structured-agent-turn-completion'
 
 type StructuredWorkflowRuntime = Pick<
   OrcaRuntimeService,
@@ -31,7 +35,10 @@ type StructuredWorkflowRuntime = Pick<
 type WorkflowStructuredHost = Pick<
   StructuredAgentSessionHost,
   'cancel' | 'journalSnapshot' | 'send' | 'subscribeTurnCompletions'
->
+> & {
+  /** Committed provider deaths, so a chat the user closes ends its node instead of stalling it. */
+  readonly deps: { readonly store: Pick<AgentSessionRecordStore, 'onDeathEvidence'> }
+}
 
 type WorkflowSessionCreator = (input: {
   caller: { callerKey: string }
@@ -162,6 +169,9 @@ export class WorkflowStructuredTurnRunner implements AgentsWorkflowStructuredTur
     try {
       return await this.executeTurn(active, input.prompt, input.signal)
     } catch (error) {
+      if (error instanceof AgentsWorkflowAgentSessionClosedError) {
+        return refusal(error.code, error.message, true)
+      }
       return refusal(
         input.signal?.aborted ? 'cancelled' : 'structured_agent_turn_failed',
         error instanceof Error ? error.message : String(error),
@@ -247,6 +257,7 @@ export class WorkflowStructuredTurnRunner implements AgentsWorkflowStructuredTur
       sessionId: active.sessionId,
       subscriberId: `agents-workflow:${clientMessageId}`,
       signal,
+      onSessionDeath: (listener) => active.host.deps.store.onDeathEvidence(listener),
       send: async () => {
         const sent = await active.host.send(active.caller, {
           ...structuredAgentSessionMessageSendMutation({

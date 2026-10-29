@@ -70,7 +70,16 @@ function agentInput(signal?: AbortSignal) {
 
 function harness() {
   let emit: (event: AgentSessionTurnCompletionEvent) => void = () => undefined
+  let onDeathEvidence: (sessionId: string) => void = () => undefined
   const host = {
+    deps: {
+      store: {
+        onDeathEvidence: vi.fn((listener: (sessionId: string) => void) => {
+          onDeathEvidence = listener
+          return () => undefined
+        })
+      }
+    },
     subscribeTurnCompletions: vi.fn((subscriber) => {
       emit = subscriber.emit
       return () => undefined
@@ -110,6 +119,7 @@ function harness() {
   return {
     emit,
     getEmit: () => emit,
+    reportDeath: (sessionId: string) => onDeathEvidence(sessionId),
     host,
     runtime,
     createSession,
@@ -203,6 +213,22 @@ describe('WorkflowStructuredTurnRunner', () => {
     await scheduledRun
     await scheduled.runner.release('run-1', { reclaim: true })
     expect(lifecycle.close).toHaveBeenCalledOnce()
+  })
+
+  // Why: a closed chat publishes no completion, so the node must fail on the committed death
+  // instead of holding the run's workspace lock until the run budget expires.
+  it('fails the node when the chat it drives is closed mid-turn', async () => {
+    const rig = harness()
+    const running = rig.runner.run(agentInput())
+    await vi.waitFor(() => expect(rig.host.send).toHaveBeenCalledOnce())
+
+    rig.reportDeath('session-1')
+
+    await expect(running).resolves.toMatchObject({
+      ok: false,
+      code: 'agent_session_closed',
+      unverifiable: true
+    })
   })
 
   // Why: a run cancelled before its first node opened a chat has nothing to stop.

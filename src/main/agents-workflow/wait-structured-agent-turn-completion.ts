@@ -3,12 +3,30 @@ import type { StructuredAgentSessionHost } from '../native-chat/agent-session-wi
 
 type CompletionHost = Pick<StructuredAgentSessionHost, 'subscribeTurnCompletions'>
 
+/** The chat this node was driving went away, so no turn completion can ever arrive for it. */
+const AGENT_SESSION_CLOSED_CODE = 'agent_session_closed'
+
+export class AgentsWorkflowAgentSessionClosedError extends Error {
+  readonly code = AGENT_SESSION_CLOSED_CODE
+
+  constructor() {
+    super('The agent chat running this node was closed before its turn completed.')
+    this.name = 'AgentsWorkflowAgentSessionClosedError'
+  }
+}
+
 export async function waitStructuredAgentTurnCompletion<T>(input: {
   host: CompletionHost
   sessionId: string
   subscriberId: string
   send: () => Promise<T>
   signal?: AbortSignal
+  /**
+   * Told once this session's provider death is committed. Why: completion is live-only, so a chat
+   * closed mid-turn publishes no event and the wait would hold the run's workspace lock until the
+   * run budget expired.
+   */
+  onSessionDeath?: (listener: (sessionId: string) => void) => () => void
 }): Promise<{ sent: T; completion: AgentSessionTurnCompletion }> {
   if (input.signal?.aborted) {
     throw input.signal.reason
@@ -30,6 +48,13 @@ export async function waitStructuredAgentTurnCompletion<T>(input: {
       }
     }
   })
+  // Why not on an aborted signal: a cancel closes the chat too, and the user's stop must decide
+  // the run's outcome rather than this half seeing the death first.
+  const unwatchDeath = input.onSessionDeath?.((endedSessionId) => {
+    if (endedSessionId === input.sessionId && input.signal?.aborted !== true) {
+      rejectCompletion(new AgentsWorkflowAgentSessionClosedError())
+    }
+  })
   const onAbort = (): void => rejectCompletion(input.signal?.reason)
   input.signal?.addEventListener('abort', onAbort, { once: true })
 
@@ -38,6 +63,7 @@ export async function waitStructuredAgentTurnCompletion<T>(input: {
     return { sent, completion: await completion }
   } finally {
     input.signal?.removeEventListener('abort', onAbort)
+    unwatchDeath?.()
     unsubscribe()
   }
 }
