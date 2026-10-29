@@ -1,13 +1,14 @@
 // Keep close state on the exact child. Callers join adapter-bounded attempts and retry unproven exits;
 // root-exit proof reaches the single exit handler, including late adapter reports.
 
+import type { AgentSessionCloseObserver } from './structured-agent-session-adapter-stop'
 import { refuse } from '../../../shared/agent-session-wire-refusals'
 import type { AgentSessionWireRefusal } from '../../../shared/agent-session-wire'
 import type { StructuredAgentSessionLifetimeContext } from './structured-agent-session-host-lifetime'
 import type { StructuredAgentSessionProviderChild } from './structured-agent-session-host-types'
 import { stopAgentSessionProviderRoot } from './structured-agent-session-provider-exit-proof'
 import { releaseStoredStructuredAgentSessionOwnerAfterExit } from './structured-agent-session-lease-release'
-import { isSurfaceReleasableAgentSessionRecord } from '../../runtime/agent-session-surface-release-transition'
+import { isSurfaceReleasableAgentSessionRecord } from '../../runtime/agent-session/ownership/agent-session-surface-release-transition'
 import type { StructuredAgentSessionAttachLock } from './structured-agent-session-attach-lock'
 
 /** A surviving root after kill remains unverifiable, never exited. */
@@ -16,11 +17,12 @@ export type StructuredAgentSessionChildCloseVerdict = 'exited' | 'unverifiable'
 export async function joinStructuredAgentSessionChildClose(
   context: StructuredAgentSessionLifetimeContext,
   sessionId: string,
-  child: StructuredAgentSessionProviderChild
+  child: StructuredAgentSessionProviderChild,
+  observeClose?: AgentSessionCloseObserver
 ): Promise<StructuredAgentSessionChildCloseVerdict> {
   // Capture startup state before provider release loses that evidence.
   const unanswered = child.phase === 'starting'
-  if (!(await closeProviderRoot(context, sessionId))) {
+  if (!(await closeProviderRoot(context, sessionId, observeClose))) {
     return 'unverifiable'
   }
   await endClosedStructuredAgentSessionChild(context, sessionId, child, unanswered)
@@ -36,7 +38,6 @@ async function endClosedStructuredAgentSessionChild(
   await context.endExitedChild(sessionId, child, {
     expected: true,
     reason: 'closed by Orca',
-    ...(child.close?.failure ? { failure: child.close.failure } : {}),
     ...(unanswered ? { startupUnanswered: true } : {})
   })
   context.restartWitness?.stopped(sessionId)
@@ -84,16 +85,20 @@ export async function joinClosingStructuredAgentSessionChild(
 
 function closeProviderRoot(
   context: StructuredAgentSessionLifetimeContext,
-  sessionId: string
+  sessionId: string,
+  observeClose?: AgentSessionCloseObserver
 ): Promise<boolean> {
   const { adapter, logger } = context.deps
   // Missing close means no owned process; implemented closes must prove exit.
-  const stop = adapter.disposeSession ?? adapter.closeSession
-  if (!stop) {
+  if (!adapter.disposeSession && !adapter.closeSession) {
     return Promise.resolve(true)
   }
+  context.deps.store.requireWritableRecord(sessionId)
   return stopAgentSessionProviderRoot(
-    () => stop.call(adapter, sessionId),
+    async () => {
+      const close = adapter.disposeSession ?? adapter.closeSession
+      return (await close?.call(adapter, sessionId, observeClose)) === true
+    },
     // Proven exit stands; descendant/follow-up failures are log-only.
     (error) =>
       logger.warn("the agent's process exited, but its close did not finish cleanly", {

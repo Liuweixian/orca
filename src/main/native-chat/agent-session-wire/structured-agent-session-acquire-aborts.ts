@@ -1,7 +1,7 @@
 export class StructuredAgentSessionAcquireAborts {
   private readonly inFlight = new Map<
     string,
-    Set<{ controller: AbortController; handover: boolean; goal: boolean }>
+    Set<{ controller: AbortController; handover: boolean; goal: boolean; bound?: () => boolean }>
   >()
   /** Starts admitted after quit must begin aborted. */
   private quitReason: Error | null = null
@@ -10,7 +10,8 @@ export class StructuredAgentSessionAcquireAborts {
   begin(
     sessionId: string,
     handover = false,
-    goal = false
+    goal = false,
+    bound?: () => boolean
   ): { signal: AbortSignal; abort: () => void; end: () => void } {
     const controller = new AbortController()
     if (this.quitReason) {
@@ -18,8 +19,13 @@ export class StructuredAgentSessionAcquireAborts {
     }
     const waits =
       this.inFlight.get(sessionId) ??
-      new Set<{ controller: AbortController; handover: boolean; goal: boolean }>()
-    const active = { controller, handover, goal }
+      new Set<{
+        controller: AbortController
+        handover: boolean
+        goal: boolean
+        bound?: () => boolean
+      }>()
+    const active = { controller, handover, goal, bound }
     waits.add(active)
     this.inFlight.set(sessionId, waits)
     return {
@@ -44,13 +50,24 @@ export class StructuredAgentSessionAcquireAborts {
       )
   }
 
-  abort(sessionId: string, reason: string | Error): boolean {
+  abort(sessionId: string, reason: string | Error): { reached: boolean; handedOver: boolean } {
     let reached = false
+    let handedOver = false
     for (const { controller, handover, goal } of this.inFlight.get(sessionId) ?? []) {
       reached ||= (handover || goal) && !controller.signal.aborted
+      handedOver ||= handover && !controller.signal.aborted
       controller.abort(typeof reason === 'string' ? new Error(reason) : reason)
     }
-    return reached
+    return { reached, handedOver }
+  }
+
+  /** Called synchronously while the exact ending child is still indexed. */
+  abortBound(sessionId: string): void {
+    for (const wait of this.inFlight.get(sessionId) ?? []) {
+      if (wait.bound?.()) {
+        wait.controller.abort(new Error('bound provider child exited'))
+      }
+    }
   }
 
   /** Abort all waits, including queued attach-drain work. */

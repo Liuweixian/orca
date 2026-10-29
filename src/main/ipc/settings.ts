@@ -1,3 +1,4 @@
+import { getClaudeAgentViewService } from '../claude/agent-view-service'
 import { app, BrowserWindow, ipcMain, nativeTheme } from 'electron'
 import type { Store } from '../persistence'
 import type { GlobalSettings } from '../../shared/global-settings-types'
@@ -17,6 +18,7 @@ import { isAgentStatusHooksEnabledForAgent } from '../../shared/agent-status-hoo
 import { recordManagedHookInstallFailure } from '../agent-hooks/install-telemetry'
 import { applyElectronProxySettings } from '../network/proxy-settings'
 import { applyBrowserSessionProxies } from '../browser/browser-session-proxy'
+import { applyProxyToElectronUpdaterSession } from '../updater/electron-updater-proxy-session'
 import { browserSessionRegistry } from '../browser/browser-session-registry'
 import { sanitizeNetworkSettings } from './network-settings-sanitization'
 import { sanitizeRendererSettingsUpdate } from './renderer-settings-sanitization'
@@ -42,8 +44,10 @@ import {
 } from '../../shared/computer-awake-mode'
 import { resolveAiVaultSearchSettings } from '../../shared/ai-vault-search-settings'
 import { applySessionSearchSettingsChange } from '../ai-vault-search/session-search-enablement'
+import { getRuntimeEnvironmentRegistryRoot } from './runtime-environments/runtime-environment-registry-root'
 
 const SETTINGS_CHANGED_WHITELIST_SET = new Set<string>(SETTINGS_CHANGED_WHITELIST)
+const registryRoot = getRuntimeEnvironmentRegistryRoot
 
 // Why: fields that appear in the View > Appearance submenu need the menu
 // rebuilt after any update so the checkbox `checked` state stays in sync
@@ -83,9 +87,9 @@ export function registerSettingsHandlers(
     }
   })
 
-  ipcMain.handle('settings:get', () => {
-    return readSettingsWithRuntimeEnvironmentPreference(store, app.getPath('userData'))
-  })
+  ipcMain.handle('settings:get', () =>
+    readSettingsWithRuntimeEnvironmentPreference(store, registryRoot())
+  )
 
   ipcMain.handle(
     'settings:update-pr-bot-author-override',
@@ -102,7 +106,7 @@ export function registerSettingsHandlers(
 
   // PTYs can bind before hydration; transport authority selection needs persisted settings synchronously.
   ipcMain.on('settings:get-sync', (event) => {
-    event.returnValue = readSettingsWithRuntimeEnvironmentPreference(store, app.getPath('userData'))
+    event.returnValue = readSettingsWithRuntimeEnvironmentPreference(store, registryRoot())
   })
 
   ipcMain.handle('settings:set', async (event, args: Partial<GlobalSettings>) => {
@@ -191,15 +195,11 @@ export function registerSettingsHandlers(
       ('httpProxyBypassRules' in sanitizedArgs &&
         before.httpProxyBypassRules !== result.httpProxyBypassRules)
     if (proxySettingsChanged) {
-      // Start both authorities before yielding so requests cannot enter between their barriers.
-      const defaultSessionApply = applyElectronProxySettings(result)
-      const browserSessionsApply = applyBrowserSessionProxies(
-        browserSessionRegistry.listProfiles(),
-        result
-      )
+      // Start every authority before yielding so requests cannot enter between their barriers.
       const [defaultSessionResult, browserSessionsResult] = await Promise.allSettled([
-        defaultSessionApply,
-        browserSessionsApply
+        applyElectronProxySettings(result),
+        applyBrowserSessionProxies(browserSessionRegistry.listProfiles(), result),
+        applyProxyToElectronUpdaterSession(result)
       ])
       if (defaultSessionResult.status === 'rejected') {
         console.warn('[settings] failed to apply network proxy settings')
@@ -216,6 +216,7 @@ export function registerSettingsHandlers(
         normalizeComputerAwakeMode(result.computerAwakeMode, result.keepComputerAwakeWhileAgentsRun)
       )
     }
+    await getClaudeAgentViewService().reconcile(result)
     const hookSettingChanged =
       ('agentStatusHooksEnabled' in sanitizedArgs &&
         before.agentStatusHooksEnabled !== result.agentStatusHooksEnabled) ||
@@ -287,7 +288,7 @@ export function registerSettingsHandlers(
       }
       const requestedId = requestedEnvironmentId?.trim() || null
       const environmentId =
-        requestedId === null ? null : resolveEnvironment(app.getPath('userData'), requestedId).id
+        requestedId === null ? null : resolveEnvironment(registryRoot(), requestedId).id
       return store.updateSettings(
         { activeRuntimeEnvironmentId: environmentId },
         { notifyListeners: true, originWebContentsId: event.sender.id }
@@ -295,9 +296,7 @@ export function registerSettingsHandlers(
     }
   )
 
-  ipcMain.handle('settings:listFonts', () => {
-    return listSystemFontFamilies()
-  })
+  ipcMain.handle('settings:listFonts', () => listSystemFontFamilies())
 
   ipcMain.handle('settings:previewGhosttyImport', () => {
     return previewGhosttyImport(store)

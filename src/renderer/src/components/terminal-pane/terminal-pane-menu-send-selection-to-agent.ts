@@ -66,7 +66,7 @@ export const sendTerminalSelectionToAgentTarget = async ({
       toast.success(
         translate(
           'components.terminalPane.TerminalContextMenu.sendToAgentSent',
-          'Sent to {{value0}}.',
+          'Sent to active agent {{value0}}.',
           { value0: formatAgentTypeLabel(target.agentType) }
         )
       )

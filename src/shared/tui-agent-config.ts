@@ -1,5 +1,6 @@
 import type { TuiAgent } from './tui-agent'
-import type { TuiAgentConfig } from './tui-agent-config-types'
+import { skipsLinuxOrcaCliRename } from './orca-cli-command-name'
+import type { TuiAgentConfig, TuiAgentConfigSource } from './tui-agent-config-types'
 import { TUI_AGENT_CONFIG_SOURCE } from './tui-agent-config-entries'
 
 export type {
@@ -9,12 +10,6 @@ export type {
   TuiAgentConfig,
   TuiAgentDetectionRuntime
 } from './tui-agent-config-types'
-
-/** Authoring form: `launchCmd` and `expectedProcess` default to `detectCmd` (true for most agents). */
-export type TuiAgentConfigSource = Omit<TuiAgentConfig, 'launchCmd' | 'expectedProcess'> & {
-  launchCmd?: string
-  expectedProcess?: string
-}
 
 function resolveTuiAgentConfig(source: TuiAgentConfigSource): TuiAgentConfig {
   return {
@@ -44,8 +39,7 @@ export function getTuiAgentLaunchCommand(
   platform: NodeJS.Platform,
   opts?: { isRemote?: boolean }
 ): string {
-  // Why: local-only orca-ide rename (avoids GNOME Orca clash) must not leak to Linux remotes, whose relay shim is always `orca`.
-  if (opts?.isRemote && platform === 'linux') {
+  if (platform === 'linux' && skipsLinuxOrcaCliRename(opts?.isRemote)) {
     return config.launchCmd
   }
   return config.launchCmdByPlatform?.[platform] ?? config.launchCmd

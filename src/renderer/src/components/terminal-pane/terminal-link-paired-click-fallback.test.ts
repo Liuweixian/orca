@@ -6,7 +6,11 @@ import { openDetectedFilePath } from './terminal-file-open-routing'
 import { createTerminalLinkTestDoubles } from './terminal-link-handlers-test-fixtures'
 import { getTerminalPathExistsCacheKey } from './terminal-path-exists-cache'
 import { replaceRuntimeEnvironmentRevisions } from '@/runtime/runtime-environment-revision'
-import { makeBuffer, makeBufferLine } from './terminal-link-provider-buffer-fixtures'
+import {
+  makeBuffer,
+  makeBufferLine,
+  makeExistsCache
+} from './terminal-link-provider-buffer-fixtures'
 import {
   createDeferred,
   flushAsyncWork,
@@ -77,7 +81,7 @@ function hostAnswers(answer: (relativePath: string) => HostAnswer): void {
 
 function clickPairedPath(
   buffer: ReturnType<typeof makeBuffer>,
-  pathExistsCache = new Map<string, boolean>()
+  pathExistsCache = makeExistsCache()
 ): boolean {
   return openFilePathLinkAtBufferPosition(buffer, { x: 4, y: 1 }, 80, {
     startupCwd: '/srv/repo',
@@ -89,10 +93,7 @@ function clickPairedPath(
   })
 }
 
-function clickFirstPath(
-  onOpenFailure = vi.fn(),
-  pathExistsCache = new Map<string, boolean>()
-): boolean {
+function clickFirstPath(onOpenFailure = vi.fn(), pathExistsCache = makeExistsCache()): boolean {
   return openFilePathLinkAtBufferPosition(BUFFER, { x: 4, y: 1 }, 80, {
     startupCwd: '/srv/repo',
     worktreeId: 'wt-1',
@@ -126,7 +127,7 @@ describe('a modifier-click on a paired-server path followed by more paths', () =
     setPlatform('Macintosh')
     hostAnswers((path) => (path === 'a.txt' ? { exists: true } : { error: OLD_HOST_ENOTDIR }))
     // Why: hovering underlined a.txt, so only the longer joined guesses are unchecked.
-    const pathExistsCache = new Map([[runtimeKey('/srv/repo/a.txt'), true]])
+    const pathExistsCache = makeExistsCache([[runtimeKey('/srv/repo/a.txt'), true]])
 
     clickFirstPath(vi.fn(), pathExistsCache)
     await flushDoubleRaf()
@@ -148,7 +149,7 @@ describe('a modifier-click on a paired-server path followed by more paths', () =
     setPlatform('Macintosh')
     hostAnswers(() => ({ error: 'host unreachable' }))
     const onOpenFailure = vi.fn()
-    const pathExistsCache = new Map([
+    const pathExistsCache = makeExistsCache([
       [runtimeKey('/srv/repo/a.txt'), false],
       [runtimeKey('/srv/repo/a.txt/srv/repo/b.txt/srv/repo/c.txt'), false]
     ])
@@ -210,7 +211,7 @@ describe('a modifier-click on a paired-server path followed by more paths', () =
     await flushAsyncWork()
 
     expect(statMock).toHaveBeenCalledTimes(1)
-    expect(statMock).toHaveBeenCalledWith({ filePath: '/repo/package.json' })
+    expect(statMock).toHaveBeenCalledWith({ filePath: '/repo/package.json', wakeWslDistro: true })
   })
 
   it('reports a missing path but stays quiet for a bare dotted word', async () => {
@@ -250,7 +251,7 @@ describe('a modifier-click on a paired-server path followed by more paths', () =
       async (path: string) => path === '/repo/foo.ts.map'
     )
     const buffer = makeBuffer([makeBufferLine('/repo/foo.ts'), makeBufferLine('.map')])
-    const pathExistsCache = new Map([
+    const pathExistsCache = makeExistsCache([
       [getTerminalPathExistsCacheKey({ absolutePath: '/repo/foo.ts' }), true]
     ])
     const deps = { startupCwd: '/repo', worktreeId: 'wt-1', worktreePath: '/repo', pathExistsCache }
@@ -259,7 +260,7 @@ describe('a modifier-click on a paired-server path followed by more paths', () =
     await flushAsyncWork()
 
     expect(statMock).toHaveBeenCalledTimes(1)
-    expect(statMock).toHaveBeenCalledWith({ filePath: '/repo/foo.ts.map' })
+    expect(statMock).toHaveBeenCalledWith({ filePath: '/repo/foo.ts.map', wakeWslDistro: true })
   })
 
   it('drops a slow ambiguous probe once any other file open has started', async () => {
@@ -280,7 +281,7 @@ describe('a modifier-click on a paired-server path followed by more paths', () =
     await flushAsyncWork()
 
     expect(statMock).toHaveBeenCalledTimes(1)
-    expect(statMock).toHaveBeenCalledWith({ filePath: '/repo/other.txt' })
+    expect(statMock).toHaveBeenCalledWith({ filePath: '/repo/other.txt', wakeWslDistro: true })
   })
 
   it('supersedes an earlier open still in flight as soon as an ambiguous click starts', async () => {
@@ -340,6 +341,80 @@ describe('a modifier-click on a paired-server path followed by more paths', () =
     expect(asked).toEqual(['//server/share/other/report.txt'])
   })
 
+  it.each([
+    ['report', ['//server/share/report.md']],
+    ['details', []]
+  ])('never opens an unchecked guess past a share path when clicking %s', async (word, opened) => {
+    setPlatform('Windows')
+    runtimeEnvironmentCallMock.mockResolvedValue({
+      id: 'rpc-1',
+      ok: true,
+      result: { worktree: 'wt-1', relativePath: null, absolutePath: null, exists: false },
+      _meta: { runtimeId: 'remote-runtime' }
+    })
+    const line = 'See //server/share/report.md for details'
+    const buffer = makeBuffer([makeBufferLine(line)])
+
+    openFilePathLinkAtBufferPosition(buffer, { x: line.indexOf(word) + 1, y: 1 }, 80, {
+      startupCwd: '/srv/repo',
+      worktreeId: 'wt-1',
+      worktreePath: '/srv/repo',
+      runtimeEnvironmentId: 'env-1',
+      terminalHandle: 'term-1',
+      pathExistsCache: new Map()
+    })
+    await flushDoubleRaf()
+
+    const asked = runtimeEnvironmentCallMock.mock.calls.map(([args]) => args.params?.pathText)
+    expect(asked).toEqual(opened)
+  })
+
+  it('leaves a click on prose beside a path to the terminal', async () => {
+    setPlatform('Macintosh')
+    const line = '/tmp/report.md completed successfully'
+    const buffer = makeBuffer([makeBufferLine(line)])
+
+    const handled = openFilePathLinkAtBufferPosition(
+      buffer,
+      { x: line.indexOf('completed') + 1, y: 1 },
+      80,
+      {
+        startupCwd: '/srv/repo',
+        worktreeId: 'wt-1',
+        worktreePath: '/srv/repo',
+        runtimeEnvironmentId: 'env-1',
+        terminalHandle: 'term-1',
+        pathExistsCache: new Map()
+      }
+    )
+    await flushDoubleRaf()
+
+    expect(handled).toBe(false)
+    expect(runtimeEnvironmentCallMock).not.toHaveBeenCalled()
+  })
+
+  it('opens the joined path when its checks fail and the visible prefix is known missing', async () => {
+    setPlatform('Macintosh')
+    hostAnswers((path) => ({ exists: path === 'report.txt' }))
+    const answerOpen = runtimeEnvironmentCallMock.getMockImplementation()!
+    runtimeEnvironmentCallMock.mockImplementation((args) =>
+      args.method === 'files.pathsExist' ? Promise.reject(new Error('host busy')) : answerOpen(args)
+    )
+    const buffer = makeBuffer([
+      makeBufferLine('/srv/repo/report'),
+      makeBufferLine('.txt'),
+      makeBufferLine('.map')
+    ])
+
+    clickPairedPath(buffer, makeExistsCache([[runtimeKey('/srv/repo/report'), false]]))
+    await flushDoubleRaf()
+
+    expect(openFileMock).toHaveBeenCalledWith(
+      expect.objectContaining({ filePath: '/srv/repo/report.txt' }),
+      expect.anything()
+    )
+  })
+
   it('opens a wrapped share path whole even when its prefix is a known file', async () => {
     setPlatform('Windows')
     runtimeEnvironmentCallMock.mockResolvedValue({
@@ -349,7 +424,7 @@ describe('a modifier-click on a paired-server path followed by more paths', () =
       _meta: { runtimeId: 'remote-runtime' }
     })
     const buffer = makeBuffer([makeBufferLine('//server/share/report'), makeBufferLine('.txt')])
-    const pathExistsCache = new Map([[runtimeKey('//server/share/report'), true]])
+    const pathExistsCache = makeExistsCache([[runtimeKey('//server/share/report'), true]])
 
     clickPairedPath(buffer, pathExistsCache)
     await flushDoubleRaf()
@@ -410,12 +485,12 @@ describe('a modifier-click on a paired-server path followed by more paths', () =
     setPlatform('Macintosh')
     hostAnswers(() => ({ exists: false }))
     const onOpenFailure = vi.fn()
-    const pathExistsCache = new Map(
+    const pathExistsCache = makeExistsCache(
       [
         '/srv/repo/a.txt',
         '/srv/repo/a.txt/srv/repo/b.txt',
         '/srv/repo/a.txt/srv/repo/b.txt/srv/repo/c.txt'
-      ].map((path) => [runtimeKey(path), false])
+      ].map((path): [string, boolean] => [runtimeKey(path), false])
     )
 
     expect(clickFirstPath(onOpenFailure, pathExistsCache)).toBe(true)
@@ -433,7 +508,7 @@ describe('a modifier-click on a paired-server path followed by more paths', () =
     const linked = Object.assign(label, {
       getCell: () => ({ hasExtendedAttrs: () => true, extended: { urlId: 1 } })
     })
-    const pathExistsCache = new Map([
+    const pathExistsCache = makeExistsCache([
       [getTerminalPathExistsCacheKey({ absolutePath: '/repo/nwparker/fix-123' }), false]
     ])
     const onOpenFailure = vi.fn()

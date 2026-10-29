@@ -5,6 +5,12 @@ import type {
 } from './run-completion-watcher'
 import type { AutomationRunOutputSnapshot } from '../../shared/automations-types'
 import {
+  AUTOMATION_RUN_FAILURE_COPY,
+  automationRunFailure,
+  type AutomationRunFailure
+} from '../../shared/automation-run-failure-copy'
+import {
+  hasHeldRunTurnDone,
   judgeIdleRun,
   type AutomationRunAgentEvidence,
   type RunCompletionSubject
@@ -18,6 +24,9 @@ const AGENT_START_POLL_INTERVAL_MS = 250
 const AGENT_START_PROBE_TIMEOUT_MS = 250
 /** Allow prompt submission delays and SSH startup before declaring the agent unstarted. */
 const AGENT_START_DEADLINE_MS = 2 * 60 * 1000
+/** How long the agent's own `done` must stand before it settles a run whose screen never reads
+ *  idle (a lost stream or an unknown idle screen, #34064); past any blocked verdict a screen gives. */
+const HELD_DONE_SETTLE_MS = 30_000
 /** Bound re-arming per observation; startup reconciliation can attach again. */
 const OBSERVE_DEADLINE_MS = 6 * 60 * 60 * 1000
 
@@ -141,6 +150,14 @@ async function waitForAgentStart(
   return false
 }
 
+export const AGENT_HOOKS_REVIEW_BLOCKED_ERROR = AUTOMATION_RUN_FAILURE_COPY.hooksReviewBlocked
+
+function describeBlockedAgent(blockedReason: string): AutomationRunFailure {
+  return blockedReason === 'agent-hooks-review-prompt'
+    ? automationRunFailure('hooksReviewBlocked')
+    : { error: `Automation agent is blocked: ${blockedReason}.` }
+}
+
 async function readTerminalSnapshot(
   runtime: AutomationRunTerminalHost,
   handle: string
@@ -167,21 +184,21 @@ async function buildObservation(
   return {
     status: 'dispatch_failed',
     outputSnapshot,
-    error: wait.blockedReason
-      ? `Automation agent is blocked: ${wait.blockedReason}.`
-      : 'Automation agent did not report completion.'
+    ...(wait.blockedReason
+      ? describeBlockedAgent(wait.blockedReason)
+      : automationRunFailure('agentNoCompletion'))
   }
 }
 
 async function buildUnobservedObservation(
   runtime: AutomationRunTerminalHost,
   handle: string,
-  error: string
+  failure: AutomationRunFailure
 ): Promise<AutomationRunCompletionObservation> {
   return {
     status: 'dispatch_failed',
     outputSnapshot: await readTerminalSnapshot(runtime, handle),
-    error
+    ...failure
   }
 }
 
@@ -209,14 +226,18 @@ export function createRuntimeAutomationRunTerminalObserver(
           return await buildUnobservedObservation(
             runtime,
             handle,
-            'Automation agent never started after the prompt was submitted.'
+            automationRunFailure('agentNeverStarted')
           )
         }
       }
       const deadlineAt = startedAt + OBSERVE_DEADLINE_MS
       while (Date.now() < deadlineAt) {
         try {
-          const wait = await runtime.waitForTerminal(handle, { condition: 'tui-idle', signal })
+          const wait = await runtime.waitForTerminal(handle, {
+            condition: 'tui-idle',
+            signal,
+            ...(judged ? { timeoutMs: HELD_DONE_SETTLE_MS } : {})
+          })
           if (!judged || !wait.satisfied) {
             return await buildObservation(runtime, handle, wait)
           }
@@ -236,12 +257,28 @@ export function createRuntimeAutomationRunTerminalObserver(
           if (signal.aborted || !isTerminalWaitTimeout(error)) {
             throw error
           }
+          if (
+            judged &&
+            hasHeldRunTurnDone(
+              judged.evidence,
+              judged.run,
+              runStartedAt,
+              Date.now(),
+              HELD_DONE_SETTLE_MS
+            )
+          ) {
+            return {
+              status: 'completed',
+              outputSnapshot: snapshotOf(await readTail(runtime, handle)),
+              error: null
+            }
+          }
         }
       }
       return await buildUnobservedObservation(
         runtime,
         handle,
-        'Orca stopped watching this run after 6h without a completion signal.'
+        automationRunFailure('watchTimedOut')
       )
     }
   }

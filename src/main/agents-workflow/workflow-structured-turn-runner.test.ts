@@ -15,7 +15,7 @@ vi.mock('../runtime/structured-agent-runtime-metadata', () => ({
   structuredAgentRuntimeMetadata: (agent: string) =>
     agent === 'claude' ? { definition: { agent: 'claude' } } : null
 }))
-vi.mock('../runtime/structured-agent-session-close', () => ({
+vi.mock('../runtime/agent-session/structured-agent-session-close', () => ({
   closeStructuredAgentSessionChild: lifecycle.close
 }))
 vi.mock('../runtime/structured-worker-authority', () => ({

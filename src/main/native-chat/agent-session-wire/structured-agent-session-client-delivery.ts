@@ -1,3 +1,5 @@
+import { StructuredAgentSessionRequestFailures } from './structured-agent-session-request-failures'
+import { structuredAgentSessionFailureWordsContext } from './structured-agent-session-send-preparation'
 import { AT_REST_COMMANDS_READ_BUDGET_MS } from './at-rest-command-catalog'
 import type { AgentSessionStatusSummary } from '../../../shared/agent-session-wire'
 import { AgentSessionRefusalError } from '../../../shared/agent-session-wire-refusals'
@@ -33,7 +35,9 @@ export class StructuredAgentSessionClientDelivery {
   private stopAtRestCommandUpdates: () => void = () => undefined
   private readonly statusFeed
   private readonly turnCompletionFeed
+  readonly requestFailures
   private readonly sendSettlement
+  private readonly journalObservers = new Map<string, Set<() => void>>()
 
   constructor(
     private readonly sessions: Map<string, StructuredAgentSessionHostSession>,
@@ -46,10 +50,22 @@ export class StructuredAgentSessionClientDelivery {
     onAgentStarted: (sessionId: string) => void,
     onChildWorkChanged: (sessionId: string) => void,
     // Current clients interpret an absent opening roster as no tasks.
-    readBackgroundTasks: NonNullable<SubscriberFieldHooks['readBackgroundTasks']>
+    readBackgroundTasks: NonNullable<SubscriberFieldHooks['readBackgroundTasks']>,
+    starting?: (sessionId: string) => boolean
   ) {
+    this.requestFailures = new StructuredAgentSessionRequestFailures({
+      sessions,
+      onFailure: (failure) => deps().onRequestFailure?.(failure),
+      capturePendingOutput: (input) => deps().adapter.capturePendingOutput?.(input),
+      wordsContext: (sessionId) =>
+        structuredAgentSessionFailureWordsContext(
+          deps().store.getRecord(sessionId),
+          sessions.get(sessionId)?.journal
+        )
+    })
     this.statusFeed = createStructuredAgentSessionHostStatusFeed({
       sessions,
+      starting,
       now,
       currentWork: (sessionId, journal) => this.currentWork(sessionId, journal),
       deps,
@@ -155,6 +171,15 @@ export class StructuredAgentSessionClientDelivery {
     if (!session) {
       return
     }
+    try {
+      this.requestFailures.generationEnded(sessionId)
+    } catch (error) {
+      this.deps().logger.warn('observing a request death failed', {
+        scope: 'request-outcomes',
+        sessionId,
+        error
+      })
+    }
     // Invalidate cached work before every reader re-derives.
     session.operationalRevision = (session.operationalRevision ?? 0) + 1
     const { journal } = session
@@ -177,6 +202,19 @@ export class StructuredAgentSessionClientDelivery {
     this.turnCompletionFeed.observe(sessionId, undefined, { historical: true })
   }
 
+  /** Observe every journal publication, including row-free wakes, without opening a client stream. */
+  observeJournalPublications = (sessionId: string, observer: () => void): (() => void) => {
+    const observers = this.journalObservers.get(sessionId) ?? new Set<() => void>()
+    observers.add(observer)
+    this.journalObservers.set(sessionId, observers)
+    return () => {
+      observers.delete(observer)
+      if (observers.size === 0 && this.journalObservers.get(sessionId) === observers) {
+        this.journalObservers.delete(sessionId)
+      }
+    }
+  }
+
   subscribeStatus = (subscriber: StructuredAgentSessionStatusSubscriber): (() => void) =>
     this.statusFeed.subscribe(subscriber)
   forgetStatus = (sessionId: string): void => this.statusFeed.forget(sessionId)
@@ -190,6 +228,7 @@ export class StructuredAgentSessionClientDelivery {
 
   /** Closing handles retains session-list rows; agent-status retains them only while tabs need them. */
   closeSession(sessionId: string, options: { listed: boolean }): void {
+    this.requestFailures.forget(sessionId)
     this.sendSettlement.closeSession(sessionId)
     if (options.listed) {
       this.statusFeed.revokeLive(sessionId)
@@ -201,8 +240,10 @@ export class StructuredAgentSessionClientDelivery {
   }
 
   closeAll(): void {
+    this.requestFailures.clear()
     this.stopAtRestCommandUpdates()
     this.sendSettlement.closeAll()
+    this.journalObservers.clear()
   }
 
   private publishJournal(sessionId: string, journal: AgentSessionJournal, activity = true): void {
@@ -211,6 +252,17 @@ export class StructuredAgentSessionClientDelivery {
     // Observe completion after status projection updates, even without subscribers for background chats.
     this.turnCompletionFeed.observe(sessionId, journal)
     this.queue.onJournalActivity(sessionId, activity)
+    for (const observer of this.journalObservers.get(sessionId) ?? []) {
+      try {
+        observer()
+      } catch (error) {
+        this.deps().logger.warn('observing a journal publication failed', {
+          scope: 'journal-delivery',
+          sessionId,
+          error
+        })
+      }
+    }
   }
 
   private currentWork(sessionId: string, journal: AgentSessionJournal) {

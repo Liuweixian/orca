@@ -16,6 +16,10 @@ import {
   type NotesSendAgentTarget
 } from '@/lib/notes-send-agent-targets'
 import { selectLivePtyIdsForWorktree } from '@/components/sidebar/worktree-card-status-inputs'
+import {
+  getStructuredChatTabNames,
+  useStructuredChatTabNames
+} from '@/runtime/structured-chat-name-observation'
 import { translate } from '@/i18n/i18n'
 
 type TerminalSendToAgentSubmenuProps = {
@@ -36,6 +40,7 @@ export function TerminalSendToAgentSubmenu({
   const ptyIdsByTabId = useAppStore(useShallow((s) => selectLivePtyIdsForWorktree(s, worktreeId)))
   const runtimePaneTitlesByTabId = useAppStore((s) => s.runtimePaneTitlesByTabId)
   const agentStatusEpoch = useAppStore((s) => s.agentStatusEpoch)
+  const chatNames = useStructuredChatTabNames()
   const targets = useMemo(() => {
     // Why: stale-boundary timers bump this epoch without replacing the status
     // map, so eligibility must derive again when freshness flips.
@@ -49,12 +54,14 @@ export function TerminalSendToAgentSubmenu({
         ptyIdsByTabId,
         runtimePaneTitlesByTabId
       },
-      worktreeId
+      worktreeId,
+      chatNames
       // Why: this menu pastes the pane's selected text into a terminal; a
       // structured chat has no pane to read from, so only terminal rows list.
     ).filter((target) => target.messageTarget.kind === 'terminal')
   }, [
     agentStatusEpoch,
+    chatNames,
     agentStatusByPaneKey,
     tabsByWorktree,
     unifiedTabsByWorktree,
@@ -70,9 +77,11 @@ export function TerminalSendToAgentSubmenu({
     }
     // Why: rows come from an open-menu snapshot; re-derive before sending so a
     // pane that closed or went non-sendable reports its current reason.
-    const current = deriveNotesSendAgentTargets(useAppStore.getState(), worktreeId).find(
-      (candidate) => candidate.paneKey === target.paneKey
-    )
+    const current = deriveNotesSendAgentTargets(
+      useAppStore.getState(),
+      worktreeId,
+      getStructuredChatTabNames()
+    ).find((candidate) => candidate.paneKey === target.paneKey)
     if (!current || current.status !== 'eligible') {
       toast.message(current?.disabledReason ?? 'Terminal is no longer available')
       return

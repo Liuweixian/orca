@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { readAgentJournalTurn } from '../../shared/agent-session-turn-record'
 import { readAgentSessionFailureFact } from '../../shared/agent-session-failure'
-import { withNativeChatCutTurnNotices } from '../../shared/native-chat-cut-turn-notice'
+import { withNativeChatCutTurnNotices } from '../../shared/native-chat/transcript/native-chat-cut-turn-notice'
 import { closeProviderTimelineRigs } from '../native-chat/agent-session-timeline/provider-timeline-assembler-test-support'
 import {
   CALLER,
@@ -233,7 +233,9 @@ describe('closing or stopping a Grok chat while it starts', () => {
       { dispatchState: 'rejected', rejection: { kind: 'cancelled' } }
     ])
     const rows = (await host.history({ sessionId: SESSION, direction: 'tail' })).page.items
-    expect(rows.filter((row) => row.body.kind === 'status')).toEqual([])
+    expect(rows.flatMap((row) => (row.body.kind === 'status' ? [row.body.text] : []))).toEqual([
+      'Cancellation requested.'
+    ])
     await host.close(SESSION, 'user-close')
   })
 

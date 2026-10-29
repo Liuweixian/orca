@@ -14,7 +14,7 @@ import {
 } from '../../shared/structured-agent-session-send-mutation'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import type { AgentSessionRecordStore } from '../runtime/agent-session-record-store'
-import { closeStructuredAgentSessionChild } from '../runtime/structured-agent-session-close'
+import { closeStructuredAgentSessionChild } from '../runtime/agent-session/structured-agent-session-close'
 import { structuredAgentRuntimeMetadata } from '../runtime/structured-agent-runtime-metadata'
 import { observeStructuredSession } from '../runtime/structured-worker-authority'
 import { createStructuredAgentSessionForWorktree } from '../runtime/rpc/methods/structured-agent-session-create'

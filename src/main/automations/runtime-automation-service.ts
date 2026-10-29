@@ -10,7 +10,11 @@ import {
   TUI_AGENT_CONFIG
 } from '../../shared/tui-agent-config'
 import { launchHeadlessAutomationAgent, runOwnHandle } from './headless-automation-agent-launch'
-import { createRuntimeAutomationRunTerminalObserver } from './runtime-terminal-run-observer'
+import {
+  AGENT_HOOKS_REVIEW_BLOCKED_ERROR,
+  createRuntimeAutomationRunTerminalObserver
+} from './runtime-terminal-run-observer'
+import { closeEarlierHookReviewRunTerminals } from './hook-review-blocked-run-terminals'
 
 const MAX_REMEMBERED_LAUNCHES = 256
 
@@ -39,7 +43,27 @@ export function createRuntimeAutomationService(input: {
       ...observer,
       resolveRunTerminal: (run) =>
         (run.terminalPaneKey ? launchedHandles.get(run.terminalPaneKey) : undefined) ??
-        observer.resolveRunTerminal(run)
+        observer.resolveRunTerminal(run),
+      observeCompletion: async (handle, options) => {
+        const observation = await observer.observeCompletion(handle, options)
+        // Why: the observer accepts any run subject, but only an automation run owns the pane
+        // and history this cleanup compares; workflow turns never reach this service.
+        const latestRun = options.run?.automationId
+          ? store
+              .listAutomationRuns(options.run.automationId)
+              .find((run) => run.terminalPaneKey === options.run?.terminalPaneKey)
+          : undefined
+        if (latestRun && observation.error === AGENT_HOOKS_REVIEW_BLOCKED_ERROR) {
+          const markDispatchResult = service.markDispatchResult.bind(service)
+          void closeEarlierHookReviewRunTerminals(
+            { store, runtime, markDispatchResult },
+            latestRun
+          ).catch((error: unknown) => {
+            console.warn('[automations] hook-review tab cleanup failed:', error)
+          })
+        }
+        return observation
+      }
     },
     onAutomationsChanged: (payload) => runtime.notifyAutomationsChanged(payload),
     allowRemoteHostScheduling: input.headless,
