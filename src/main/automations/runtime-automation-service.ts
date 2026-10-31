@@ -1,3 +1,8 @@
+import { observeAutomationChatRun } from './runtime-chat-run-observer'
+import { readAutomationRunReceipt } from './automation-run-receipt'
+import { publishedLaunchTarget } from './automation-agent-run-result'
+import { launchAutomationChatAgent } from './automation-chat-agent-launch'
+import { tuiAgentDisplayName } from '../../shared/tui-agent-display-names'
 import type { ClaudeUsageStore } from '../claude-usage/store'
 import type { CodexUsageStore } from '../codex-usage/store'
 import type { Store } from '../persistence'
@@ -15,8 +20,34 @@ import {
   createRuntimeAutomationRunTerminalObserver
 } from './runtime-terminal-run-observer'
 import { closeEarlierHookReviewRunTerminals } from './hook-review-blocked-run-terminals'
+import type { RunCompletionSubject } from './automation-run-agent-evidence'
+import type { AutomationRun } from '../../shared/automations-types'
 
 const MAX_REMEMBERED_LAUNCHES = 256
+
+/** Why: the observer accepts any run subject, but only an automation run owns a launch receipt and the pane and history this cleanup compares; workflow turns name no automation. */
+function findLatestAutomationRun(
+  store: Store,
+  subject: RunCompletionSubject | undefined
+): AutomationRun | undefined {
+  if (!subject?.automationId) {
+    return undefined
+  }
+  return (
+    store
+      .listAutomationRuns(subject.automationId)
+      .find((entry) => entry.terminalPaneKey === subject.terminalPaneKey) ??
+    // Why: a subject that still carries run identity names its run even before the run is stored.
+    asAutomationRun(subject)
+  )
+}
+
+function asAutomationRun(subject: RunCompletionSubject | undefined): AutomationRun | undefined {
+  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: only the automation run that produced the subject carries these fields.
+  return subject && 'id' in subject && 'sessionKind' in subject
+    ? (subject as AutomationRun)
+    : undefined
+}
 
 export function createRuntimeAutomationService(input: {
   store: Store
@@ -41,18 +72,98 @@ export function createRuntimeAutomationService(input: {
     codexUsage,
     terminalObserver: {
       ...observer,
-      resolveRunTerminal: (run) =>
-        (run.terminalPaneKey ? launchedHandles.get(run.terminalPaneKey) : undefined) ??
-        observer.resolveRunTerminal(run),
+      resolveRunTerminal: (run) => {
+        if (run.sessionKind === 'chat') {
+          return `automation:${run.id}`
+        }
+        if (run.status === 'dispatching') {
+          const records = runtime.openedAgentSessionRecordStore()
+          if (
+            (records && readAutomationRunReceipt(records, run)) ||
+            store.listAutomations().find((entry) => entry.id === run.automationId)?.surface ===
+              'chat'
+          ) {
+            return `automation:${run.id}`
+          }
+          if (!records) {
+            void runtime.openAgentSessionRecordStore().catch((error: unknown) => {
+              console.warn('[automations] could not read accepted Chat operation:', error)
+            })
+          }
+        }
+        return (
+          (run.terminalPaneKey ? launchedHandles.get(run.terminalPaneKey) : undefined) ??
+          observer.resolveRunTerminal(run)
+        )
+      },
       observeCompletion: async (handle, options) => {
-        const observation = await observer.observeCompletion(handle, options)
-        // Why: the observer accepts any run subject, but only an automation run owns the pane
-        // and history this cleanup compares; workflow turns never reach this service.
-        const latestRun = options.run?.automationId
-          ? store
-              .listAutomationRuns(options.run.automationId)
-              .find((run) => run.terminalPaneKey === options.run?.terminalPaneKey)
-          : undefined
+        let latestRun = findLatestAutomationRun(store, options.run)
+        let run = options.run
+        if (latestRun && handle.startsWith('automation:')) {
+          if (!latestRun.chatSessionId) {
+            const records = await runtime.openAgentSessionRecordStore()
+            const receipt = readAutomationRunReceipt(records, latestRun)
+            const agent =
+              tuiAgentDisplayName(
+                store.listAutomations().find((entry) => entry.id === latestRun?.automationId)
+                  ?.agentId ?? 'Agent'
+              ) ?? 'Agent'
+            if (!receipt) {
+              return {
+                status: 'dispatch_failed',
+                error: `${agent} could not confirm this run after Orca restarted. Open its workspace before running again.`
+              }
+            }
+            const target =
+              receipt.kind === 'terminal'
+                ? publishedLaunchTarget(runtime, receipt.launch)
+                : {
+                    workspaceId: receipt.workspaceId,
+                    sessionKind: 'chat' as const,
+                    chatSessionId: receipt.sessionId,
+                    terminalPaneKey: null,
+                    terminalSessionId: null,
+                    terminalPtyId: null
+                  }
+            latestRun = await service.markDispatchResult({
+              ...target,
+              runId: latestRun.id,
+              status: receipt.accepted ? 'dispatched' : 'dispatch_failed',
+              error: receipt.accepted
+                ? null
+                : `${agent} could not confirm this run's prompt. Open the run before trying again.`
+            })
+            if (!receipt.accepted) {
+              return { status: 'dispatch_failed', error: latestRun.error }
+            }
+            if (receipt.kind === 'terminal') {
+              handle = receipt.launch.outcome.handle
+            }
+          }
+          if (latestRun.sessionKind === 'chat') {
+            try {
+              return await observeAutomationChatRun(runtime, latestRun, options.signal)
+            } catch (error) {
+              if (options.signal.aborted) {
+                throw error
+              }
+              console.error('[automations] chat run observation failed:', error)
+              const agent =
+                tuiAgentDisplayName(
+                  store.listAutomations().find((entry) => entry.id === latestRun?.automationId)
+                    ?.agentId ?? 'Agent'
+                ) ?? 'Agent'
+              return {
+                status: 'dispatch_failed',
+                error: `${agent} stopped reporting this run's result. Open the chat before running again.`
+              }
+            }
+          }
+        }
+        const observation = await observer.observeCompletion(handle, {
+          ...options,
+          run: latestRun ?? run
+        })
         if (latestRun && observation.error === AGENT_HOOKS_REVIEW_BLOCKED_ERROR) {
           const markDispatchResult = service.markDispatchResult.bind(service)
           void closeEarlierHookReviewRunTerminals(
@@ -67,6 +178,19 @@ export function createRuntimeAutomationService(input: {
     },
     onAutomationsChanged: (payload) => runtime.notifyAutomationsChanged(payload),
     allowRemoteHostScheduling: input.headless,
+    chatDispatcher: async (request) => {
+      const { terminalHandle, ...launch } = await launchAutomationChatAgent(runtime, {
+        ...request,
+        runs: store.listAutomationRuns(request.automation.id)
+      })
+      if (launch.terminalPaneKey && terminalHandle) {
+        launchedHandles.set(launch.terminalPaneKey, terminalHandle)
+        if (launchedHandles.size > MAX_REMEMBERED_LAUNCHES) {
+          launchedHandles.delete(launchedHandles.keys().next().value ?? '')
+        }
+      }
+      return launch
+    },
     headlessDispatcher: input.headless
       ? async (request) => {
           const { terminalHandle, ...launch } = await launchHeadlessAutomationAgent(runtime, {
@@ -115,9 +239,13 @@ function bindHeadlessRunTerminalRetention(
       return true
     },
     // Shared workspaces must close run panes rather than accumulate sleeping tabs.
-    runOwnsWorkspace: (run) =>
-      run.workspaceId !== null &&
-      store.getWorktreeMeta(run.workspaceId)?.automationProvenance?.automationRunId === run.id,
+    runOwnsWorkspace: (run) => {
+      const provenance = run.workspaceId
+        ? store.getWorktreeMeta(run.workspaceId)?.automationProvenance
+        : undefined
+      // Why: a client-origin label names another owner's run, never one of this host's.
+      return provenance?.origin !== 'client' && provenance?.automationRunId === run.id
+    },
     sleepRunWorkspace: async (run) => {
       const ptyId = run.terminalPtyId
       if (!run.workspaceId || !ptyId) {
