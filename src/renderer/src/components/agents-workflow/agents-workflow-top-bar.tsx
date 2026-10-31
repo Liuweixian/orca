@@ -1,4 +1,4 @@
-import { Play, Save, Trash2 } from 'lucide-react'
+import { Play, Save, Sparkles, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { translate } from '@/i18n/i18n'
 
@@ -10,6 +10,8 @@ export function AgentsWorkflowTopBar({
   dirty,
   saving,
   running,
+  generateBlocker,
+  onGenerate,
   onSave,
   onDelete,
   onRun,
@@ -22,6 +24,9 @@ export function AgentsWorkflowTopBar({
   dirty: boolean
   saving: boolean
   running: boolean
+  /** Why this workflow cannot be designed here, or null when it can. */
+  generateBlocker: 'workspace' | 'agent' | null
+  onGenerate: () => void
   onSave: () => void
   onDelete: () => void
   onRun: () => void
@@ -48,6 +53,28 @@ export function AgentsWorkflowTopBar({
               : translate('auto.components.agents-workflow.topbar.valid', 'Ready to run')}
         </div>
       </div>
+      <Button
+        variant="outline"
+        size="xs"
+        disabled={generateBlocker !== null}
+        title={
+          generateBlocker === 'workspace'
+            ? translate(
+                'auto.components.agents-workflow.generation.workspaceRequired',
+                'Generation runs an agent in a workspace. Switch this workflow’s target to a worktree first.'
+              )
+            : generateBlocker === 'agent'
+              ? translate(
+                  'auto.components.agents-workflow.generation.agentRequired',
+                  'Generation runs an agent. Install or enable an agent for this host first.'
+                )
+              : undefined
+        }
+        onClick={onGenerate}
+      >
+        <Sparkles />
+        {translate('auto.components.agents-workflow.generation.generate', 'Generate')}
+      </Button>
       <Button variant="outline" size="xs" onClick={onExport}>
         {translate('auto.components.agents-workflow.topbar.export', 'Copy JSON')}
       </Button>

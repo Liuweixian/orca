@@ -4,7 +4,28 @@ import type { OrcaRuntimeService } from '../../orca-runtime'
 import type { RpcRequest } from '../core'
 import { RpcDispatcher } from '../dispatcher'
 import { AGENTS_WORKFLOW_METHODS } from './agents-workflow'
+import type * as GenerationService from '../../../agents-workflow/workflow-generation-service'
+import type * as ExecutionAdapterFactory from '../../../agents-workflow/workflow-host-execution-adapter'
+import { generateAgentsWorkflowDraft } from '../../../agents-workflow/workflow-generation-service'
+import { createAgentsWorkflowHostExecutionAdapter } from '../../../agents-workflow/workflow-host-execution-adapter'
 import { AgentsWorkflowRevisionConflictError } from '../../../../shared/agents-workflow-errors'
+
+// Why mock the turn: this file only checks wiring — workspace resolution and the params the
+// handler hands the generator. The generation loop has its own suite.
+vi.mock('../../../agents-workflow/workflow-generation-service', async (importOriginal) => {
+  const actual = await importOriginal<typeof GenerationService>()
+  return {
+    ...actual,
+    generateAgentsWorkflowDraft: vi.fn()
+  }
+})
+vi.mock('../../../agents-workflow/workflow-host-execution-adapter', async (importOriginal) => {
+  const actual = await importOriginal<typeof ExecutionAdapterFactory>()
+  return {
+    ...actual,
+    createAgentsWorkflowHostExecutionAdapter: vi.fn(() => ({}))
+  }
+})
 
 function request(method: string, params?: unknown): RpcRequest {
   return { id: 'request-1', authToken: 'token', method, params }
@@ -131,5 +152,64 @@ describe('agent workflow RPC methods', () => {
         data: { expectedRevision: 1, actualRevision: 2 }
       }
     })
+  })
+
+  it('generates in the workflow workspace and returns only the draft', async () => {
+    const draft = { name: 'Review changes', nodes: [], edges: [] }
+    vi.mocked(generateAgentsWorkflowDraft).mockResolvedValue({ draft })
+    const showManagedWorktree = vi.fn(async () => ({
+      id: 'workspace-1',
+      path: '/repo/workspace-1'
+    }))
+    const methods = { getRuntimeId: () => 'runtime-1', showManagedWorktree }
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: The request resolves a workspace and hands it to the mocked generator.
+    const runtime = methods as unknown as OrcaRuntimeService
+    const dispatcher = new RpcDispatcher({ runtime, methods: AGENTS_WORKFLOW_METHODS })
+
+    const response = await dispatcher.dispatch(
+      request('agentsWorkflow.generate', {
+        request: 'Review my changes',
+        workspaceId: 'workspace-1',
+        agentId: 'claude',
+        agentIds: ['claude', 'codex']
+      })
+    )
+
+    expect(showManagedWorktree).toHaveBeenCalledWith('id:workspace-1')
+    expect(createAgentsWorkflowHostExecutionAdapter).toHaveBeenCalledWith(runtime)
+    expect(generateAgentsWorkflowDraft).toHaveBeenCalledWith(
+      expect.objectContaining({
+        workspaceId: 'workspace-1',
+        // Why the path: the file channel writes its output contract into this checkout.
+        workspacePath: '/repo/workspace-1',
+        agentId: 'claude',
+        agentIds: ['claude', 'codex'],
+        request: 'Review my changes'
+      })
+    )
+    expect(response).toMatchObject({ ok: true, result: { draft } })
+    expect(response).not.toHaveProperty('result.issues')
+  })
+
+  it('rejects an unknown generation agent before resolving a workspace', async () => {
+    vi.mocked(generateAgentsWorkflowDraft).mockClear()
+    const showManagedWorktree = vi.fn()
+    const methods = { getRuntimeId: () => 'runtime-1', showManagedWorktree }
+    // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: Validation rejects before the dispatcher can access any other runtime member.
+    const runtime = methods as unknown as OrcaRuntimeService
+    const dispatcher = new RpcDispatcher({ runtime, methods: AGENTS_WORKFLOW_METHODS })
+
+    const response = await dispatcher.dispatch(
+      request('agentsWorkflow.generate', {
+        request: 'Review my changes',
+        workspaceId: 'workspace-1',
+        agentId: 'not-an-agent',
+        agentIds: ['claude']
+      })
+    )
+
+    expect(response).toMatchObject({ ok: false, error: { code: 'invalid_argument' } })
+    expect(showManagedWorktree).not.toHaveBeenCalled()
+    expect(generateAgentsWorkflowDraft).not.toHaveBeenCalled()
   })
 })

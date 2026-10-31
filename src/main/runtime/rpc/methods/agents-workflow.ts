@@ -4,6 +4,7 @@ import {
   AgentsWorkflowCreate,
   AgentsWorkflowCancelRun,
   AgentsWorkflowDelete,
+  AgentsWorkflowGenerate,
   AgentsWorkflowId,
   AgentsWorkflowList,
   AgentsWorkflowRunNow,
@@ -11,6 +12,8 @@ import {
   AgentsWorkflowShowRun,
   AgentsWorkflowUpdate
 } from '../../../../shared/rpc-contract/agents-workflow-params'
+import { generateAgentsWorkflowDraft } from '../../../agents-workflow/workflow-generation-service'
+import { createAgentsWorkflowHostExecutionAdapter } from '../../../agents-workflow/workflow-host-execution-adapter'
 import { defineMethod } from '../core'
 
 export const AGENTS_WORKFLOW_METHODS = [
@@ -33,6 +36,27 @@ export const AGENTS_WORKFLOW_METHODS = [
     handler: (_params, { runtime }) => ({
       agentChannels: runtime.listAgentsWorkflowAgentChannels()
     })
+  }),
+  defineMethod({
+    name: 'agentsWorkflow.generate',
+    permission: 'workspace',
+    params: AgentsWorkflowGenerate,
+    handler: async (params, { runtime }) => {
+      // Why resolve first: the generator runs in this checkout, so an unknown id would fail late.
+      const workspace = await runtime.showManagedWorktree(`id:${params.workspaceId}`)
+      const result = await generateAgentsWorkflowDraft({
+        // Why the run adapter: the designer takes the same channel the workflow's own nodes take,
+        // so an agent without structured sessions designs through its pane or transcript instead.
+        runner: createAgentsWorkflowHostExecutionAdapter(runtime),
+        workspaceId: workspace.id,
+        workspacePath: workspace.path,
+        agentId: params.agentId,
+        agentIds: params.agentIds,
+        request: params.request
+      })
+      // Why only the draft: nothing is stored, and the renderer has no use for the validator's issues.
+      return { draft: result.draft }
+    }
   }),
   defineMethod({
     name: 'agentsWorkflow.create',

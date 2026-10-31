@@ -18989,7 +18989,24 @@
           "deleteConfirm": "Delete",
           "addCommand": "Command"
         },
-        "newCommand": "New command"
+        "newCommand": "New command",
+        "generation": {
+          "title": "Generate workflow",
+          "description": "Describe what the workflow should do. An agent designs the graph in this workflow’s workspace; its chat or terminal closes when it answers, and the finished graph replaces this workflow’s graph and is saved.",
+          "agentLabel": "Agent",
+          "promptLabel": "What should this workflow do?",
+          "promptPlaceholder": "For example: review every changed file, fix lint errors, then run the test suite and report failures.",
+          "workspaceRequired": "Generation runs an agent in a workspace. Switch this workflow’s target to a worktree first.",
+          "agentRequired": "Generation runs an agent. Install or enable an agent for this host first.",
+          "detecting": "Detecting the agents this host can run…",
+          "designing": "Designing the workflow…",
+          "inProgress": "A workflow is already being designed. Its graph lands on the canvas and is saved when it answers.",
+          "generate": "Generate",
+          "confirmTitle": "Replace the current graph?",
+          "confirmGenerated": "{{name}} · {{nodes}} nodes. This workflow has edits that were not saved; applying the generated graph loses them.",
+          "confirmCancel": "Keep editing",
+          "confirmReplace": "Replace"
+        }
       },
       "OrcaSignInProgress": {
         "waiting": "Waiting for sign-in in your browser",

@@ -3,6 +3,8 @@ import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowUpdateFields
 } from '../../../../shared/agents-workflow-types'
+import type { AgentsWorkflowGenerationDraft } from '../../../../shared/agents-workflow-generation'
+import type { TuiAgent } from '../../../../shared/tui-agent'
 import type {
   AgentsWorkflowRun,
   AgentsWorkflowRunsPage
@@ -48,6 +50,20 @@ export async function createAgentsWorkflow(
     { workflow }
   )
   return result.workflow
+}
+
+/** Drafts a graph from a request; the host stores nothing until the user saves it. */
+export async function generateAgentsWorkflow(input: {
+  request: string
+  workspaceId: string
+  agentId: TuiAgent
+  agentIds: TuiAgent[]
+}): Promise<{ draft: AgentsWorkflowGenerationDraft }> {
+  return callRuntimeRpc<{ draft: AgentsWorkflowGenerationDraft }>(
+    LOCAL_TARGET,
+    'agentsWorkflow.generate',
+    input
+  )
 }
 
 export async function updateAgentsWorkflow(

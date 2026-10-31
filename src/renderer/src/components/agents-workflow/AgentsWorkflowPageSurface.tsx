@@ -15,6 +15,7 @@ import {
   DialogTitle
 } from '@/components/ui/dialog'
 import { AgentsWorkflowCanvas } from './agents-workflow-canvas'
+import { useAgentsWorkflowGenerationPanel } from './agents-workflow-generation-panel'
 import { AgentsWorkflowInspector } from './agents-workflow-inspector'
 import { AgentsWorkflowTopBar } from './agents-workflow-top-bar'
 import { AgentsWorkflowDefinitionPanel } from './agents-workflow-definition-panel'
@@ -27,6 +28,9 @@ export function AgentsWorkflowPageSurface({
 }: {
   controller: AgentsWorkflowPageController
 }): React.JSX.Element {
+  // Why the id: the workflow that was just created is the only one the design step may open for.
+  // A bare flag survived a failed create and popped the dialog over an unrelated workflow later.
+  const [pendingGenerateFor, setPendingGenerateFor] = React.useState<string | null>(null)
   const definition = controller.definition
   if (!definition) {
     return (
@@ -36,22 +40,41 @@ export function AgentsWorkflowPageSurface({
             {translate('auto.components.agents-workflow.loading', 'Loading workflows…')}
           </div>
         ) : (
-          <Button onClick={() => void controller.createWorkflow()}>
+          <Button
+            onClick={() => {
+              // Why open the design step after creating: a new workflow starts as a blank graph, so
+              // describing it is the natural next step rather than an extra trip to the toolbar.
+              void controller.createWorkflow().then((created) => {
+                if (created) {
+                  setPendingGenerateFor(created.id)
+                }
+              })
+            }}
+          >
             {translate('auto.components.agents-workflow.createFirst', 'Create workflow')}
           </Button>
         )}
       </div>
     )
   }
-  return <AgentsWorkflowLoadedSurface controller={controller} definition={definition} />
+  return (
+    <AgentsWorkflowLoadedSurface
+      controller={controller}
+      definition={definition}
+      openGenerateOnMount={definition.id === pendingGenerateFor}
+    />
+  )
 }
 
 function AgentsWorkflowLoadedSurface({
   controller,
-  definition
+  definition,
+  openGenerateOnMount
 }: {
   controller: AgentsWorkflowPageController
   definition: AgentsWorkflowDefinition
+  /** The workflow on screen is the one the empty state just created, so design it next. */
+  openGenerateOnMount: boolean
 }): React.JSX.Element {
   const onDefinitionChange = controller.setDefinition
   const repos = useAppStore((s) => s.repos)
@@ -89,17 +112,34 @@ function AgentsWorkflowLoadedSurface({
     setSelectedNodeId((current) => (current && ids.has(current) ? null : current))
   }, [])
 
+  const clearNodeSelection = React.useCallback(() => setSelectedNodeId(null), [])
+  // Why here: generation is a self-contained flow (dialog, background turn, landing graph), and the
+  // page only needs to open it and render it.
+  const generation = useAgentsWorkflowGenerationPanel({
+    controller,
+    definition,
+    onBeforeApply: clearNodeSelection,
+    openOnMount: openGenerateOnMount
+  })
+
+  const openNewWorkflow = React.useCallback(async () => {
+    const created = await controller.createWorkflow()
+    if (created) {
+      // Why open the dialog after creating: a new workflow starts as a blank graph, so designing it
+      // by describing it is the natural next step rather than an extra trip to a toolbar button.
+      generation.open()
+    }
+  }, [controller, generation])
+
   const requestSwitch = React.useCallback(
     (next: { kind: 'select'; id: string } | { kind: 'create' }) => {
       if (controller.dirty) {
         setPendingDiscard(next)
         return
       }
-      void (next.kind === 'select'
-        ? controller.selectWorkflow(next.id)
-        : controller.createWorkflow())
+      void (next.kind === 'select' ? controller.selectWorkflow(next.id) : openNewWorkflow())
     },
-    [controller]
+    [controller, openNewWorkflow]
   )
 
   // Why here: the page stays mounted while the right sidebar is open, so a row clicked there
@@ -120,10 +160,8 @@ function AgentsWorkflowLoadedSurface({
     if (!pending) {
       return
     }
-    void (pending.kind === 'select'
-      ? controller.selectWorkflow(pending.id)
-      : controller.createWorkflow())
-  }, [controller, pendingDiscard])
+    void (pending.kind === 'select' ? controller.selectWorkflow(pending.id) : openNewWorkflow())
+  }, [controller, openNewWorkflow, pendingDiscard])
 
   const exportDefinition = React.useCallback(() => {
     // navigator.clipboard silently rejects in some renderer contexts; the preload bridge
@@ -152,6 +190,8 @@ function AgentsWorkflowLoadedSurface({
         dirty={controller.dirty}
         saving={controller.saving}
         running={controller.running}
+        generateBlocker={generation.blocker}
+        onGenerate={generation.open}
         onSave={() => void controller.saveWorkflow()}
         onDelete={() => setDeleteOpen(true)}
         onRun={() => void controller.runNow()}
@@ -216,6 +256,7 @@ function AgentsWorkflowLoadedSurface({
           }
         />
       </div>
+      {generation.element}
       <Dialog open={deleteOpen} onOpenChange={setDeleteOpen}>
         <DialogContent>
           <DialogHeader>

@@ -2,8 +2,6 @@ import React from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
-import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
-import { AGENTS_WORKFLOW_REVISION_CONFLICT } from '../../../../shared/agents-workflow-errors'
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
 import type {
   AgentsWorkflowRun,
@@ -15,19 +13,15 @@ import {
 } from './use-agents-workflow-agent-channels'
 import { useAgentsWorkflowInvalidation } from './use-agents-workflow-invalidation'
 import { useAgentsWorkflowRuns } from './use-agents-workflow-runs'
-import {
-  newWorkflowInput,
-  workflowTargetForNewWorkflow,
-  workflowUpdateFields
-} from './agents-workflow-page-inputs'
-import { reportDefinitionFailure } from './agents-workflow-definition-errors'
+import { newWorkflowInput, workflowTargetForNewWorkflow } from './agents-workflow-page-inputs'
+import { isRevisionConflict, reportDefinitionFailure } from './agents-workflow-definition-errors'
+import { writeSavedAgentsWorkflow } from './agents-workflow-definition-write'
 import { takeRequestedAgentsWorkflow } from './agents-workflow-pending-request'
 import {
   createAgentsWorkflow,
   deleteAgentsWorkflow,
   listAgentsWorkflows,
-  showAgentsWorkflow,
-  updateAgentsWorkflow
+  showAgentsWorkflow
 } from './agents-workflow-rpc-client'
 
 export type AgentsWorkflowPageController = {
@@ -45,8 +39,14 @@ export type AgentsWorkflowPageController = {
   agentChannels: AgentsWorkflowAgentChannelMap | null
   setDefinition: (definition: AgentsWorkflowDefinition) => void
   selectWorkflow: (id: string) => Promise<void>
-  createWorkflow: () => Promise<void>
+  /** Resolves the workflow it opened, or null when no target could be resolved or the host refused. */
+  createWorkflow: () => Promise<AgentsWorkflowDefinition | null>
   saveWorkflow: () => Promise<void>
+  /**
+   * Puts `definition` on the canvas and saves it in one step. A generated graph is the whole
+   * workflow, so it must not wait for the user to notice it is still a draft.
+   */
+  applyAndSaveWorkflow: (definition: AgentsWorkflowDefinition) => Promise<void>
   deleteWorkflow: () => Promise<void>
   runNow: () => Promise<void>
   cancelRun: (runId: string) => Promise<void>
@@ -155,7 +155,7 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
     }
   }, [refreshList, selectWorkflow])
 
-  const createWorkflow = React.useCallback(async () => {
+  const createWorkflow = React.useCallback(async (): Promise<AgentsWorkflowDefinition | null> => {
     // Why resolve a target first: every workflow needs a project this host can actually run in,
     // and the store refuses ids it cannot resolve.
     const target = workflowTargetForNewWorkflow({
@@ -172,7 +172,7 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
           'Open a project workspace before creating a workflow.'
         )
       )
-      return
+      return null
     }
     setSaving(true)
     try {
@@ -181,6 +181,7 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
       setDefinitionState(created)
       setSavedDefinition(created)
       clearRuns()
+      return created
     } catch (error) {
       reportDefinitionFailure(
         error,
@@ -189,50 +190,50 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
           'Could not create the workflow.'
         )
       )
+      return null
     } finally {
       setSaving(false)
     }
   }, [activeWorktreeId, clearRuns, definition, projectHostSetups, repos, worktreesByRepo])
 
+  // Why the definition is a parameter rather than read from state: a generated graph is written in
+  // the same tick it reaches the canvas, so the caller hands over the graph instead of relying on
+  // the copy state happens to hold.
+  const writeDefinition = React.useCallback(
+    async (next: AgentsWorkflowDefinition) => {
+      if (!savedDefinition) {
+        return
+      }
+      setDefinitionState(next)
+      setSaving(true)
+      try {
+        await writeSavedAgentsWorkflow({
+          saved: savedDefinition,
+          next,
+          applySaved: (saved) => {
+            setDefinitionState(saved)
+            setSavedDefinition(saved)
+            setWorkflows((current) =>
+              current.map((workflow) => (workflow.id === saved.id ? saved : workflow))
+            )
+            setConflict(false)
+          },
+          onConflict: () => setConflict(true)
+        })
+      } finally {
+        setSaving(false)
+      }
+    },
+    // Why only savedDefinition: the setters come from useState and never change identity.
+    [savedDefinition]
+  )
+
   const saveWorkflow = React.useCallback(async () => {
-    if (!definition || !savedDefinition) {
+    if (!definition) {
       return
     }
-    setSaving(true)
-    try {
-      const saved = await updateAgentsWorkflow(
-        savedDefinition.id,
-        savedDefinition.revision,
-        workflowUpdateFields(definition)
-      )
-      setDefinitionState(saved)
-      setSavedDefinition(saved)
-      setWorkflows((current) =>
-        current.map((workflow) => (workflow.id === saved.id ? saved : workflow))
-      )
-      setConflict(false)
-      toast.success(
-        translate('auto.components.agents-workflow.controller.saved', 'Workflow saved.')
-      )
-    } catch (error) {
-      if (
-        error instanceof RuntimeRpcCallError &&
-        error.code === AGENTS_WORKFLOW_REVISION_CONFLICT
-      ) {
-        setConflict(true)
-      } else {
-        reportDefinitionFailure(
-          error,
-          translate(
-            'auto.components.agents-workflow.controller.saveFailed',
-            'Could not save the workflow.'
-          )
-        )
-      }
-    } finally {
-      setSaving(false)
-    }
-  }, [definition, savedDefinition])
+    await writeDefinition(definition)
+  }, [definition, writeDefinition])
 
   const deleteWorkflow = React.useCallback(async () => {
     if (!savedDefinition) {
@@ -251,10 +252,7 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
         clearRuns()
       }
     } catch (error) {
-      if (
-        error instanceof RuntimeRpcCallError &&
-        error.code === AGENTS_WORKFLOW_REVISION_CONFLICT
-      ) {
+      if (isRevisionConflict(error)) {
         setConflict(true)
       } else {
         reportDefinitionFailure(
@@ -308,6 +306,7 @@ export function useAgentsWorkflowPageController(): AgentsWorkflowPageController 
     selectWorkflow,
     createWorkflow,
     saveWorkflow,
+    applyAndSaveWorkflow: writeDefinition,
     deleteWorkflow,
     runNow: () => runsPage.runNow(savedDefinition?.id ?? ''),
     cancelRun,

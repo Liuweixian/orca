@@ -3,9 +3,14 @@ import {
   AgentsWorkflowCreateInputSchema,
   AgentsWorkflowUpdateFieldsSchema
 } from '../agents-workflow-types'
+import { AGENTS_WORKFLOW_GENERATION_REQUEST_LIMIT } from '../agents-workflow-generation'
+import type { TuiAgent } from '../tui-agent'
+import { isTuiAgent } from '../tui-agent-config'
 import { requiredString } from './rpc-param-primitives'
 
 const Revision = z.number().int().positive()
+// Why here: an unknown agent is a caller error, not a runtime branch each handler must remember.
+const TuiAgentParam = z.custom<TuiAgent>(isTuiAgent, { message: 'Unknown workflow agent' })
 
 export const AgentsWorkflowList = z.object({})
 
@@ -58,4 +63,19 @@ export const AgentsWorkflowClearRuns = z.object({
 
 export const AgentsWorkflowShowRun = z.object({
   runId: requiredString('Missing agent workflow run id')
+})
+
+export const AgentsWorkflowGenerate = z.object({
+  request: requiredString('Missing workflow generation request').pipe(
+    z
+      .string()
+      .trim()
+      .min(1, 'Missing workflow generation request')
+      .max(AGENTS_WORKFLOW_GENERATION_REQUEST_LIMIT, 'The workflow generation request is too long')
+  ),
+  // Generation runs the agent in this workspace, so the graph is designed against a real checkout.
+  workspaceId: requiredString('Missing workflow generation workspace'),
+  agentId: TuiAgentParam,
+  // Every agent a generated node may name: the renderer sends what this host can actually run.
+  agentIds: z.array(TuiAgentParam).min(1, 'Missing workflow generation agents').max(100)
 })

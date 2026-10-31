@@ -1,5 +1,6 @@
 // @vitest-environment happy-dom
 
+import React from 'react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from 'vitest'
 import { useAppStore } from '@/store'
@@ -295,6 +296,76 @@ describe('AgentsWorkflowPageSurface workflow requests', () => {
 
     expect(selectWorkflow).toHaveBeenCalledWith('other-workflow')
   })
+
+  // Why: a workflow that already exists is the main thing a user wants redesigned, so the toolbar
+  // must offer the dialog instead of only the create paths.
+  it('opens the generate dialog from the toolbar', () => {
+    useAppStore.setState({ ensureNativeDetectedAgents: async () => [] })
+    const definition = {
+      ...createAgentsWorkflowPageFixture(100),
+      workspace: { mode: 'existing' as const, workspaceId: 'workspace-1' }
+    }
+    render(<AgentsWorkflowPageSurface controller={controller(definition, vi.fn())} />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Generate' }))
+
+    expect(screen.getByText('Generate workflow')).not.toBeNull()
+  })
+
+  // Why: generation runs an agent in a checkout, so the trigger must say why it is unavailable
+  // instead of opening a dialog that can never submit.
+  it('disables the toolbar generate button without a worktree to run in', () => {
+    const definition = createAgentsWorkflowPageFixture(100)
+    render(<AgentsWorkflowPageSurface controller={controller(definition, vi.fn())} />)
+
+    expect(screen.getByRole('button', { name: 'Generate' }).hasAttribute('disabled')).toBe(true)
+  })
+
+  // Why: a new workflow starts as a blank graph, so the design prompt is the next step.
+  it('opens the generate dialog after creating a workflow', async () => {
+    useAppStore.setState({ ensureNativeDetectedAgents: async () => [] })
+    const definition = createAgentsWorkflowPageFixture(100)
+    const createWorkflow = vi.fn(async () => definition)
+    render(
+      <AgentsWorkflowPageSurface
+        controller={controller(definition, vi.fn(), { dirty: false, createWorkflow })}
+      />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'New workflow' }))
+
+    await waitFor(() => expect(screen.getByText('Generate workflow')).not.toBeNull())
+    expect(createWorkflow).toHaveBeenCalledOnce()
+  })
+
+  // Why: with nothing loaded there is no panel, so the empty-state button is the only way in and it
+  // must still offer the design step instead of leaving a blank workflow on screen.
+  it('opens the generate dialog when the first workflow is created', async () => {
+    useAppStore.setState({ ensureNativeDetectedAgents: async () => [] })
+    const definition = createAgentsWorkflowPageFixture(100)
+    function Harness(): React.JSX.Element {
+      const [current, setCurrent] = React.useState<ReturnType<
+        typeof createAgentsWorkflowPageFixture
+      > | null>(null)
+      return (
+        <AgentsWorkflowPageSurface
+          controller={controller(definition, vi.fn(), {
+            definition: current,
+            loading: false,
+            createWorkflow: async () => {
+              setCurrent(definition)
+              return definition
+            }
+          })}
+        />
+      )
+    }
+    render(<Harness />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Create workflow' }))
+
+    await waitFor(() => expect(screen.getByText('Generate workflow')).not.toBeNull())
+  })
 })
 
 function controller(
@@ -316,8 +387,9 @@ function controller(
     agentChannels: null,
     setDefinition,
     selectWorkflow: vi.fn(async () => undefined),
-    createWorkflow: vi.fn(async () => undefined),
+    createWorkflow: vi.fn(async () => null),
     saveWorkflow: vi.fn(async () => undefined),
+    applyAndSaveWorkflow: vi.fn(async () => undefined),
     deleteWorkflow: vi.fn(async () => undefined),
     runNow: vi.fn(async () => undefined),
     cancelRun: vi.fn(async () => undefined),

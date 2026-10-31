@@ -21,11 +21,7 @@ import type {
 } from '../../../../shared/agents-workflow-run-types'
 import { OrcaRuntimeWithRestoredTerminalPlacement } from './restored-terminal-placement'
 import { AgentsWorkflowRunService } from '../../../agents-workflow/workflow-run-service'
-import { createAgentsWorkflowExecutionAdapter } from '../../../agents-workflow/workflow-agent-execution-adapter'
-import { createWorkflowStructuredTurnRunner } from '../../../agents-workflow/workflow-structured-turn-runner'
-import { createWorkflowFileHandoffTurnRunner } from '../../../agents-workflow/workflow-file-handoff-runner'
-import { createWorkflowTranscriptTurnRunner } from '../../../agents-workflow/workflow-transcript-turn-runner'
-import { createWorkflowReportTurnRunner } from '../../../agents-workflow/workflow-report-turn-runner'
+import { createAgentsWorkflowHostExecutionAdapter } from '../../../agents-workflow/workflow-host-execution-adapter'
 import { createAgentsWorkflowWorkspaceResolver } from '../../../agents-workflow/workflow-workspace-resolver'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 
@@ -236,12 +232,7 @@ export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends OrcaRuntim
         flushPendingOrThrowAsync: store.flushPendingOrThrowAsync?.bind(store)
       },
       () => this.notifyAgentsWorkflowsChanged({ reason: 'run' }),
-      createAgentsWorkflowExecutionAdapter(
-        createWorkflowStructuredTurnRunner(runtime),
-        createWorkflowFileHandoffTurnRunner(runtime),
-        createWorkflowTranscriptTurnRunner(runtime),
-        createWorkflowReportTurnRunner(runtime)
-      ),
+      createAgentsWorkflowHostExecutionAdapter(runtime),
       createAgentsWorkflowWorkspaceResolver(runtime),
       Date.now,
       async (workspaceId) => {
