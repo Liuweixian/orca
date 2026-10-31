@@ -190,10 +190,7 @@ function AgentsWorkflowLoadedSurface({
         dirty={controller.dirty}
         saving={controller.saving}
         running={controller.running}
-        generateBlocker={generation.blocker}
-        onGenerate={generation.open}
         onSave={() => void controller.saveWorkflow()}
-        onDelete={() => setDeleteOpen(true)}
         onRun={() => void controller.runNow()}
         onExport={exportDefinition}
       />
