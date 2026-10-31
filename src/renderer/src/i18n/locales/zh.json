@@ -18484,6 +18484,23 @@
           "grace": "错过运行宽限时间（分钟）",
           "noProjectSetup": "该项目在所选主机上没有就绪的配置。"
         },
+        "generation": {
+          "title": "生成工作流",
+          "description": "描述这个工作流要做什么。智能体会在此工作流的工作区中设计流程图；它回答后，其对话或终端会关闭，完成后的流程图会替换当前工作流的流程图并保存。",
+          "agentLabel": "智能体",
+          "promptLabel": "这个工作流要做什么？",
+          "promptPlaceholder": "例如：审查每个改动的文件，修复 lint 错误，然后运行测试套件并报告失败的用例。",
+          "workspaceRequired": "生成会在工作区中运行智能体。请先把此工作流的目标切换为工作树。",
+          "agentRequired": "生成需要运行智能体。请先为此主机安装或启用一个智能体。",
+          "detecting": "正在检测此主机可以运行的智能体…",
+          "designing": "正在设计工作流…",
+          "inProgress": "已有一个工作流正在设计中。它回答后，流程图会出现在画布上并保存。",
+          "generate": "生成",
+          "confirmTitle": "替换当前流程图？",
+          "confirmGenerated": "{{name}} · {{nodes}} 个节点。此工作流有未保存的修改；应用生成的流程图会丢失这些修改。",
+          "confirmCancel": "继续编辑",
+          "confirmReplace": "替换"
+        },
         "history": {
           "title": "运行历史",
           "empty": "暂无运行记录。",
