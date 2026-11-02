@@ -1,19 +1,19 @@
 import { randomUUID } from 'node:crypto'
-import type { AgentJournalRenderItem } from '../../shared/agent-session-journal-types'
+import type { AgentJournalRenderItem } from '../../shared/agent-session/journal/agent-session-journal-types'
 import {
   createStructuredAgentSessionOperationId,
   structuredAgentSessionPayloadFingerprint
-} from '../../shared/structured-agent-session-mutation'
+} from '../../shared/agent-session/lifecycle/structured-agent-session-mutation'
 import {
   createStructuredAgentSessionId,
   structuredAgentSessionCreateParams
-} from '../../shared/structured-agent-session-create'
+} from '../../shared/agent-session/structured-agent-session-create'
 import {
   structuredAgentSessionMessageSendMutation,
   structuredAgentSessionSendBody
-} from '../../shared/structured-agent-session-send-mutation'
+} from '../../shared/agent-session/requests/structured-agent-session-send-mutation'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
-import type { AgentSessionRecordStore } from '../runtime/agent-session-record-store'
+import type { AgentSessionRecordStore } from '../runtime/agent-session/records/agent-session-record-store'
 import { closeStructuredAgentSessionChild } from '../runtime/agent-session/structured-agent-session-close'
 import { structuredAgentRuntimeMetadata } from '../runtime/structured-agent-runtime-metadata'
 import { observeStructuredSession } from '../runtime/structured-worker-authority'

@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type {
   AgentJournalItemBody,
   AgentJournalRenderItem
-} from '../../shared/agent-session-journal-types'
+} from '../../shared/agent-session/journal/agent-session-journal-types'
 import { captureAgentsWorkflowStructuredOutput } from './structured-agent-output-capture'
 
 const TURN_ITEM_ID = 'orca:turn-1'

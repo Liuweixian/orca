@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import type { AgentJournalRenderItem } from '../../shared/agent-session-journal-types'
+import type { AgentJournalRenderItem } from '../../shared/agent-session/journal/agent-session-journal-types'
 import { journalTurnItemIdForProviderTurn } from './provider-turn-journal-item'
 
 function turn(itemId: string, turnId: string): AgentJournalRenderItem {

@@ -15,5 +15,6 @@ export function sanitizeRendererSettingsUpdate(
   // writes must pass the dedicated reviewed-fingerprint handlers.
   delete sanitizedArgs.pluginConsents
   delete sanitizedArgs.disabledPlugins
+  delete sanitizedArgs.pluginExternalHostGrants
   return sanitizedArgs
 }

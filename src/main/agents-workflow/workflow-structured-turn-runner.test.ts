@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AgentSessionTurnCompletionEvent } from '../../shared/agent-session-turn-completion-wire'
-import type { AgentJournalRenderItem } from '../../shared/agent-session-journal-types'
+import type { AgentSessionTurnCompletionEvent } from '../../shared/agent-session/view/agent-session-turn-completion-wire'
+import type { AgentJournalRenderItem } from '../../shared/agent-session/journal/agent-session-journal-types'
 import { WorkflowStructuredTurnRunner } from './workflow-structured-turn-runner'
 
 const lifecycle = vi.hoisted<{

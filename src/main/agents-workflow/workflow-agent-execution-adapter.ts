@@ -1,5 +1,5 @@
 import type { AgentsWorkflowStepExecutor } from './workflow-dynamic-scheduler'
-import type { AgentJournalRenderItem } from '../../shared/agent-session-journal-types'
+import type { AgentJournalRenderItem } from '../../shared/agent-session/journal/agent-session-journal-types'
 import {
   agentsWorkflowAgentChannelPlan,
   agentsWorkflowNodeChannels,

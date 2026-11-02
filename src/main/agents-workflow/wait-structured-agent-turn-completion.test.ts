@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { AgentSessionTurnCompletionEvent } from '../../shared/agent-session-turn-completion-wire'
+import type { AgentSessionTurnCompletionEvent } from '../../shared/agent-session/view/agent-session-turn-completion-wire'
 import {
   AgentsWorkflowAgentSessionClosedError,
   waitStructuredAgentTurnCompletion

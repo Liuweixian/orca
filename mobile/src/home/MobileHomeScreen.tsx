@@ -11,6 +11,7 @@ import { useResponsiveLayout } from '../layout/responsive-layout'
 import { triggerMediumImpact } from '../platform/haptics'
 import { useOpenMobileSession } from '../session/use-open-mobile-session'
 import { useOpenMobileTasks } from '../tasks/use-open-mobile-tasks'
+import { useOpenMobileAutomations } from '../automations/use-open-mobile-automations'
 import { colors } from '../theme/mobile-theme'
 import { themedStyleSheet } from '../theme/themed-styles'
 import { useMobileColorScheme } from '../theme/use-mobile-color-scheme'
@@ -29,6 +30,7 @@ import { mobileConnectionPathLabel } from '../transport/mobile-connection-path-l
 import type { HomeJumpBackInRow } from '../worktree/home-jump-back-in'
 import { isResumeTargetConfirmedMissing } from '../worktree/home-resume-card'
 import { MobileHomeAppUpdateCard } from './MobileHomeAppUpdateCard'
+import { MobileHomeTasksAndAutomations } from './MobileHomeTasksAndAutomations'
 import { MobileHomeBottomBar, MobileHomePairBar } from './MobileHomeBottomBar'
 import { MobileHomeEmptyState } from './MobileHomeEmptyState'
 import { MobileHomeHostList } from './MobileHomeHostList'
@@ -45,6 +47,7 @@ export function MobileHomeScreen() {
   const { isWideLayout, contentMaxWidth } = useResponsiveLayout()
   const openMobileHostEdit = useOpenMobileHostEdit()
   const openMobileTasks = useOpenMobileTasks()
+  const openMobileAutomations = useOpenMobileAutomations()
   const openMobileSession = useOpenMobileSession()
   const disconnectHostClient = useDisconnectHostClient()
   const forgetHostClient = useForgetHostClient()
@@ -148,7 +151,16 @@ export function MobileHomeScreen() {
                 />
               ) : null
             }
-            footer={<MobileHomeAppUpdateCard />}
+            footer={
+              <>
+                <MobileHomeTasksAndAutomations
+                  connectedHosts={data.connectedHosts}
+                  onOpenTasks={(hostId) => openMobileTasks(hostId)}
+                  onOpenAutomations={openMobileAutomations}
+                />
+                <MobileHomeAppUpdateCard />
+              </>
+            }
             hostAttempts={data.hostAttempts}
             hostLastConnected={data.hostLastConnected}
             hostConnections={data.hostConnections}
@@ -168,7 +180,7 @@ export function MobileHomeScreen() {
             contentMaxWidth={contentMaxWidth}
             isWideLayout={isWideLayout}
             connectedHosts={data.connectedHosts}
-            onOpenTasks={(hostId) => openMobileTasks(hostId)}
+            hostsConnecting={data.hostsConnecting}
             onCreateWorkspace={() =>
               data.router.push(newWorkspaceOverlayHref(data.connectedHosts.map((host) => host.id)))
             }

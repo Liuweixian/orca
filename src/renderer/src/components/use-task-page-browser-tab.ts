@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react'
-import type { TaskPageJiraListEffectsModel } from './use-task-page-jira-list-effects'
+import type { TaskPageJiraListEffectsModel } from './task-page/jira/use-task-page-jira-list-effects'
 import {
   TASK_PAGE_BROWSER_NEW_TAB_SELECTION,
   type TaskPageBrowserTabSelection

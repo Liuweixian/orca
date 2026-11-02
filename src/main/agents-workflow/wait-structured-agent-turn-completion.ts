@@ -1,4 +1,4 @@
-import type { AgentSessionTurnCompletion } from '../../shared/agent-session-turn-completion-wire'
+import type { AgentSessionTurnCompletion } from '../../shared/agent-session/view/agent-session-turn-completion-wire'
 import type { StructuredAgentSessionHost } from '../native-chat/agent-session-wire/structured-agent-session-host'
 
 type CompletionHost = Pick<StructuredAgentSessionHost, 'subscribeTurnCompletions'>
