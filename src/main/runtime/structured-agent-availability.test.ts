@@ -158,6 +158,17 @@ it('captures fresh shell facts for a first subscriber even when Refresh had no l
   expect(read.mock.lastCall?.[0]).toContainEqual(opencodeAvailable)
 })
 
+it('keeps a missing command missing when PATH contains an unexpanded home entry', async () => {
+  mocks.programs.claude = found('claude', `~/.dotnet/tools${delimiter}/usr/bin`)
+  const { availability } = install()
+  const read = vi.fn()
+  availability.subscribe(read)
+  await vi.waitFor(() => expect(read).toHaveBeenCalledTimes(1))
+  expect(
+    read.mock.lastCall?.[0].find((row: { agent: string }) => row.agent === 'claude')?.chatProgram
+  ).toBe('missing')
+})
+
 it('reads a missing program as missing, a workspace-relative PATH as unknown, and re-reads after an install', async () => {
   mocks.installable = false
   mocks.programs.claude = found('launcher', `bin${delimiter}/usr/bin`, [

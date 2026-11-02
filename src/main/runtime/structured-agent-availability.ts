@@ -67,6 +67,12 @@ async function observeHostAgent(
     : { agent, state: 'unknown' }
 }
 
+/** A `~` entry is the home directory. Only cwd-relative entries can resolve at launch. */
+function pathEntryDependsOnLaunchDirectory(entry: string): boolean {
+  const trimmed = entry.trim()
+  return trimmed.length > 0 && !isAbsolute(trimmed) && !trimmed.startsWith('~')
+}
+
 /** Resolve chat program without spawn; bare names miss unless relative PATH entries require workspace resolution. */
 async function observeChatProgram(
   { definition: { agent }, chatProgram }: StructuredAgentRuntimeMetadata,
@@ -83,7 +89,7 @@ async function observeChatProgram(
       return 'available'
     }
     const path = (env.PATH ?? env.Path ?? '').split(delimiter)
-    if (/[\\/]/.test(command) || path.some((entry) => entry.trim() && !isAbsolute(entry.trim()))) {
+    if (/[\\/]/.test(command) || path.some(pathEntryDependsOnLaunchDirectory)) {
       return 'unknown'
     }
   } catch {
