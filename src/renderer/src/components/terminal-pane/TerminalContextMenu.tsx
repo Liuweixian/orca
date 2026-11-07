@@ -9,6 +9,7 @@ import {
   Minimize2,
   PanelBottomClose,
   PanelsTopLeft,
+  Quote,
   PanelRightClose,
   Pencil,
   RotateCcw,
@@ -25,8 +26,9 @@ import {
   DropdownMenuTrigger
 } from '@/components/ui/dropdown-menu'
 import { shouldIgnoreTerminalMenuPointerDownOutside } from './terminal-context-menu-dismiss'
-import type { TerminalQuickCommand } from '../../../../shared/terminal-quick-command-types'
+import type { TerminalQuickCommand } from '../../../../shared/terminal/quick-commands/terminal-quick-command-types'
 import type { ExecutionHostId } from '../../../../shared/execution-host'
+import type { ManagedPane } from '@/lib/pane-manager/pane-manager'
 import {
   formatOptionalPrimaryShortcutLabel,
   formatPrimaryShortcutLabel
@@ -39,7 +41,8 @@ import { ClearPaneTitleMenuItem } from './ClearPaneTitleMenuItem'
 import type { TerminalQuickCommandMenuHost } from '@/hooks/use-terminal-quick-command-hosts'
 import { TerminalQuickCommandsSubmenu } from './TerminalQuickCommandsSubmenu'
 import { TerminalSendToAgentSubmenu } from './TerminalSendToAgentSubmenu'
-import type { NotesSendAgentTarget } from '@/lib/notes-send-agent-targets'
+import { sendTerminalSelectionToAgentTarget } from './terminal-pane-menu-send-selection-to-agent'
+import { AddToChatSubmenu } from '../native-chat/AddToChatMenu'
 
 type TerminalContextMenuProps = {
   open: boolean
@@ -51,6 +54,8 @@ type TerminalContextMenuProps = {
   canExpandPane: boolean
   menuPaneIsExpanded: boolean
   onCopy: () => void
+  /** The selection to add and the workspace whose chats can take it; null with no selection. */
+  addToChat: { pane: ManagedPane; worktreeId: string; quote: string } | null
   onSelectAll: () => void
   onPaste: () => void
   onSplitRight: () => void
@@ -70,9 +75,6 @@ type TerminalContextMenuProps = {
   isNativeChatView: boolean
   onToggleNativeChat: () => void
   onCopyAgentSessionContext: () => void
-  worktreeId: string
-  canSendSelectionToAgent: boolean
-  onSendSelectionToAgent: (target: NotesSendAgentTarget) => Promise<void>
   quickCommandHosts: TerminalQuickCommandMenuHost[]
   quickCommandHostLoadFailed: boolean
   quickCommandHostOwnershipPending: boolean
@@ -147,6 +149,7 @@ function TerminalContextMenuItems({
   canExpandPane,
   menuPaneIsExpanded,
   onCopy,
+  addToChat,
   onSelectAll,
   onPaste,
   onSplitRight,
@@ -164,9 +167,6 @@ function TerminalContextMenuItems({
   isNativeChatView,
   onToggleNativeChat,
   onCopyAgentSessionContext,
-  worktreeId,
-  canSendSelectionToAgent,
-  onSendSelectionToAgent,
   quickCommandHosts,
   quickCommandHostLoadFailed,
   quickCommandHostOwnershipPending,
@@ -209,6 +209,26 @@ function TerminalContextMenuItems({
         {translate('auto.components.terminal.pane.TerminalContextMenu.f3eeb1de13', 'Copy')}
         <DropdownMenuShortcut>{shortcuts.copy}</DropdownMenuShortcut>
       </DropdownMenuItem>
+      {addToChat ? (
+        <>
+          <AddToChatSubmenu {...addToChat} launchSource="terminal_context_menu" />
+          <TerminalSendToAgentSubmenu
+            worktreeId={addToChat.worktreeId}
+            onSend={(target) => {
+              void sendTerminalSelectionToAgentTarget({
+                pane: addToChat.pane,
+                worktreeId: addToChat.worktreeId,
+                target
+              })
+            }}
+          />
+        </>
+      ) : (
+        <DropdownMenuItem disabled>
+          <Quote />
+          {translate('components.native-chat.addSelectionToChat', 'Add to chat')}
+        </DropdownMenuItem>
+      )}
       <DropdownMenuItem onSelect={onSelectAll}>
         <TextSelect />
         {translate('auto.components.terminal.pane.TerminalContextMenu.selectAll', 'Select All')}
@@ -228,12 +248,6 @@ function TerminalContextMenuItems({
         onClose={() => onOpenChange(false)}
         onAdd={onAddQuickCommand}
       />
-      {canSendSelectionToAgent ? (
-        <TerminalSendToAgentSubmenu
-          worktreeId={worktreeId}
-          onSend={(target) => void onSendSelectionToAgent(target)}
-        />
-      ) : null}
       {canContinueAgentSessionInNewSession ? (
         <AgentSessionContinuationMenuItem onSelect={onContinueAgentSessionInNewSession} />
       ) : null}

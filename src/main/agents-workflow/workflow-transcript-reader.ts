@@ -6,11 +6,11 @@
 
 import { stat } from 'node:fs/promises'
 import { normalize, sep } from 'node:path'
-import type { AiVaultAgent, AiVaultSession } from '../../shared/ai-vault-types'
+import type { AiVaultAgent, AiVaultSession } from '../../shared/ai-vault/contracts/ai-vault-types'
 import { scanAiVaultSessions } from '../ai-vault/session-scanner'
 import { parseAgentSessionFile } from '../ai-vault/session-scanner-agent-parser'
 import type { SessionFileCandidate } from '../ai-vault/session-scanner-types'
-import type { TranscriptMessageSink } from '../ai-vault/session-transcript-consumers'
+import type { TranscriptMessageSink } from '../ai-vault/transcripts/session-transcript-consumers'
 import { AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES } from '../../shared/agents-workflow-run-limits'
 
 /** A transcript may be written a moment after the pane settled, and clocks drift slightly. */
@@ -208,10 +208,10 @@ export async function readWorkflowTranscriptTurn(input: {
     input.startedAt,
     new Set((input.claimedSessionPaths ?? []).map((path) => comparablePath(path) ?? ''))
   )
-  const session = match.session
-  if (!session) {
+  if (!match.session) {
     return { ok: false, message: noMatchMessage(match) }
   }
+  const session = match.session
   let content: string | null
   try {
     content = await readAssistantAnswer(

@@ -4,7 +4,7 @@
 // reads that back. A channel this build cannot open falls through to the file contract; a turn that
 // already ran but whose answer cannot be matched is a failure, never a re-run.
 
-import type { AiVaultAgent } from '../../shared/ai-vault-types'
+import type { AiVaultAgent } from '../../shared/ai-vault/contracts/ai-vault-types'
 import type { AgentsWorkflowNodeOutput } from '../../shared/agents-workflow-run-types'
 import { agentsWorkflowAgentChannelPlan } from '../../shared/agents-workflow-agent-channels'
 import type { AgentsWorkflowStepExecutor } from './workflow-dynamic-scheduler'

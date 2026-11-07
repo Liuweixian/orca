@@ -4,8 +4,8 @@ import {
   AgentsWorkflowUpdateFieldsSchema
 } from '../agents-workflow-types'
 import { AGENTS_WORKFLOW_GENERATION_REQUEST_LIMIT } from '../agents-workflow-generation'
-import type { TuiAgent } from '../tui-agent'
-import { isTuiAgent } from '../tui-agent-config'
+import type { TuiAgent } from '../agent-launch/catalog/tui-agent'
+import { isTuiAgent } from '../agent-launch/catalog/tui-agent-config'
 import { requiredString } from './rpc-param-primitives'
 
 const Revision = z.number().int().positive()

@@ -1,6 +1,6 @@
 import { isFolderRepo } from '../../shared/repo-kind'
 import type { AgentsWorkflowDefinition } from '../../shared/agents-workflow-types'
-import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-managed-worktree-create-types'
+import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/workspaces/creation/runtime-managed-worktree-create-types'
 
 export type AgentsWorkflowWorkspaceResolver = (
   workflow: AgentsWorkflowDefinition,

@@ -1,9 +1,8 @@
 import { consumeLinearIssueRead } from '@/store/slices/linear/linear-issue-publication'
 import { applyHostWorktreeTerminalSleepState } from '@/components/terminal-pane/pty-shutdown-exit-deferral'
-import { emitAgentsWorkflowsChangedWindowEvent } from '@/lib/agents-workflows-changed-window-event'
 import { dispatchTerminalSideEffectBatch } from '@/components/terminal-pane/terminal-side-effect-facts-handler'
-import { emitAutomationsChangedWindowEvent } from '@/lib/automations-changed-window-event'
 import { applyNativeChatLaunchDraftResolved } from '@/runtime/native-chat-launch-draft-runtime-resolution'
+import { forwardAgentSurfaceChangeEvents } from '@/lib/runtime-agent-surface-change-events'
 import { getRuntimeEnvironmentRevision } from '@/runtime/runtime-environment-revision'
 import {
   refreshRuntimeEnvironmentCatalog,
@@ -15,6 +14,7 @@ import {
   refreshRuntimeEnvironmentSshTargetMetadata
 } from '@/runtime/runtime-environment-ssh-state'
 import { subscribeRuntimeClientEvents } from '@/runtime/runtime-client-events'
+import { hostsBrowserPagesFor } from '@/runtime/browser-client-host-request-answer'
 import { toRemoteRuntimePtyId } from '../../../../shared/remote-runtime/remote-runtime-pty-id'
 import { getEnvironmentSshStateGeneration } from '@/store/slices/runtime-environment-ssh'
 import { getRuntimeEnvironmentConnectionGeneration } from '@/store/slices/runtime-status'
@@ -99,6 +99,14 @@ export function registerRuntimeClientIpcBridge(
     event: RuntimeClientEvent,
     generation = getEnvironmentSshStateGeneration(environmentId)
   ): void => {
+    if (event.type === 'notificationAttentionAcknowledged') {
+      void window.api.notifications
+        .acknowledgeAttention(event.acknowledgement, toRuntimeExecutionHostId(environmentId))
+        .catch((error: unknown) =>
+          console.warn('[notifications] Remote acknowledgement failed', error)
+        )
+      return
+    }
     if (event.type === 'worktreeTerminalSleepState') {
       applyHostWorktreeTerminalSleepState(environmentId, event)
       return
@@ -123,20 +131,7 @@ export function registerRuntimeClientIpcBridge(
       requestProjectRefresh(environmentId)
       return
     }
-    if (event.type === 'automationsChanged') {
-      // Why: without the environment the subscriber cannot attribute the changed authority.
-      emitAutomationsChangedWindowEvent({
-        environmentId,
-        ...(event.selector ? { selector: event.selector } : {}),
-        ...(event.reason ? { reason: event.reason } : {})
-      })
-      return
-    }
-    if (event.type === 'agentsWorkflowsChanged') {
-      emitAgentsWorkflowsChangedWindowEvent({
-        environmentId,
-        ...(event.reason ? { reason: event.reason } : {})
-      })
+    if (forwardAgentSurfaceChangeEvents(event, environmentId)) {
       return
     }
     if (event.type === 'browserProfilesChanged') {
@@ -269,7 +264,8 @@ export function registerRuntimeClientIpcBridge(
               hydrateRuntimeEnvironmentSshState(environmentId, { force: true }),
             sync: runtimeClientEventsSync.sync
           })
-        }
+        },
+        { hostsBrowserPages: hostsBrowserPagesFor(environmentId) }
       )
       return subscription
     },

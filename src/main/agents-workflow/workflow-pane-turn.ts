@@ -3,12 +3,12 @@
 // The pane channels differ only in what they read afterwards — the file contract, or the agent's
 // own transcript — so the lifecycle they share lives here once.
 
-import type { TuiAgent } from '../../shared/tui-agent'
+import type { TuiAgent } from '../../shared/agent-launch/catalog/tui-agent'
 import {
   agentsWorkflowAgentSettlement,
   type AgentsWorkflowTurnSettlement
 } from '../../shared/agents-workflow-agent-channels'
-import { getTuiAgentDetectCommands, TUI_AGENT_CONFIG } from '../../shared/tui-agent-config'
+import { getTuiAgentDetectCommands, TUI_AGENT_CONFIG } from '../../shared/agent-launch/catalog/tui-agent-config'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { createRuntimeAutomationRunTerminalObserver } from '../automations/runtime-terminal-run-observer'
 import type { AutomationRunAgentEvidence } from '../automations/automation-run-agent-evidence'

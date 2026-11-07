@@ -1,6 +1,6 @@
 import { z } from 'zod'
-import type { TuiAgent } from './tui-agent'
-import { isTuiAgent } from './tui-agent-config'
+import type { TuiAgent } from './agent-launch/catalog/tui-agent'
+import { isTuiAgent } from './agent-launch/catalog/tui-agent-config'
 
 const NonEmptyId = z.string().trim().min(1)
 const Position = z.strictObject({ x: z.number().finite(), y: z.number().finite() })

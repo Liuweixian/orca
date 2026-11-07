@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { AiVaultSession } from '../../shared/ai-vault-types'
-import type { TranscriptMessage } from '../ai-vault/session-transcript-consumers'
+import type { AiVaultSession } from '../../shared/ai-vault/contracts/ai-vault-types'
+import type { TranscriptMessage } from '../ai-vault/transcripts/session-transcript-consumers'
 import { readWorkflowTranscriptTurn } from './workflow-transcript-reader'
 
 const scanner = vi.hoisted(() => ({ scanAiVaultSessions: vi.fn() }))

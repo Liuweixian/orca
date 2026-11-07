@@ -49,6 +49,12 @@ vi.mock('@/lib/agent-catalog', () => ({ AgentIcon: () => null }))
 vi.mock('./terminal-context-menu-dismiss', () => ({
   shouldIgnoreTerminalMenuPointerDownOutside: () => false
 }))
+const sendSelection = vi.hoisted(() => ({ calls: [] as Record<string, unknown>[] }))
+vi.mock('./terminal-pane-menu-send-selection-to-agent', () => ({
+  sendTerminalSelectionToAgentTarget: (args: Record<string, unknown>) => {
+    sendSelection.calls.push(args)
+  }
+}))
 vi.mock('./TerminalSendToAgentSubmenu', () => ({
   TerminalSendToAgentSubmenu: function TerminalSendToAgentSubmenu(props: Record<string, unknown>) {
     sendToAgentSubmenu.renders.push(props)
@@ -69,6 +75,12 @@ function childrenText(children: React.ReactNode): string {
     .join('')
 }
 
+const SELECTION = {
+  pane: { id: 1, terminal: { hasSelection: () => true } },
+  worktreeId: 'wt-menu',
+  quote: 'Bug bash'
+}
+
 function renderMenu(overrides: Record<string, unknown> = {}): string {
   const props = {
     open: true,
@@ -80,6 +92,7 @@ function renderMenu(overrides: Record<string, unknown> = {}): string {
     canExpandPane: true,
     menuPaneIsExpanded: false,
     onCopy: vi.fn(),
+    addToChat: null,
     onSelectAll: vi.fn(),
     onPaste: vi.fn(),
     onSplitRight: vi.fn(),
@@ -97,9 +110,6 @@ function renderMenu(overrides: Record<string, unknown> = {}): string {
     isNativeChatView: false,
     onToggleNativeChat: vi.fn(),
     onCopyAgentSessionContext: vi.fn(),
-    worktreeId: 'wt-menu',
-    canSendSelectionToAgent: false,
-    onSendSelectionToAgent: vi.fn(),
     quickCommandHosts: [
       { hostId: 'local' as const, label: 'Local Linux', repoCommands: [], globalCommands: [] }
     ],
@@ -127,6 +137,7 @@ describe('TerminalContextMenu', () => {
     items.list = []
     shortcuts.list = []
     sendToAgentSubmenu.renders = []
+    sendSelection.calls = []
     vi.stubGlobal('navigator', { userAgent: 'Linux' })
   })
 
@@ -192,13 +203,12 @@ describe('TerminalContextMenu', () => {
     renderMenu()
     expect(sendToAgentSubmenu.renders).toHaveLength(0)
 
-    renderMenu({ canSendSelectionToAgent: true })
+    renderMenu({ addToChat: SELECTION })
     expect(sendToAgentSubmenu.renders).toHaveLength(1)
   })
 
-  it('routes a send-to-agent pick to the selection-send handler for the menu worktree', () => {
-    const onSendSelectionToAgent = vi.fn()
-    renderMenu({ canSendSelectionToAgent: true, onSendSelectionToAgent })
+  it('routes a send-to-agent pick to the selection send for the menu worktree', () => {
+    renderMenu({ addToChat: SELECTION })
 
     const [submenuProps] = sendToAgentSubmenu.renders
     expect(submenuProps?.worktreeId).toBe('wt-menu')
@@ -209,7 +219,7 @@ describe('TerminalContextMenu', () => {
     if (typeof onSend === 'function') {
       onSend(target)
     }
-    expect(onSendSelectionToAgent).toHaveBeenCalledWith(target)
+    expect(sendSelection.calls).toEqual([{ pane: SELECTION.pane, worktreeId: 'wt-menu', target }])
   })
 
   it('hides chat continuation when the pane cannot switch views', () => {
@@ -339,12 +349,13 @@ describe('TerminalContextMenu', () => {
           label: 'Local Mac',
           repoCommands: [{ id: 'repo', label: 'Repo command', command: 'repo', appendEnter: true }],
           globalCommands: [
-            { id: 'global', label: 'Global command', command: 'global', appendEnter: true }
+            { id: 'global', label: 'Global command', command: 'global', appendEnter: false }
           ]
         }
       ]
     })
 
+    expect(rendered).toContain('Insert')
     expect(rendered).toContain('Orca')
     expect(rendered).toContain('Global')
     expect(rendered).not.toContain('Local Mac')

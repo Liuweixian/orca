@@ -1,6 +1,6 @@
 // The contracts a workflow schedule offers its caller and its agent executor.
 
-import type { TuiAgent } from '../../shared/tui-agent'
+import type { TuiAgent } from '../../shared/agent-launch/catalog/tui-agent'
 import type {
   AgentsWorkflowNodeAttempt,
   AgentsWorkflowNodeOutput

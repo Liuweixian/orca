@@ -7,7 +7,7 @@
 import React from 'react'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import type { TuiAgent } from '../../../../shared/tui-agent'
+import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
 import type { AgentsWorkflowGenerationDraft } from '../../../../shared/agents-workflow-generation'
 import {

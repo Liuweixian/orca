@@ -5,10 +5,10 @@
 // never carry a claim about what another machine can do. Readers resolve the plan at execution
 // time; only the fallback order is shared.
 
-import type { AiVaultAgent } from './ai-vault-types'
-import { getTuiAgentRestSignal } from './tui-agent-rest-signal'
-import type { TuiAgent } from './tui-agent'
-import { ALL_TUI_AGENTS } from './tui-agent-display-names'
+import type { AiVaultAgent } from './ai-vault/contracts/ai-vault-types'
+import { getTuiAgentRestSignal } from './agent-status/title/tui-agent-rest-signal'
+import type { TuiAgent } from './agent-launch/catalog/tui-agent'
+import { ALL_TUI_AGENTS } from './agent-launch/catalog/tui-agent-display-names'
 
 export const AGENTS_WORKFLOW_AGENT_CHANNELS = [
   /** A structured agent session reports the committed turn and yields its assistant message. */

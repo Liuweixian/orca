@@ -11,14 +11,14 @@ const lifecycle = vi.hoisted<{
   status: 'exited'
 }))
 
-vi.mock('../runtime/structured-agent-runtime-metadata', () => ({
+vi.mock('../runtime/agent-session/installation/structured-agent-runtime-metadata', () => ({
   structuredAgentRuntimeMetadata: (agent: string) =>
     agent === 'claude' ? { definition: { agent: 'claude' } } : null
 }))
 vi.mock('../runtime/agent-session/structured-agent-session-close', () => ({
   closeStructuredAgentSessionChild: lifecycle.close
 }))
-vi.mock('../runtime/structured-worker-authority', () => ({
+vi.mock('../runtime/orchestration/terminal-authority/structured-sessions/structured-worker-authority', () => ({
   observeStructuredSession: () => ({ status: lifecycle.status })
 }))
 

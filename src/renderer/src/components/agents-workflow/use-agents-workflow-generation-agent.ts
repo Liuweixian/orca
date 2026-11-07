@@ -2,10 +2,10 @@
 // detected/enabled/default resolution the rest of the app uses for launching an agent.
 
 import React from 'react'
-import type { TuiAgent } from '../../../../shared/tui-agent'
+import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
-import { pickSourceControlLaunchAgent } from '../../../../shared/source-control-launch-agent-selection'
-import { filterEnabledTuiAgents } from '../../../../shared/tui-agent-selection'
+import { pickSourceControlLaunchAgent } from '../../../../shared/source-control/ai/source-control-launch-agent-selection'
+import { filterEnabledTuiAgents } from '../../../../shared/agent-launch/catalog/tui-agent-selection'
 import { readNativeDetectedAgents } from '@/store/slices/local-detected-agent-store-state'
 import { useAppStore } from '@/store'
 

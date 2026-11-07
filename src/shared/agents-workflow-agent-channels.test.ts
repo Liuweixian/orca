@@ -9,8 +9,8 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { ALL_TUI_AGENTS } from './tui-agent-display-names'
-import { isAiVaultAgent } from './ai-vault-types'
+import { ALL_TUI_AGENTS } from './agent-launch/catalog/tui-agent-display-names'
+import { isAiVaultAgent } from './ai-vault/contracts/ai-vault-types'
 import {
   AGENTS_WORKFLOW_AGENT_CHANNELS,
   agentsWorkflowAgentChannelPlan,

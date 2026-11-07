@@ -5,7 +5,7 @@
 
 import { z } from 'zod'
 import { LOCAL_EXECUTION_HOST_ID } from './execution-host'
-import type { TuiAgent } from './tui-agent'
+import type { TuiAgent } from './agent-launch/catalog/tui-agent'
 import { validateParsedAgentsWorkflowDefinition } from './agents-workflow-graph-validation'
 import type { AgentsWorkflowValidationIssue } from './agents-workflow-graph'
 import {

@@ -6,7 +6,7 @@ import { isFolderRepo } from '../../../../shared/repo-kind'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { shouldShowAgentsWorkflowButton } from '../sidebar/SidebarNav'
 import { getVisibleRightSidebarActivityItems } from './right-sidebar-activity-visibility'
-import { getPluginPanelActivityItems } from './plugin-panel-activity-items'
+import { getPluginPanelActivityItems } from './plugin-panels/plugin-panel-activity-items'
 import {
   getPortsPanelOwnerKey,
   portsPanelHostForOwnerKey,

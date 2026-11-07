@@ -1,9 +1,12 @@
-import { readAgentEffortLevel } from '../../agent-effort-level'
-import type { AgentHookSource } from '../../agent-hook-relay'
-import type { AgentStatusCacheIdentity, RefusedPaneResume } from '../../agent-status-ipc-payload'
-import type { AgentStatusState } from '../../agent-status-types'
-import type { AgentMainAgentStatus } from '../../main-agent-status'
-import type { TuiAgent } from '../../tui-agent'
+import { readAgentEffortLevel } from '../../agent-launch/choices/agent-effort-level'
+import type { AgentHookSource } from '../../agent-hook-listener/transport/agent-hook-relay'
+import type {
+  AgentStatusCacheIdentity,
+  RefusedPaneResume
+} from '../../agent-status/contracts/agent-status-ipc-payload'
+import type { AgentStatusState } from '../../agent-status/contracts/agent-status-types'
+import type { AgentMainAgentStatus } from '../../agent-status/lifecycle/main-agent-status'
+import type { TuiAgent } from '../../agent-launch/catalog/tui-agent'
 
 export const RESUMABLE_TUI_AGENTS = [
   'claude',
@@ -334,18 +337,4 @@ export type SavedResumeStartupSource = {
   expectedStatus?: AgentStatusCacheIdentity
 }
 
-/** Forward only effective launch facts through each existing terminal envelope. */
-export function terminalLaunchFacts(result: TerminalLaunchResult): TerminalLaunchResult {
-  return {
-    ...(result.savedResumeDecision ? { savedResumeDecision: result.savedResumeDecision } : {}),
-    ...(result.agentResumeUnavailable
-      ? { agentResumeUnavailable: result.agentResumeUnavailable }
-      : {}),
-    ...(result.agentResumeRefused ? { agentResumeRefused: result.agentResumeRefused } : {}),
-    ...(result.refusedResume ? { refusedResume: result.refusedResume } : {}),
-    ...(result.launchConfig ? { launchConfig: result.launchConfig } : {}),
-    ...(result.launchAgent ? { launchAgent: result.launchAgent } : {}),
-    ...(result.launchToken ? { launchToken: result.launchToken } : {}),
-    ...(result.resumeProviderSession ? { resumeProviderSession: result.resumeProviderSession } : {})
-  }
-}
+export { terminalLaunchFacts } from './terminal-launch-facts'

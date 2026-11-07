@@ -110,7 +110,7 @@ describe('sendTerminalSelectionToAgentTarget', () => {
       prompt: 'copilot answer',
       noteTarget: { tabId: 'tab-a', leafId: 'leaf-b' }
     })
-    expect(harness.toastSuccess).toHaveBeenCalledWith('Sent to Claude.')
+    expect(harness.toastSuccess).toHaveBeenCalledWith('Sent to active agent Claude.')
     expect(harness.track).toHaveBeenCalledWith('agent_prompt_sent', {
       agent_kind: 'claude-code',
       launch_source: 'terminal_context_menu',
@@ -127,7 +127,7 @@ describe('sendTerminalSelectionToAgentTarget', () => {
     await sendTerminalSelectionToAgentTarget({ pane, worktreeId: WORKTREE_ID, target: TARGET })
 
     expect(harness.sendNotesToActiveAgentSession).toHaveBeenCalledTimes(1)
-    expect(harness.toastSuccess).toHaveBeenCalledWith('Sent to Claude.')
+    expect(harness.toastSuccess).toHaveBeenCalledWith('Sent to active agent Claude.')
   })
 
   it('reports a refused send without claiming success', async () => {
@@ -170,7 +170,7 @@ describe('sendTerminalSelectionToAgentTarget', () => {
       target: unknownAgent
     })
 
-    expect(harness.toastSuccess).toHaveBeenCalledWith('Sent to Agent.')
+    expect(harness.toastSuccess).toHaveBeenCalledWith('Sent to active agent Agent.')
     expect(harness.track).toHaveBeenCalledWith('agent_prompt_sent', {
       agent_kind: 'other',
       launch_source: 'terminal_context_menu',

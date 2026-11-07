@@ -6,13 +6,13 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { AI_VAULT_AGENTS } from '../../shared/ai-vault-types'
-import { ALL_TUI_AGENTS } from '../../shared/tui-agent-display-names'
+import { AI_VAULT_AGENTS } from '../../shared/ai-vault/contracts/ai-vault-types'
+import { ALL_TUI_AGENTS } from '../../shared/agent-launch/catalog/tui-agent-display-names'
 import {
   agentsWorkflowAgentChannelPlan,
   agentsWorkflowAgentChannelPlanEntries
 } from '../../shared/agents-workflow-agent-channels'
-import { structuredAgentRuntimeMetadata } from '../runtime/structured-agent-runtime-metadata'
+import { structuredAgentRuntimeMetadata } from '../runtime/agent-session/installation/structured-agent-runtime-metadata'
 
 describe('agents workflow channel plans against the implementing rosters', () => {
   it.each(ALL_TUI_AGENTS)(

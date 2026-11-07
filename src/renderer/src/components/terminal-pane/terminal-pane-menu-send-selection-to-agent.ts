@@ -7,7 +7,8 @@ import {
   activeAgentNotesSendFailureMessage,
   sendNotesToActiveAgentSession
 } from '@/lib/active-agent-note-send'
-import { agentKindForAgentType, formatAgentTypeLabel } from '@/lib/agent-status'
+import { agentKindForAgentType } from '@/lib/agent-status'
+import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentation/agent-type-label'
 import { readTerminalClipboardSelection } from './terminal-clipboard-selection-text'
 import { runTerminalCopy } from './terminal-copy-rejection-guards'
 

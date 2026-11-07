@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { AgentsWorkflowDefinition } from '../../shared/agents-workflow-types'
-import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/runtime-managed-worktree-create-types'
+import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/workspaces/creation/runtime-managed-worktree-create-types'
 import { createAgentsWorkflowWorkspaceResolver } from './workflow-workspace-resolver'
 
 function workflow(workspace: AgentsWorkflowDefinition['workspace']): AgentsWorkflowDefinition {

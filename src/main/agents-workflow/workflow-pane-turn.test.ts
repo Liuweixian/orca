@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { AgentStatusIpcPayload } from '../../shared/agent-status-types'
+import type { AgentStatusIpcPayload } from '../../shared/agent-status/contracts/agent-status-ipc-payload'
 import { WorkflowPaneTurns, type WorkflowPaneTurnRuntime } from './workflow-pane-turn'
 
 function statusRow(state: 'working' | 'done', stateStartedAt: number): AgentStatusIpcPayload {

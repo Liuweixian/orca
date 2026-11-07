@@ -19,13 +19,13 @@ import type {
   AgentsWorkflowRun,
   AgentsWorkflowRunsPage
 } from '../../../../shared/agents-workflow-run-types'
-import { OrcaRuntimeWithRestoredTerminalPlacement } from './restored-terminal-placement'
+import { RuntimeArtifactOperations } from '../../artifacts/runtime-artifact-operations'
 import { AgentsWorkflowRunService } from '../../../agents-workflow/workflow-run-service'
 import { createAgentsWorkflowHostExecutionAdapter } from '../../../agents-workflow/workflow-host-execution-adapter'
 import { createAgentsWorkflowWorkspaceResolver } from '../../../agents-workflow/workflow-workspace-resolver'
 import type { OrcaRuntimeService } from '../../orca-runtime'
 
-export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends OrcaRuntimeWithRestoredTerminalPlacement {
+export abstract class OrcaRuntimeWithAgentsWorkflowOperations extends RuntimeArtifactOperations {
   private agentsWorkflowRunService: AgentsWorkflowRunService | null = null
 
   abstract notifyAgentsWorkflowsChanged(payload?: { reason?: 'definition' | 'run' }): void
