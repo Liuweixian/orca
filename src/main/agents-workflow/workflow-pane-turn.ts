@@ -8,7 +8,10 @@ import {
   agentsWorkflowAgentSettlement,
   type AgentsWorkflowTurnSettlement
 } from '../../shared/agents-workflow-agent-channels'
-import { getTuiAgentDetectCommands, TUI_AGENT_CONFIG } from '../../shared/agent-launch/catalog/tui-agent-config'
+import {
+  getTuiAgentDetectCommands,
+  TUI_AGENT_CONFIG
+} from '../../shared/agent-launch/catalog/tui-agent-config'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import { createRuntimeAutomationRunTerminalObserver } from '../automations/runtime-terminal-run-observer'
 import type { AutomationRunAgentEvidence } from '../automations/automation-run-agent-evidence'

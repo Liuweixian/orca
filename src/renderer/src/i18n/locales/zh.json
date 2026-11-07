@@ -888,8 +888,7 @@
         "jira": {
           "856083302c": "Jira 连接已被新的请求取代。"
         },
-        "linear": {
-        },
+        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "创建配置文件失败",
@@ -9536,8 +9535,7 @@
               "chrome": "chrome",
               "password": "密码管理器"
             },
-            "nativeChat": {
-            }
+            "nativeChat": {}
           }
         },
         "floating": {
@@ -12805,8 +12803,7 @@
         "MobileRelayStatusSection": {},
         "MobileRelayBetaAvailability": {},
         "PluginMarketplacePreviewDialog": {},
-        "InstalledPluginCarousel": {
-        },
+        "InstalledPluginCarousel": {},
         "PluginInstallTrustDialog": {
           "titleFolder": "请确认你信任此文件夹",
           "title": "请确认你信任 {{value0}}",
@@ -20905,8 +20902,7 @@
       "demoPassword": "密码",
       "demoCookie": "Cookie"
     },
-    "nativeChatUpgrade": {
-    }
+    "nativeChatUpgrade": {}
   },
   "quickOpen": {
     "moreMatchesAvailable": "可能还有更多匹配结果。请细化搜索以缩小范围。",

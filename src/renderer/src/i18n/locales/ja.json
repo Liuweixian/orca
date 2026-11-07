@@ -888,8 +888,7 @@
         "jira": {
           "856083302c": "Jira 接続は新規リクエストに置き換えられました。"
         },
-        "linear": {
-        },
+        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "プロファイルの作成に失敗しました",
@@ -9565,8 +9564,7 @@
               "chrome": "クローム",
               "password": "パスワードマネージャー"
             },
-            "nativeChat": {
-            }
+            "nativeChat": {}
           }
         },
         "floating": {
@@ -12797,8 +12795,7 @@
         "MobileRelayStatusSection": {},
         "MobileRelayBetaAvailability": {},
         "PluginMarketplacePreviewDialog": {},
-        "InstalledPluginCarousel": {
-        },
+        "InstalledPluginCarousel": {},
         "PluginInstallTrustDialog": {
           "titleFolder": "このフォルダーを信頼できることを確認してください",
           "title": "{{value0}} を信頼できることを確認してください",
@@ -20757,8 +20754,7 @@
       "demoPassword": "パスワード",
       "demoCookie": "Cookie"
     },
-    "nativeChatUpgrade": {
-    }
+    "nativeChatUpgrade": {}
   },
   "quickOpen": {
     "moreMatchesAvailable": "さらに多くの一致が利用可能になる可能性があります。検索を絞り込んで結果を絞り込みます。",

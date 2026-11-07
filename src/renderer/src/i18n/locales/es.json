@@ -896,8 +896,7 @@
         "jira": {
           "856083302c": "La conexión de Jira fue reemplazada por una solicitud más reciente."
         },
-        "linear": {
-        },
+        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "Error al crear perfil",
@@ -9823,8 +9822,7 @@
               "chrome": "chrome",
               "password": "gestor de contraseñas"
             },
-            "nativeChat": {
-            }
+            "nativeChat": {}
           }
         },
         "floating": {
@@ -13085,8 +13083,7 @@
         "MobileRelayStatusSection": {},
         "MobileRelayBetaAvailability": {},
         "PluginMarketplacePreviewDialog": {},
-        "InstalledPluginCarousel": {
-        },
+        "InstalledPluginCarousel": {},
         "PluginInstallTrustDialog": {
           "titleFolder": "Asegúrate de que confías en esta carpeta",
           "title": "Asegúrate de que confías en {{value0}}",
@@ -21195,8 +21192,7 @@
       "demoPassword": "contraseña",
       "demoCookie": "cookie"
     },
-    "nativeChatUpgrade": {
-    }
+    "nativeChatUpgrade": {}
   },
   "fileExplorer": {
     "root": {

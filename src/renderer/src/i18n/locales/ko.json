@@ -888,8 +888,7 @@
         "jira": {
           "856083302c": "더 새로운 요청이 있어 Jira 연결 요청을 건너뛰었습니다."
         },
-        "linear": {
-        },
+        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "프로필을 생성하지 못했습니다",
@@ -9528,8 +9527,7 @@
               "chrome": "크롬",
               "password": "비밀번호 관리자"
             },
-            "nativeChat": {
-            }
+            "nativeChat": {}
           }
         },
         "floating": {
@@ -12797,8 +12795,7 @@
         "MobileRelayStatusSection": {},
         "MobileRelayBetaAvailability": {},
         "PluginMarketplacePreviewDialog": {},
-        "InstalledPluginCarousel": {
-        },
+        "InstalledPluginCarousel": {},
         "PluginInstallTrustDialog": {
           "titleFolder": "이 폴더를 신뢰하는지 확인하세요",
           "title": "{{value0}}을(를) 신뢰하는지 확인하세요",
@@ -20757,8 +20754,7 @@
       "demoPassword": "비밀번호",
       "demoCookie": "쿠키"
     },
-    "nativeChatUpgrade": {
-    }
+    "nativeChatUpgrade": {}
   },
   "quickOpen": {
     "moreMatchesAvailable": "더 많은 일치 항목을 사용할 수 있습니다. 검색 결과를 좁히려면 검색을 구체화하세요.",

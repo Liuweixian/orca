@@ -1116,8 +1116,7 @@
         "jira": {
           "856083302c": "La connexion Jira a été remplacée par une requête plus récente."
         },
-        "linear": {
-        },
+        "linear": {},
         "orca": {
           "profiles": {
             "612f7f6861": "Échec de la création du profil",
@@ -10093,8 +10092,7 @@
               "chrome": "chrome",
               "password": "gestionnaire de mots de passe"
             },
-            "nativeChat": {
-            }
+            "nativeChat": {}
           }
         },
         "floating": {
@@ -13309,8 +13307,7 @@
         "MobileRelayStatusSection": {},
         "MobileRelayBetaAvailability": {},
         "PluginMarketplacePreviewDialog": {},
-        "InstalledPluginCarousel": {
-        },
+        "InstalledPluginCarousel": {},
         "PluginInstallTrustDialog": {
           "titleFolder": "Assurez-vous de faire confiance à ce dossier",
           "title": "Assurez-vous de faire confiance à {{value0}}",
@@ -21154,8 +21151,7 @@
       "demoPassword": "mot de passe",
       "demoCookie": "cookie"
     },
-    "nativeChatUpgrade": {
-    }
+    "nativeChatUpgrade": {}
   },
   "quickOpen": {
     "moreMatchesAvailable": "D'autres correspondances sont peut-être disponibles. Affinez votre recherche pour réduire les résultats.",
