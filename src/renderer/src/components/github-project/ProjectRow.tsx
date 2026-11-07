@@ -1,6 +1,6 @@
 import type { RuntimeClientTarget } from '../../../../shared/runtime-client-target'
 import React from 'react'
-import { ExternalLink, Play } from 'lucide-react'
+import { ExternalLink, Play, ScanEye } from 'lucide-react'
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
@@ -33,6 +33,7 @@ type Props = {
   onEditLabels?: (add: string[], remove: string[]) => void
   onEditIssueType?: (issueType: GitHubIssueType | null) => void
   onStartWork?: () => void
+  onReviewWithAgent?: () => void
   onOpenInBrowser?: () => void
   sourceHost?: string
   sourceTarget: RuntimeClientTarget
@@ -51,6 +52,7 @@ export default function ProjectRow({
   onEditLabels,
   onEditIssueType,
   onStartWork,
+  onReviewWithAgent,
   onOpenInBrowser,
   sourceHost,
   sourceTarget
@@ -134,6 +136,29 @@ export default function ProjectRow({
             </TooltipTrigger>
             <TooltipContent>
               {translate('auto.components.github.project.ProjectRow.e12be8b4d4', 'Open in GitHub')}
+            </TooltipContent>
+          </Tooltip>
+        ) : null}
+        {!disabled && row.itemType === 'PULL_REQUEST' && row.content.number != null ? (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={onReviewWithAgent}
+                aria-label={translate(
+                  'auto.components.github.project.ProjectRow.reviewWithAgent',
+                  'Review with agent'
+                )}
+                className="rounded p-1 hover:bg-muted"
+              >
+                <ScanEye className="size-3.5" />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {translate(
+                'auto.components.github.project.ProjectRow.reviewWithAgent',
+                'Review with agent'
+              )}
             </TooltipContent>
           </Tooltip>
         ) : null}

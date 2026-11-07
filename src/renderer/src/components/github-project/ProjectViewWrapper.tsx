@@ -170,6 +170,7 @@ function ProjectViewBody({
         }
       }}
       onStartWork={rowActions.startWork}
+      onReviewWithAgent={rowActions.reviewWithAgent}
       sourceTarget={tableState.sourceTarget}
     />
   )

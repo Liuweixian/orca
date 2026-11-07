@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { useRepoSlugIndex } from '@/lib/repo-slug-index'
 import { launchWorkItemDirect } from '@/lib/launch-work-item-direct'
+import { startPrReviewAgent } from '@/lib/pr-review-agent-launch'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
 import { buildTaskSourceContextFromRepo } from '../../../../shared/task-source-context'
@@ -223,6 +224,36 @@ export function useProjectRowActions({
     [buildOrigin, messageForResolution, resolveRow, table]
   )
 
+  const reviewWithAgent = useCallback(
+    (row: GitHubProjectRow) => {
+      if (row.itemType !== 'PULL_REQUEST') {
+        return
+      }
+      const resolution = resolveRow(row)
+      if (!resolution || messageForResolution(row, resolution.status)) {
+        return
+      }
+      if (resolution.status !== 'selected_match' || !table) {
+        return
+      }
+      const workItem = buildProjectWorkItem(row, resolution.repo, table.project.host)
+      if (!workItem) {
+        return
+      }
+      void startPrReviewAgent({
+        item: workItem,
+        repoId: resolution.repo.id,
+        launchSource: 'task_page',
+        openModalFallback: () => {
+          if (row.content.url) {
+            openAppHttpLink(row.content.url)
+          }
+        }
+      })
+    },
+    [messageForResolution, resolveRow, table]
+  )
+
   return {
     resolvedDialogRepoItem,
     dialogSourceContext,
@@ -232,6 +263,7 @@ export function useProjectRowActions({
     setRepoNotInOrca,
     openDialog,
     startWork,
+    reviewWithAgent,
     ...rowMutations
   }
 }

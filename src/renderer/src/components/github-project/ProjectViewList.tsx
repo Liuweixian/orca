@@ -57,6 +57,7 @@ type Props = {
   onEditLabels?: (row: GitHubProjectRow, add: string[], remove: string[]) => void
   onEditIssueType?: (row: GitHubProjectRow, issueType: GitHubIssueType | null) => void
   onStartWork?: (row: GitHubProjectRow) => void
+  onReviewWithAgent?: (row: GitHubProjectRow) => void
   onOpenInBrowser?: (row: GitHubProjectRow) => void
   sourceTarget: RuntimeClientTarget
 }
@@ -69,6 +70,7 @@ export default function ProjectViewList({
   onEditLabels,
   onEditIssueType,
   onStartWork,
+  onReviewWithAgent,
   onOpenInBrowser,
   sourceTarget
 }: Props): React.JSX.Element {
@@ -241,6 +243,7 @@ export default function ProjectViewList({
                     onEditLabels={(add, remove) => onEditLabels?.(row, add, remove)}
                     onEditIssueType={(issueType) => onEditIssueType?.(row, issueType)}
                     onStartWork={() => onStartWork?.(row)}
+                    onReviewWithAgent={() => onReviewWithAgent?.(row)}
                     onOpenInBrowser={() => onOpenInBrowser?.(row)}
                     sourceHost={table.project.host}
                     sourceTarget={sourceTarget}
