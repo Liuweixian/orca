@@ -1,9 +1,10 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolvePrReviewWorktreeId } from './pr-review-agent-launch'
+import { resolveMrReviewWorktreeId, resolvePrReviewWorktreeId } from './pr-review-agent-launch'
 import type { Worktree } from '../../../shared/worktree/types'
 
 const PR_URL = 'https://github.com/stablyai/orca/pull/42'
+const MR_URL = 'https://gitlab.com/stably/orca/-/merge_requests/42'
 
 function worktree(overrides: Partial<Worktree> = {}): Worktree {
   return {
@@ -64,6 +65,42 @@ describe('resolvePrReviewWorktreeId', () => {
         ],
         'repo-1',
         { number: 42, url: PR_URL }
+      )
+    ).toBeNull()
+  })
+})
+
+describe('resolveMrReviewWorktreeId', () => {
+  it('prefers the workspace attached to the merge request', () => {
+    const attached = worktree({
+      id: 'wt-mr',
+      linkedItems: [{ provider: 'gitlab', type: 'mr', number: 42, url: MR_URL }]
+    })
+    const main = worktree({ id: 'wt-main', isMainWorktree: true })
+
+    expect(resolveMrReviewWorktreeId([main, attached], 'repo-1', { number: 42, url: MR_URL })).toBe(
+      'wt-mr'
+    )
+  })
+
+  it('falls back to the repository main checkout', () => {
+    const main = worktree({ id: 'wt-main', isMainWorktree: true })
+    const other = worktree({ id: 'wt-other' })
+
+    expect(resolveMrReviewWorktreeId([other, main], 'repo-1', { number: 42, url: MR_URL })).toBe(
+      'wt-main'
+    )
+  })
+
+  it('returns null when the repository has no usable workspace', () => {
+    expect(
+      resolveMrReviewWorktreeId(
+        [
+          worktree({ id: 'other-repo', repoId: 'repo-2' }),
+          worktree({ id: 'archived', isArchived: true })
+        ],
+        'repo-1',
+        { number: 42, url: MR_URL }
       )
     ).toBeNull()
   })

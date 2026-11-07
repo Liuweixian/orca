@@ -1747,6 +1747,15 @@
           }
         }
       },
+      "gitlab": {
+        "review": {
+          "agent": {
+            "launch": {
+              "started": "Started a review agent for MR !{{value0}}."
+            }
+          }
+        }
+      },
       "local": {
         "path": {
           "open": {
@@ -3399,6 +3408,8 @@
         "gitlabViewTodos": "My Todos",
         "startWorkspaceFromMr": "Start workspace from MR {{number}}",
         "startWorkspaceFromIssue": "Start workspace from issue {{number}}",
+        "reviewWithAgent": "Review with agent",
+        "reviewMrWithAgent": "Review MR !{{number}} with agent",
         "shownCount_other": "{{count}} shown",
         "linearProjectPlaceholder": "Project",
         "labelCount_one": "{{count}} label",

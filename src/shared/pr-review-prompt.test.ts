@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildReviewPullRequestPrompt } from './pr-review-prompt'
+import { buildReviewMergeRequestPrompt, buildReviewPullRequestPrompt } from './pr-review-prompt'
 
 const BASE_ARGS = {
   number: 123,
@@ -62,5 +62,48 @@ describe('buildReviewPullRequestPrompt', () => {
     expect(prompt).toContain('"Pre-existing"')
     expect(prompt).toContain('No blocking findings')
     expect(prompt).toContain('the count of files you actually read')
+  })
+})
+
+const GITLAB_BASE_ARGS = {
+  number: 87,
+  title: 'fix(ssh): retry transient handshake failures',
+  url: 'https://gitlab.com/stably/orca/-/merge_requests/87',
+  baseRef: 'main',
+  headSha: 'a1b2c3d'
+}
+
+describe('buildReviewMergeRequestPrompt', () => {
+  it('reads the review through glab instead of gh', () => {
+    const prompt = buildReviewMergeRequestPrompt(GITLAB_BASE_ARGS)
+
+    expect(prompt).toContain('Review merge request !87')
+    expect(prompt).toContain('glab mr view 87 --output json')
+    expect(prompt).toContain('glab mr diff 87')
+    expect(prompt).toContain('projects/:fullpath/repository/files/<url-encoded path>/raw?ref=<sha>')
+    expect(prompt).not.toContain('gh pr')
+    expect(prompt).not.toContain('gh api')
+  })
+
+  it('keeps the same reporting contract as the pull request prompt', () => {
+    const prompt = buildReviewMergeRequestPrompt(GITLAB_BASE_ARGS)
+
+    expect(prompt).toContain('P0 must fix before merge, P1 should fix, P2 optional')
+    expect(prompt).toContain('"Pre-existing"')
+    expect(prompt).toContain('No blocking findings')
+    expect(promptMetadata(prompt)).toMatchObject({
+      number: 87,
+      url: GITLAB_BASE_ARGS.url,
+      baseRef: 'main',
+      headSha: 'a1b2c3d'
+    })
+  })
+
+  it('mentions an existing head checkout only when it can be verified', () => {
+    const withHead = buildReviewMergeRequestPrompt(GITLAB_BASE_ARGS)
+    const withoutHead = buildReviewMergeRequestPrompt({ ...GITLAB_BASE_ARGS, headSha: null })
+
+    expect(withHead).toContain('git diff --merge-base origin/main a1b2c3d')
+    expect(withoutHead).not.toContain('git diff --merge-base')
   })
 })

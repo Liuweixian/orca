@@ -6,6 +6,8 @@ import type { LinkedWorkItemSummary } from '@/lib/new-workspace'
 import { useAppStore } from '@/store'
 import { getWorkItemRepo } from '@/lib/work-item-repo-row'
 import { findGithubWorkItemWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
+import { startMergeRequestReviewAgent } from '@/lib/pr-review-agent-launch'
+import { openAppHttpLink } from '@/lib/app-http-link-open'
 import { activateAndRevealWorktree } from '@/lib/worktree-activation'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
@@ -122,18 +124,35 @@ export function useTaskPageWorkspaceActions<Model extends TaskPageWorkspaceActio
     },
     [openComposerForGitLabItem]
   )
+  const handleReviewGitLabItem = useCallback((item: GitLabWorkItem): void => {
+    if (item.type !== 'mr') {
+      return
+    }
+    void startMergeRequestReviewAgent({
+      item,
+      repoId: item.repoId,
+      launchSource: 'task_page',
+      openModalFallback: () => {
+        if (item.url) {
+          openAppHttpLink(item.url)
+        }
+      }
+    })
+  }, [])
   const nextModel = model as typeof model & {
     openComposerForItem: typeof openComposerForItem
     handleUseWorkItem: typeof handleUseWorkItem
     handleOpenOrUseGitHubWorkItem: typeof handleOpenOrUseGitHubWorkItem
     openComposerForGitLabItem: typeof openComposerForGitLabItem
     handleUseGitLabItem: typeof handleUseGitLabItem
+    handleReviewGitLabItem: typeof handleReviewGitLabItem
   }
   nextModel.openComposerForItem = openComposerForItem
   nextModel.handleUseWorkItem = handleUseWorkItem
   nextModel.handleOpenOrUseGitHubWorkItem = handleOpenOrUseGitHubWorkItem
   nextModel.openComposerForGitLabItem = openComposerForGitLabItem
   nextModel.handleUseGitLabItem = handleUseGitLabItem
+  nextModel.handleReviewGitLabItem = handleReviewGitLabItem
   return nextModel
 }
 export type TaskPageWorkspaceActionsModel = ReturnType<

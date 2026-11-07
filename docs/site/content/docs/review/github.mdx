@@ -23,7 +23,7 @@ Bitbucket Cloud connects in-app from the same pane — **Connect** with **Email 
 - GitHub PR conversation comments and inline review-thread comments have a reaction picker matching GitHub's eight reactions (👍 👎 😄 😕 ❤️ 🎉 🚀 👀). Existing chips are toggles. GitLab comments stay unchanged.
 - Grouped PR comment sections sort newest-first so a fresh reply bubbles its thread to the top. The Timeline tab stays oldest-first.
 - When a GitHub pull request has failing checks, use **Fix broken checks** from the PR view to hand the failed check names and links to an agent.
-- **Review with agent** in a Tasks row starts a review agent for that pull request in a workspace you already have — the PR's own workspace when one is linked, otherwise the repository's main checkout. It creates no worktree: the agent reads the diff with `gh pr diff` and reports findings by severity without posting them to the pull request.
+- **Review with agent** in a Tasks row starts a review agent for that pull request in a workspace you already have — the PR's own workspace when one is linked, otherwise the repository's main checkout. It creates no worktree: the agent reads the diff with `gh pr diff` and reports findings by severity without posting them to the pull request. GitLab merge request rows in Tasks offer the same action, reading the change with `glab mr view` and `glab mr diff`.
 
 ### Auto-merge
 

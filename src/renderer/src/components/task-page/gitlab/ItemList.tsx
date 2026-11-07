@@ -3,7 +3,7 @@ import { getIntlLocale, translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip'
 import { Button } from '@/components/ui/button'
-import { ArrowRight, ExternalLink } from 'lucide-react'
+import { ArrowRight, ExternalLink, ScanEye } from 'lucide-react'
 import { openAppHttpLink } from '@/lib/app-http-link-open'
 export function TaskPageGitLabItemList({
   model
@@ -17,11 +17,12 @@ export function TaskPageGitLabItemList({
     gitlabEmptyState,
     displayedGitLabItems,
     openGitLabDetailPage,
-    handleUseGitLabItem
+    handleUseGitLabItem,
+    handleReviewGitLabItem
   } = model
   return (
     <div className="flex min-h-0 max-h-full flex-col rounded-md border border-t-0 border-border/50 bg-muted/50 overflow-hidden rounded-t-none shadow-sm">
-      <div className="flex-none grid grid-cols-[80px_minmax(0,3fr)_120px_110px_50px] gap-3 border-b border-border/50 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+      <div className="flex-none grid grid-cols-[80px_minmax(0,3fr)_120px_110px_76px] gap-3 border-b border-border/50 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
         <span>{translate('auto.components.TaskPage.eb10c32872', 'ID')}</span>
         <span>{translate('auto.components.TaskPage.16cba35bee', 'Title')}</span>
         <span>{translate('auto.components.TaskPage.00b7ffb952', 'Type / State')}</span>
@@ -47,7 +48,7 @@ export function TaskPageGitLabItemList({
             }).map((_, i) => (
               <div
                 key={i}
-                className="grid w-full gap-3 px-3 py-2 grid-cols-[80px_minmax(0,3fr)_120px_110px_50px]"
+                className="grid w-full gap-3 px-3 py-2 grid-cols-[80px_minmax(0,3fr)_120px_110px_76px]"
               >
                 <div className="h-4 w-16 animate-pulse rounded bg-muted/70" />
                 <div>
@@ -87,7 +88,7 @@ export function TaskPageGitLabItemList({
                   openGitLabDetailPage(item)
                 }
               }}
-              className="grid w-full cursor-pointer gap-3 px-3 py-2 text-left grid-cols-[80px_minmax(0,3fr)_120px_110px_50px] hover:bg-muted/50"
+              className="grid w-full cursor-pointer gap-3 px-3 py-2 text-left grid-cols-[80px_minmax(0,3fr)_120px_110px_76px] hover:bg-muted/50"
             >
               <span className="font-mono text-xs text-muted-foreground">
                 {/* Why: GitLab uses !N for MRs and #N for issues — match gitlab.com so rows map to web links. */}
@@ -105,6 +106,30 @@ export function TaskPageGitLabItemList({
                 {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString(getIntlLocale()) : ''}
               </span>
               <div className="flex items-center justify-end gap-1">
+                {item.type === 'mr' ? (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon-xs"
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          handleReviewGitLabItem(item)
+                        }}
+                        aria-label={translate(
+                          'auto.components.TaskPage.reviewMrWithAgent',
+                          'Review MR !{{number}} with agent',
+                          { number: item.number }
+                        )}
+                      >
+                        <ScanEye className="size-3.5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side="bottom" sideOffset={6}>
+                      {translate('auto.components.TaskPage.reviewWithAgent', 'Review with agent')}
+                    </TooltipContent>
+                  </Tooltip>
+                ) : null}
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button
