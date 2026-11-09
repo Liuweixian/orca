@@ -4,7 +4,30 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { TooltipProvider } from '@/components/ui/tooltip'
 import { useAppStore } from '@/store'
-import { makeWorktree } from '@/store/slices/worktrees-slice-test-fixtures'
+import type { Worktree } from '../../../../shared/worktree/types'
+
+function makeWorktree(overrides: Partial<Worktree> & { id: string; repoId: string }): Worktree {
+  return {
+    path: '/tmp/wt',
+    head: 'abc123',
+    branch: 'refs/heads/feature',
+    isBare: false,
+    isMainWorktree: false,
+    displayName: 'feature',
+    comment: '',
+    linkedIssue: null,
+    linkedPR: null,
+    linkedLinearIssue: null,
+    linkedGitLabMR: null,
+    linkedGitLabIssue: null,
+    isArchived: false,
+    isUnread: false,
+    isPinned: false,
+    sortOrder: 0,
+    lastActivityAt: 0,
+    ...overrides
+  }
+}
 import { createAgentsWorkflowPageFixture } from '../agents-workflow/agents-workflow-page-fixtures'
 import AgentsWorkflowSidebarPanel from './AgentsWorkflowSidebarPanel'
 

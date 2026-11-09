@@ -1,10 +1,10 @@
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { launchAgentInNewTab } from '@/lib/launch-agent-in-new-tab'
-import { newAgentLaunchRequestId } from '@/lib/agent-launch-request-id'
+import { launchAgentInNewTab } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
+import { newAgentLaunchRequestId } from '@/lib/agent-session/launch/routing/agent-launch-request-id'
 import { resolveDefaultAgentForWorktreeNewTab } from '@/lib/agent-tab-shortcuts'
-import { findGithubPrWorkspaceAttachment } from '@/lib/github-work-item-workspace-attachment'
+import { findGithubPrWorkspaceAttachment } from '@/lib/work-items/github/github-work-item-workspace-attachment'
 import { findGitLabMrWorkspaceAttachment } from '@/lib/gitlab-work-item-workspace-attachment'
 import {
   buildReviewMergeRequestPrompt,

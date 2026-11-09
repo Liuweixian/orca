@@ -1,4 +1,4 @@
-import { parseSchedule } from '../../shared/automation-schedule-parsing'
+import { parseSchedule } from '../../shared/automations/scheduling/automation-schedule-parsing'
 import type { AgentsWorkflowSchedule } from '../../shared/agents-workflow-types'
 
 const MINUTE_MS = 60_000

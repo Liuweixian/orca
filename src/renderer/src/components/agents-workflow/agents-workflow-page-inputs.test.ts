@@ -8,8 +8,8 @@ vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback
 }))
 
-vi.mock('@/lib/browser-uuid', () => ({
-  createBrowserUuid: () => 'creation-key'
+vi.mock('../../../../shared/non-secure-context-uuid', () => ({
+  createNonSecureContextUuid: () => 'creation-key'
 }))
 
 function repo(id: string): Repo {

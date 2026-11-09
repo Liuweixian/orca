@@ -51,6 +51,7 @@ export function buildWindowApi(args: {
         onRequestTerminalCreate: () => () => {},
         onPublishAgentLaunchTab: () => () => {},
         onRevealTerminalPane: () => () => {},
+        onApplyAgentPaneActivity: () => () => {},
         onAgentLaunchPaneVerdict: () => () => {},
         onLaunchRecipe: () => () => {},
         onRequestTerminalTabMount: () => () => {},
@@ -127,6 +128,7 @@ export function buildWindowApi(args: {
         onCredentialRequest: () => () => {},
         onCredentialResolved: () => () => {},
         onPortForwardsChanged: () => () => {},
+        onTargetRemoved: () => () => {},
         onDetectedPortsChanged: () => () => {},
         ...args.ssh
       },
@@ -160,7 +162,7 @@ export function stubReactSyncEffect(): void {
 
 export function stubAuxiliaryModules(): void {
   vi.doMock('@/lib/ui-zoom', () => ({ applyUIZoom: vi.fn() }))
-  vi.doMock('@/lib/worktree-activation', () => ({
+  vi.doMock('../lib/workspace/activation/worktree-activation', () => ({
     activateAndRevealWorktree: vi.fn(),
     ensureWorktreeHasInitialTerminal: vi.fn()
   }))

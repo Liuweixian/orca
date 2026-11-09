@@ -13,7 +13,7 @@ import {
   type ReactFlowInstance
 } from '@xyflow/react'
 import { toast } from 'sonner'
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
 import type { AgentsWorkflowValidationIssue } from '../../../../shared/agents-workflow-graph'
 import type {
   AgentsWorkflowDefinition,

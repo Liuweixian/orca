@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
+import { RuntimeRpcCallError } from '@/runtime/rpc/calls/runtime-rpc-result'
 import {
   AGENTS_WORKFLOW_DEFINITION_INVALID,
   AGENTS_WORKFLOW_REVISION_CONFLICT

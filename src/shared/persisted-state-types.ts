@@ -5,7 +5,8 @@ import type {
   SshRemotePtyLease,
   SshTarget
 } from './ssh-types'
-import type { Automation, AutomationRun } from './automations-types'
+import type { Automation } from './automations/automation-definition'
+import type { AutomationRun } from './automations/history/automation-run'
 import type { AgentsWorkflowDefinition } from './agents-workflow-types'
 import type { AgentsWorkflowRun } from './agents-workflow-run-types'
 import type { MigrationUnsupportedPtyEntry } from './agent-status/contracts/agent-status-ipc-payload'

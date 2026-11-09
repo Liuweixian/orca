@@ -25,7 +25,10 @@ function runtime(handles: string[], rows: AgentStatusIpcPayload[] = []) {
     getTerminalHandleForPaneKey: vi.fn(() => null),
     waitForTerminal: vi.fn(async () => ({ satisfied: true })),
     readTerminal: vi.fn(async () => ({ tail: [] as string[] })),
-    getAgentStatusRowsForPane: vi.fn(() => rows)
+    getAgentStatusRowsForPane: vi.fn(() => rows),
+    getAcceptedAgentReply: vi.fn(() => undefined),
+    subscribeAgentStatusRowChanges: vi.fn(() => () => {}),
+    canOpenRunTerminals: vi.fn(() => true)
   }
 }
 

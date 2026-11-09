@@ -1,4 +1,4 @@
-import { createBrowserUuid } from '@/lib/browser-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../../shared/non-secure-context-uuid'
 import type { TaskPageBrowserTab } from '../../../../../shared/task-page-browser-settings'
 
 /** Selection state for the Tasks-page browser strip: a tab id, the add-new-tab flow, or inactive. */

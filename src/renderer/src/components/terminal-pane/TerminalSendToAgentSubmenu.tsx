@@ -20,7 +20,7 @@ import { selectLivePtyIdsForWorktree } from '@/components/sidebar/workspace-card
 import {
   getStructuredChatTabNames,
   useStructuredChatTabNames
-} from '@/runtime/structured-chat-name-observation'
+} from '@/runtime/native-chat/naming/structured-chat-name-observation'
 import { translate } from '@/i18n/i18n'
 
 type TerminalSendToAgentSubmenuProps = {

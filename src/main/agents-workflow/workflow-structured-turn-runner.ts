@@ -17,9 +17,9 @@ import type { AgentSessionRecordStore } from '../runtime/agent-session/records/a
 import { closeStructuredAgentSessionChild } from '../runtime/agent-session/structured-agent-session-close'
 import { structuredAgentRuntimeMetadata } from '../runtime/agent-session/installation/structured-agent-runtime-metadata'
 import { observeStructuredSession } from '../runtime/orchestration/terminal-authority/structured-sessions/structured-worker-authority'
-import { createStructuredAgentSessionForWorktree } from '../runtime/rpc/methods/structured-agent-session-create'
-import { getStructuredAgentSessionHost } from '../native-chat/agent-session-wire/structured-agent-session-registry'
-import type { StructuredAgentSessionHost } from '../native-chat/agent-session-wire/structured-agent-session-host'
+import { createStructuredAgentSessionForWorktree } from '../runtime/rpc/methods/structured-sessions/creation/structured-agent-session-create'
+import { getStructuredAgentSessionHost } from '../native-chat/agent-session-wire/host/structured-agent-session-registry'
+import type { StructuredAgentSessionHost } from '../native-chat/agent-session-wire/host/structured-agent-session-host'
 import type { AgentsWorkflowStructuredTurnRunner } from './workflow-agent-execution-adapter'
 import { journalTurnItemIdForProviderTurn } from './provider-turn-journal-item'
 import {

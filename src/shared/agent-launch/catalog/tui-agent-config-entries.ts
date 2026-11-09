@@ -46,6 +46,17 @@ export const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     detectCmdAliases: ['cbc'],
     promptInjectionMode: 'argv'
   },
+  codely: {
+    // Why: Tuanjie's Codely CLI is a Gemini CLI fork sharing its `--prompt-interactive` contract.
+    detectCmd: 'codely',
+    promptInjectionMode: 'flag-prompt-interactive',
+    // Why: the default quiet-window anchor latches onto the SPAWN SHELL's own
+    // DECSET 2004 and can fire inside the boot gap before the TUI mounts; the
+    // Gemini-CLI family discards stdin that arrives before its composer, so a
+    // premature paste loses the draft with no error. The composer's own
+    // bracketed-paste enable plus its reverse-video cursor is the mount proof.
+    draftPasteReadySignal: 'codely-composer-cursor-after-bracketed-paste'
+  },
   openclaude: {
     detectCmd: 'openclaude',
     promptInjectionMode: 'argv',
@@ -153,22 +164,14 @@ export const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     detectCmd: 'gemini',
     promptInjectionMode: 'flag-prompt-interactive'
   },
-  codely: {
-    // Why: Tuanjie's Codely CLI is a Gemini CLI fork sharing its `--prompt-interactive` contract.
-    detectCmd: 'codely',
-    promptInjectionMode: 'flag-prompt-interactive',
-    // Why: the default quiet-window anchor latches onto the SPAWN SHELL's own
-    // DECSET 2004 and can fire inside the boot gap before the TUI mounts; the
-    // Gemini-CLI family discards stdin that arrives before its composer, so a
-    // premature paste loses the draft with no error. The composer's own
-    // bracketed-paste enable plus its reverse-video cursor is the mount proof.
-    draftPasteReadySignal: 'codely-composer-cursor-after-bracketed-paste'
-  },
   antigravity: {
     detectCmd: 'agy',
     promptInjectionMode: 'flag-prompt-interactive',
     // Antigravity trust is exact-path, so every child workspace can show a menu that consumes paste; pre-write trust (agent-trust-presets.ts).
     preflightTrust: 'antigravity',
+    // The shell's own 2004h armed the quiet window, so a slow agy start got the paste in cooked mode (#18088).
+    draftPasteReadySignal: 'antigravity-composer-prompt',
+    draftPasteReadyTimeoutMs: 20_000,
     // agy 1.2.x expands collapsed multiline pastes over seconds; byte ingest finishing does not prove submit readiness.
     submitLineSettleMsPerLine: 45
   },
@@ -282,7 +285,8 @@ export const TUI_AGENT_CONFIG_SOURCE: Record<TuiAgent, TuiAgentConfigSource> = {
     // Why: `--prompt` exits on completion (kills the hosted session); `-i/--interactive` keeps it interactive.
     promptInjectionMode: 'flag-interactive',
     // Why: first-launch trust menu swallows the bracketed paste; pre-write trust so it skips (see agent-trust-presets.ts).
-    preflightTrust: 'copilot'
+    preflightTrust: 'copilot',
+    draftPasteReadySignal: 'copilot-composer-prompt'
   },
   grok: {
     detectCmd: 'grok',

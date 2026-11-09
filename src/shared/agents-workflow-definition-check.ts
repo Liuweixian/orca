@@ -9,7 +9,10 @@ import {
   type AgentsWorkflowValidationIssue
 } from './agents-workflow-graph'
 import type { AgentsWorkflowSchedule } from './agents-workflow-types'
-import { parseSchedule, unsupportedRruleParts } from './automation-schedule-parsing'
+import {
+  parseSchedule,
+  unsupportedRruleParts
+} from './automations/scheduling/automation-schedule-parsing'
 
 export function agentsWorkflowScheduleIssues(
   schedule: AgentsWorkflowSchedule | null | undefined

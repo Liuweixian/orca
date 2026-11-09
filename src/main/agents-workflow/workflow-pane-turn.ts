@@ -24,6 +24,9 @@ export type WorkflowPaneTurnRuntime = Pick<
   | 'waitForTerminal'
   | 'readTerminal'
   | 'getAgentStatusRowsForPane'
+  | 'getAcceptedAgentReply'
+  | 'subscribeAgentStatusRowChanges'
+  | 'canOpenRunTerminals'
 >
 
 export type WorkflowPaneTurnRefusal = {
@@ -185,6 +188,9 @@ export class WorkflowPaneTurns {
     const commands = [...getTuiAgentDetectCommands(config), config.launchCmd]
     return {
       getAgentStatusRowsForPane: (paneKey) => this.runtime.getAgentStatusRowsForPane(paneKey),
+      getAcceptedReply: (paneKey, leadTurnKey) =>
+        this.runtime.getAcceptedAgentReply(paneKey, leadTurnKey),
+      subscribeStatusChanges: (listener) => this.runtime.subscribeAgentStatusRowChanges(listener),
       // Why empty on the subject: the commands belong to the node's agent, not to the run.
       agentCommandsForRun: () => commands
     }

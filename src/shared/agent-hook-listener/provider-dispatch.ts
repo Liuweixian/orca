@@ -44,6 +44,8 @@ export type ProviderDispatchResult = {
   /** The event the payload was normalized as, which a provider may restate (Codex ended turns). */
   eventName: unknown
   hostTurnSignals: Pick<AgentHookEventPayload, 'stopHookActive' | 'nativeTurnKey'>
+  /** Full reply text this hook carried, outside the cached tool snapshot; refreshes carry none. */
+  replyCandidate: string | undefined
 }
 
 /** Exhaustive provider routing with provider-specific transcript locality and attribution. */
@@ -74,6 +76,7 @@ export function normalizeProviderEvent(input: {
   let promptInteractionKey: string | undefined
   let hasTranscriptPromptEvidence = false
   let payload: ParsedAgentStatusPayload | null
+  state.eventReplyCandidate = undefined
 
   switch (source) {
     case 'codebuddy':
@@ -233,6 +236,8 @@ export function normalizeProviderEvent(input: {
     case 'kiro':
       payload = normalizeKiroEvent(state, eventName, promptText, paneKey, hookPayload)
   }
+  const replyCandidate = state.eventReplyCandidate
+  state.eventReplyCandidate = undefined
 
   return {
     payload,
@@ -240,6 +245,7 @@ export function normalizeProviderEvent(input: {
     promptInteractionKey,
     hasTranscriptPromptEvidence,
     eventName,
-    hostTurnSignals: readHostTurnSignals(source, hookPayload, promptInteractionKey)
+    hostTurnSignals: readHostTurnSignals(source, hookPayload, promptInteractionKey),
+    replyCandidate
   }
 }

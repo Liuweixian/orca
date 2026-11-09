@@ -7,29 +7,31 @@ import type {
 } from '../../shared/agent-hook-listener/configuration/agent-hook-types'
 import {
   buildManagedCommandHook,
-  createManagedCommandMatcher,
-  buildWindowsAgentHookPostCommand,
-  getSharedManagedScriptPath,
   MANAGED_HOOK_TIMEOUT_MILLISECONDS,
-  readHooksJson,
-  removeManagedCommands,
-  wrapPosixHookCommand,
-  wrapWindowsHookCommand,
-  writeHooksJson,
-  writeManagedScript,
   type HookDefinition
-} from '../agent-hooks/installer-utils'
-import { refreshManagedScriptIfPresent } from '../agent-hooks/managed-hook-script-refresh'
+} from '../agent-hooks/installation/configuration/hook-config-schema'
+import {
+  createManagedCommandMatcher,
+  removeManagedCommands
+} from '../agent-hooks/installation/commands/managed-hook-command-matching'
+import { buildWindowsAgentHookPostCommand } from '../agent-hooks/installation/commands/windows-agent-hook-post-command'
+import { getSharedManagedScriptPath } from '../agent-hooks/installation/scripts/managed-hook-script-path'
+import { readHooksJson } from '../agent-hooks/installation/configuration/hooks-json-read'
+import { wrapPosixHookCommand } from '../agent-hooks/installation/commands/posix-hook-command'
+import { wrapWindowsHookCommand } from '../agent-hooks/installation/commands/windows-hook-command'
+import { writeHooksJson } from '../agent-hooks/installation/configuration/hooks-json-write'
+import { writeManagedScript } from '../agent-hooks/installation/scripts/managed-hook-script-write'
+import { refreshManagedScriptIfPresent } from '../agent-hooks/installation/scripts/managed-hook-script-refresh'
 import {
   readHooksJsonRemote,
-  writeHooksJsonRemote,
-  writeManagedScriptRemote
-} from '../agent-hooks/installer-utils-remote'
+  writeHooksJsonRemote
+} from '../agent-hooks/installation/configuration/hooks-json-remote'
+import { writeManagedScriptRemote } from '../agent-hooks/installation/scripts/managed-script-write-remote'
 import {
   buildPosixHookPayloadCapture,
   buildPosixHookSpoolLines,
   buildWindowsHookEnvironmentGuardLines
-} from '../agent-hooks/hook-stdin-contract'
+} from '../agent-hooks/installation/scripts/hook-stdin-contract'
 import { mergeCodelyHookEnvAllowlist, removeCodelyHookEnvAllowlist } from './hook-env-allowlist'
 
 // Why: Codely (a Gemini CLI fork) keeps Gemini's settings.json hooks schema and native

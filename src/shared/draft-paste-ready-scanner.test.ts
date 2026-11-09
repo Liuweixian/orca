@@ -556,4 +556,29 @@ describe('resolvePasteReadySignal', () => {
     expect(resolvePasteReadySignal(TUI_AGENT_CONFIG.codex, true)).toBe('codex-composer-prompt')
     expect(resolvePasteReadySignal(null, true)).toBe('render-quiet-after-bracketed-paste')
   })
+
+  describe('antigravity-composer-prompt', () => {
+    it('fires on the composer rows when a custom statusLine replaces the hint row', () => {
+      const rule = `\x1b[38;2;65;72;104m${'─'.repeat(80)}\x1b[m\r\n`
+      // agy 1.5.2 with a two-line command statusLine, after its startup splash.
+      const startup = `${DECSET_BRACKETED_PASTE}${ALT_SCREEN_ENTER} ⣾  Signing in...\r\ncustom-status-one\x1b[?1049l\r\n\n${rule}\x1b[38;2;122;162;247m>\x1b[m\r\n${rule}custom-status-one\r\ncustom-status-two\r\x1b[3A\x1b[2C${SHOW_CURSOR}`
+      expect(
+        createDraftPasteReadyScanner('antigravity-composer-prompt').observe(startup).ready
+      ).toBe(true)
+      expect(
+        createDraftPasteReadyScanner('antigravity-composer-prompt').observe(
+          startup.replace(DECSET_BRACKETED_PASTE, '')
+        ).ready
+      ).toBe(false)
+    })
+
+    it('never arms the quiet window from the shell prompt that launches agy (#18088)', () => {
+      const scanner = createDraftPasteReadyScanner('antigravity-composer-prompt')
+      // zsh enables paste at its prompt, echoes the command, then disables paste before exec.
+      expect(
+        scanner.observe(`${DECSET_BRACKETED_PASTE}% agy '--dangerously-skip-permissions'`)
+      ).toEqual({ ready: false, armQuietTimer: false })
+      expect(scanner.observe(`${DECRST_BRACKETED_PASTE}\r\r\n? for shortcuts`).ready).toBe(false)
+    })
+  })
 })

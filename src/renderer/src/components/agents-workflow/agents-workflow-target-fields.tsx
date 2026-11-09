@@ -10,7 +10,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { CreateFromPicker } from '@/components/repo/CreateFromPicker'
 import { useAppStore } from '@/store'
-import { useRepoMap } from '@/store/selectors'
+import { useRepoMap } from '@/store/repos/use-repository-catalog'
 import { translate } from '@/i18n/i18n'
 import {
   getExecutionHostLabel,
@@ -19,7 +19,7 @@ import {
   normalizeExecutionHostId,
   parseExecutionHostId
 } from '../../../../shared/execution-host'
-import { buildWorkspaceRunContext } from '../../../../shared/task-source-context'
+import { buildWorkspaceRunContext } from '../../../../shared/work-items/task-source-context'
 import type {
   AgentsWorkflowDefinition,
   AgentsWorkflowRunContext,

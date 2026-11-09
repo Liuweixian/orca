@@ -9,8 +9,8 @@ import {
 } from '@/lib/active-agent-note-send'
 import { agentKindForAgentType } from '@/lib/agent-status'
 import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentation/agent-type-label'
-import { readTerminalClipboardSelection } from './terminal-clipboard-selection-text'
-import { runTerminalCopy } from './terminal-copy-rejection-guards'
+import { readTerminalClipboardSelection } from './clipboard/terminal-clipboard-selection-text'
+import { runTerminalCopy } from './clipboard/terminal-copy-rejection-guards'
 
 /**
  * Copies the pane's current selection to the clipboard, then submits it as a

@@ -4,7 +4,7 @@
 // it. The pane's text is run-history evidence only.
 
 import type { AgentsWorkflowNodeOutput } from '../../shared/agents-workflow-run-types'
-import { createHeadlessAutomationOutputSnapshotBuffer } from '../automations/headless-dispatch'
+import { createAutomationOutputSnapshotBuffer } from '../automations/automation-launch'
 import type { AgentsWorkflowStepExecutor } from './workflow-dynamic-scheduler'
 import {
   paneTurnRefusal,
@@ -70,7 +70,7 @@ export class WorkflowReportTurnRunner implements AgentsWorkflowReportTurnRunner 
     }
 
     const tail = await this.stableTail(launched.handle, input.signal)
-    const buffer = createHeadlessAutomationOutputSnapshotBuffer()
+    const buffer = createAutomationOutputSnapshotBuffer()
     buffer.append(tail.join('\n'))
     const snapshot = buffer.snapshot()
     return {

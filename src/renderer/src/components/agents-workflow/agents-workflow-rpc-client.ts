@@ -10,7 +10,7 @@ import type {
   AgentsWorkflowRunsPage
 } from '../../../../shared/agents-workflow-run-types'
 import type { AgentsWorkflowAgentChannelEntry } from '../../../../shared/agents-workflow-agent-channels'
-import { callRuntimeRpc } from '@/runtime/runtime-rpc-client'
+import { callRuntimeRpc } from '@/runtime/rpc/calls/runtime-rpc-call'
 
 const LOCAL_TARGET = { kind: 'local' } as const
 

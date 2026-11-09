@@ -6,7 +6,7 @@ import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
 import { pickSourceControlLaunchAgent } from '../../../../shared/source-control/ai/source-control-launch-agent-selection'
 import { filterEnabledTuiAgents } from '../../../../shared/agent-launch/catalog/tui-agent-selection'
-import { readNativeDetectedAgents } from '@/store/slices/local-detected-agent-store-state'
+import { readNativeDetectedAgents } from '@/store/slices/agent-inventory/local-detected-agent-store-state'
 import { useAppStore } from '@/store'
 
 export type AgentsWorkflowGenerationAgent = {

@@ -5,8 +5,8 @@
 // the workflow, and gives the next reader a single place to see what the reuse really needs.
 
 import type { AgentsWorkflowSchedule } from '../../../../shared/agents-workflow-types'
-import { buildAutomationRrule } from '../../../../shared/automation-schedule-occurrences'
-import { tryParseAutomationRrule } from '../../../../shared/automation-schedule-parsing'
+import { buildAutomationRrule } from '../../../../shared/automations/scheduling/automation-schedule-occurrences'
+import { tryParseAutomationRrule } from '../../../../shared/automations/scheduling/automation-schedule-parsing'
 import type { AutomationDraft } from '../automations/AutomationEditorDialog'
 
 const DEFAULT_HOUR = 9

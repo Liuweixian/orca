@@ -3,7 +3,7 @@
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useAppStore } from '@/store'
-import { RuntimeRpcCallError } from '@/runtime/runtime-rpc-result'
+import { RuntimeRpcCallError } from '@/runtime/rpc/calls/runtime-rpc-result'
 import { AGENTS_WORKFLOW_REVISION_CONFLICT } from '../../../../shared/agents-workflow-errors'
 import { createAgentsWorkflowPageFixture } from './agents-workflow-page-fixtures'
 import { useAgentsWorkflowPageController } from './use-agents-workflow-page-controller'

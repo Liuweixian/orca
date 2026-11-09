@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { Plug, Files, GitBranch, ListChecks, Waypoints, Workflow } from 'lucide-react'
 import { useAppStore } from '@/store'
-import { useRepoById } from '@/store/selectors'
+import { useRepoById } from '@/store/repos/use-repository-catalog'
 import { isFolderRepo } from '../../../../shared/repo-kind'
 import { parseWorkspaceKey } from '../../../../shared/workspace-scope'
 import { shouldShowAgentsWorkflowButton } from '../sidebar/SidebarNav'
@@ -17,9 +17,9 @@ import {
   usePluginPanels,
   usePluginPanelsStore,
   type PluginPanelsFetchStatus
-} from '@/store/plugin-panels'
+} from '@/store/plugins/catalog/plugin-contribution-catalog'
 import { useShortcutLabel } from '@/hooks/useShortcutLabel'
-import { translate } from '@/i18n/i18n'
+import { useTranslate } from '@/i18n/use-translate'
 import { useUiLanguageRevision } from '@/i18n/use-ui-language-revision'
 import { AgentSessionHistoryIcon } from './agent-session-history-icon'
 import type { ActivityBarItem } from './activity-bar-buttons'
@@ -37,6 +37,7 @@ export function useRightSidebarActivityItems({
 }: {
   rightSidebarOpen: boolean
 }): RightSidebarActivityItems {
+  const t = useTranslate()
   const languageRevision = useUiLanguageRevision()
   const explorerShortcut = useShortcutLabel('sidebar.explorer.toggle')
   const sourceControlShortcut = useShortcutLabel('sidebar.sourceControl.toggle')
@@ -78,43 +79,40 @@ export function useRightSidebarActivityItems({
       {
         id: 'explorer',
         icon: Files,
-        title: translate('auto.components.right.sidebar.index.8bc2bbc3a0', 'Explorer'),
+        title: t('auto.components.right.sidebar.index.8bc2bbc3a0', 'Explorer'),
         shortcut: explorerShortcut === 'Unassigned' ? '' : explorerShortcut
       },
       {
         id: 'vault',
         icon: AgentSessionHistoryIcon,
-        title: translate('auto.components.right.sidebar.index.aiVaultSessionHistory', 'Agents'),
+        title: t('auto.components.right.sidebar.index.aiVaultSessionHistory', 'Agents'),
         shortcut: ''
       },
       {
         id: 'workspaces',
         icon: Workflow,
-        title: translate(
-          'auto.components.right.sidebar.index.folderWorkspaces',
-          'Attached worktrees'
-        ),
+        title: t('auto.components.right.sidebar.index.folderWorkspaces', 'Attached worktrees'),
         shortcut: '',
         folderOnly: true
       },
       {
         id: 'pr-checks',
         icon: ListChecks,
-        title: translate('auto.components.right.sidebar.index.parentPrChecks', 'PR Checks'),
+        title: t('auto.components.right.sidebar.index.parentPrChecks', 'PR Checks'),
         shortcut: '',
         folderOnly: true
       },
       {
         id: 'source-control',
         icon: GitBranch,
-        title: translate('auto.components.right.sidebar.index.0314901467', 'Source Control'),
+        title: t('auto.components.right.sidebar.index.0314901467', 'Source Control'),
         shortcut: sourceControlShortcut === 'Unassigned' ? '' : sourceControlShortcut,
         gitOnly: true
       },
       {
         id: 'checks',
         icon: ListChecks,
-        title: translate('auto.components.right.sidebar.index.83a10e3c44', 'Checks'),
+        title: t('auto.components.right.sidebar.index.83a10e3c44', 'Checks'),
         shortcut: checksShortcut === 'Unassigned' ? '' : checksShortcut,
         gitOnly: true
       },
@@ -128,7 +126,7 @@ export function useRightSidebarActivityItems({
               // the Attached worktrees tab right above this one, and two identical tabs in the
               // same strip read as the same feature.
               icon: Waypoints,
-              title: translate('auto.components.right.sidebar.index.workflows', 'Workflows'),
+              title: t('auto.components.right.sidebar.index.workflows', 'Workflows'),
               shortcut: ''
             }
           ]
@@ -136,14 +134,14 @@ export function useRightSidebarActivityItems({
       {
         id: 'ports',
         icon: Plug,
-        title: translate('auto.components.right.sidebar.index.441733b630', 'Ports'),
+        title: t('auto.components.right.sidebar.index.441733b630', 'Ports'),
         shortcut: portsShortcut === 'Unassigned' ? '' : portsShortcut,
         sshOnly: true
       },
       // Append plugin tabs to preserve built-in navigation positions.
       ...getPluginPanelActivityItems(visiblePluginPanels, pluginPanelErrors)
     ],
-    // oxlint-disable-next-line react-hooks/exhaustive-deps -- translate() reads the UI language implicitly.
+    // oxlint-disable-next-line react-hooks/exhaustive-deps -- t() reads the UI language implicitly.
     [
       checksShortcut,
       explorerShortcut,
@@ -152,7 +150,8 @@ export function useRightSidebarActivityItems({
       portsShortcut,
       showWorkflows,
       sourceControlShortcut,
-      languageRevision
+      languageRevision,
+      t
     ]
   )
 
