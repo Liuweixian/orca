@@ -2359,6 +2359,18 @@
       }
     },
     "components": {
+      "ReviewWithAgentDialog": {
+        "title": "Review with agent",
+        "description": "Choose the workspace to review in and the agent that runs the review of {{reference}}.",
+        "workspace": "Workspace",
+        "noWorkspace": "No workspace for this repository",
+        "mainCheckout": "Main checkout",
+        "agent": "Agent",
+        "loadingAgents": "Looking for agents…",
+        "checkoutNotice": "The agent switches this workspace to the {{reviewLabel}} head branch for the review, then returns it to the branch it started on.",
+        "cancel": "Cancel",
+        "start": "Start review"
+      },
       "hostPicker": {
         "searchHosts": "Search hosts…",
         "noHostsMatch": "No hosts match.",
@@ -3460,7 +3472,8 @@
         "shownCount_one": "{{count}} shown",
         "524f095d55": "Needs review",
         "reviewWithAgent": "Review with agent",
-        "reviewMrWithAgent": "Review MR !{{number}} with agent"
+        "reviewMrWithAgent": "Review MR !{{number}} with agent",
+        "mrApproved": "Approved"
       },
       "Terminal": {
         "73768427cf": "Close",

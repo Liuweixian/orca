@@ -53,6 +53,9 @@ const AddProjectFromFolderDialog = lazy(
   () => import('../components/sidebar/project-admission/dialog/AddProjectFromFolderDialog')
 )
 const DiagramViewerModal = lazy(() => import('../components/editor/DiagramViewerModal'))
+const ReviewWithAgentDialog = lazy(
+  () => import('../components/review-with-agent/ReviewWithAgentDialog')
+)
 const ProjectAddedDialog = lazy(
   () => import('../components/sidebar/project-admission/completion/ProjectAddedDialog')
 )
@@ -219,6 +222,11 @@ export const AppRootSurfaces = memo(function AppRootSurfaces(props: {
         {activeModal === 'chat-account-usage' ? (
           <ModalBoundary boundaryId="modal.chat-account-usage" resetKey>
             <NativeChatAccountUsageDialog />
+          </ModalBoundary>
+        ) : null}
+        {activeModal === 'review-with-agent' ? (
+          <ModalBoundary boundaryId="modal.review-with-agent" resetKey>
+            <ReviewWithAgentDialog />
           </ModalBoundary>
         ) : null}
         {/* Own store, not activeModal: another modal must never evict a running move. */}

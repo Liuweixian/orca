@@ -5,6 +5,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ExternalLink, ScanEye } from 'lucide-react'
 import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
+import { cn } from '@/lib/utils'
 export function TaskPageGitLabItemList({
   model
 }: {
@@ -24,7 +25,7 @@ export function TaskPageGitLabItemList({
   } = model
   return (
     <div className="flex min-h-0 max-h-full flex-col rounded-md border border-t-0 border-border/50 bg-muted/50 overflow-hidden rounded-t-none shadow-sm">
-      <div className="flex-none grid grid-cols-[80px_minmax(0,3fr)_120px_110px_76px] gap-3 border-b border-border/50 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+      <div className="flex-none grid grid-cols-[80px_minmax(0,3fr)_150px_110px_76px] gap-3 border-b border-border/50 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
         <span>{t('auto.components.TaskPage.eb10c32872', 'ID')}</span>
         <span>{t('auto.components.TaskPage.16cba35bee', 'Title')}</span>
         <span>{t('auto.components.TaskPage.00b7ffb952', 'Type / State')}</span>
@@ -50,7 +51,7 @@ export function TaskPageGitLabItemList({
             }).map((_, i) => (
               <div
                 key={i}
-                className="grid w-full gap-3 px-3 py-2 grid-cols-[80px_minmax(0,3fr)_120px_110px_76px]"
+                className="grid w-full gap-3 px-3 py-2 grid-cols-[80px_minmax(0,3fr)_150px_110px_76px]"
               >
                 <div className="h-4 w-16 animate-pulse rounded bg-muted/70" />
                 <div>
@@ -90,7 +91,12 @@ export function TaskPageGitLabItemList({
                   openGitLabDetailPage(item)
                 }
               }}
-              className="grid w-full cursor-pointer gap-3 px-3 py-2 text-left grid-cols-[80px_minmax(0,3fr)_120px_110px_76px] hover:bg-muted/50"
+              className={cn(
+                'grid w-full cursor-pointer gap-3 px-3 py-2 text-left grid-cols-[80px_minmax(0,3fr)_150px_110px_76px] hover:bg-muted/50',
+                item.type === 'mr' &&
+                  item.reviewDecision === 'approved' &&
+                  'bg-status-success-background'
+              )}
             >
               <span className="font-mono text-xs text-muted-foreground">
                 {/* Why: GitLab uses !N for MRs and #N for issues — match gitlab.com so rows map to web links. */}
@@ -103,6 +109,14 @@ export function TaskPageGitLabItemList({
                   ? t('auto.components.TaskPage.e224d76876', 'MR')
                   : t('auto.components.TaskPage.b1eaa18ace', 'Issue')}{' '}
                 · {item.state}
+                {item.type === 'mr' && item.reviewDecision === 'approved' ? (
+                  <>
+                    {' · '}
+                    <span className="font-medium text-status-success">
+                      {t('auto.components.TaskPage.mrApproved', 'Approved')}
+                    </span>
+                  </>
+                ) : null}
               </span>
               <span className="text-xs text-muted-foreground">
                 {item.updatedAt ? new Date(item.updatedAt).toLocaleDateString(intlLocale) : ''}

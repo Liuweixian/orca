@@ -5,7 +5,7 @@ import type { GitLabWorkItem } from '../../../../shared/gitlab-types'
 import type { LinkedWorkItemSummary } from '@/lib/new-workspace'
 import { useAppStore } from '@/store'
 import { getWorkItemRepo } from '@/lib/work-item-repo-row'
-import { startMergeRequestReviewAgent } from '@/lib/pr-review-agent-launch'
+import { openMergeRequestReviewWithAgent } from '@/lib/pr-review-agent-launch'
 import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
 import { findGithubWorkItemWorkspaceAttachment } from '@/lib/work-items/github/github-work-item-workspace-attachment'
 import { activateAndRevealWorktree } from '@/lib/workspace/activation/worktree-activation'
@@ -128,7 +128,7 @@ export function useTaskPageWorkspaceActions<Model extends TaskPageWorkspaceActio
     if (item.type !== 'mr') {
       return
     }
-    void startMergeRequestReviewAgent({
+    openMergeRequestReviewWithAgent({
       item,
       repoId: item.repoId,
       launchSource: 'task_page',

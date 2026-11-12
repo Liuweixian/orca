@@ -1,7 +1,7 @@
 import { useCallback, useState } from 'react'
 import { toast } from 'sonner'
 import { useRepoSlugIndex } from '@/lib/repo-slug-index'
-import { startPrReviewAgent } from '@/lib/pr-review-agent-launch'
+import { openPrReviewWithAgent } from '@/lib/pr-review-agent-launch'
 import { launchWorkItemDirect } from '@/lib/workspace/creation/work-item/launch-work-item-direct'
 import { useAppStore } from '@/store'
 import { translate } from '@/i18n/i18n'
@@ -240,7 +240,7 @@ export function useProjectRowActions({
       if (!workItem) {
         return
       }
-      void startPrReviewAgent({
+      openPrReviewWithAgent({
         item: workItem,
         repoId: resolution.repo.id,
         launchSource: 'task_page',

@@ -51,6 +51,7 @@ export type UISliceContextual = {
     | 'feature-wall'
     | 'feature-tips'
     | 'new-workspace-composer'
+    | 'review-with-agent'
     | 'confirm-orca-yaml-hooks'
     | 'diagram-viewer'
     | 'agent-session-history'

@@ -12,27 +12,34 @@ const BASE_ARGS = {
 
 function promptMetadata(prompt: string): unknown {
   const start = prompt.indexOf('data:\n') + 'data:\n'.length
-  const end = prompt.indexOf('\n\nRead the review from the provider')
+  const end = prompt.indexOf('\n\n- Metadata')
   return JSON.parse(prompt.slice(start, end))
 }
 
 describe('buildReviewPullRequestPrompt', () => {
-  it('reads the review from the provider instead of requiring a checkout', () => {
+  it('switches the workspace to the pull request head before reviewing', () => {
     const prompt = buildReviewPullRequestPrompt(BASE_ARGS)
 
-    expect(prompt).toContain('gh pr view 123 --json')
-    expect(prompt).toContain('gh pr diff 123')
-    expect(prompt).toContain('gh api repos/{owner}/{repo}/contents/<path>?ref=<sha>')
-    expect(prompt).toContain('do not edit files in this workspace, commit, or push')
-    expect(prompt).toContain('do not create one')
+    expect(prompt).toContain('gh pr checkout 123')
+    expect(prompt).toContain('do not open a second checkout')
+    expect(prompt).toContain('Never force, reset, stash, or discard')
+    expect(prompt).toContain('git checkout -')
   })
 
-  it('mentions an existing head checkout only when it can be verified', () => {
-    const withHead = buildReviewPullRequestPrompt(BASE_ARGS)
-    const withoutHead = buildReviewPullRequestPrompt({ ...BASE_ARGS, headSha: null })
+  it('scopes the diff through the merge base, like a base-branch review', () => {
+    const prompt = buildReviewPullRequestPrompt(BASE_ARGS)
 
-    expect(withHead).toContain('git diff --merge-base origin/main a1b2c3d')
-    expect(withoutHead).not.toContain('git diff --merge-base')
+    expect(prompt).toContain('The head commit under review is `a1b2c3d`')
+    expect(prompt).toContain('git merge-base origin/main a1b2c3d')
+    expect(prompt).toContain('run `git diff <merge-base>`')
+    expect(prompt).not.toContain('git diff a1b2c3d')
+  })
+
+  it('falls back to resolving the merge base when only the base branch is known', () => {
+    const prompt = buildReviewPullRequestPrompt({ ...BASE_ARGS, headSha: null })
+
+    expect(prompt).toContain('git rev-parse --abbrev-ref "main@{upstream}"')
+    expect(prompt).not.toContain('The head commit under review')
   })
 
   it('carries review metadata as escaped data, not prompt structure', () => {
@@ -55,13 +62,24 @@ describe('buildReviewPullRequestPrompt', () => {
     expect(promptMetadata(prompt)).toMatchObject({ baseRef: null, headSha: null })
   })
 
-  it('states the reporting contract', () => {
+  it('keeps every Codex severity instead of filtering to blocking findings', () => {
     const prompt = buildReviewPullRequestPrompt(BASE_ARGS)
 
-    expect(prompt).toContain('P0 must fix before merge, P1 should fix, P2 optional')
-    expect(prompt).toContain('"Pre-existing"')
-    expect(prompt).toContain('No blocking findings')
-    expect(prompt).toContain('the count of files you actually read')
+    expect(prompt).toContain('[P0] — Drop everything to fix')
+    expect(prompt).toContain('[P3] — Low. Nice to have')
+    expect(prompt).toContain('Output all findings that the original author would fix')
+  })
+
+  it('applies the Codex rubric and output contract', () => {
+    const prompt = buildReviewPullRequestPrompt(BASE_ARGS)
+
+    expect(prompt).toContain(`The bug was introduced by this pull request`)
+    expect(prompt).toContain('pre-existing bugs should not be flagged')
+    expect(prompt).toContain('`AGENTS.override.md`, `AGENTS.md`')
+    expect(prompt).toContain('"overall_correctness"')
+    expect(prompt).toContain('Do not generate a fix for the change')
+    expect(prompt).toContain('Part 1 — the verdict the user reads')
+    expect(prompt).toContain('"Patch is correct." or "Patch is incorrect."')
   })
 })
 
@@ -74,10 +92,11 @@ const GITLAB_BASE_ARGS = {
 }
 
 describe('buildReviewMergeRequestPrompt', () => {
-  it('reads the review through glab instead of gh', () => {
+  it('reads the merge request through glab instead of gh', () => {
     const prompt = buildReviewMergeRequestPrompt(GITLAB_BASE_ARGS)
 
     expect(prompt).toContain('Review merge request !87')
+    expect(prompt).toContain('glab mr checkout 87')
     expect(prompt).toContain('glab mr view 87 --output json')
     expect(prompt).toContain('glab mr diff 87')
     expect(prompt).toContain('projects/:fullpath/repository/files/<url-encoded path>/raw?ref=<sha>')
@@ -85,12 +104,12 @@ describe('buildReviewMergeRequestPrompt', () => {
     expect(prompt).not.toContain('gh api')
   })
 
-  it('keeps the same reporting contract as the pull request prompt', () => {
+  it('keeps the same review contract as the pull request prompt', () => {
     const prompt = buildReviewMergeRequestPrompt(GITLAB_BASE_ARGS)
 
-    expect(prompt).toContain('P0 must fix before merge, P1 should fix, P2 optional')
-    expect(prompt).toContain('"Pre-existing"')
-    expect(prompt).toContain('No blocking findings')
+    expect(prompt).toContain('git merge-base origin/main a1b2c3d')
+    expect(prompt).toContain('Output all findings that the original author would fix')
+    expect(prompt).toContain('"overall_correctness"')
     expect(promptMetadata(prompt)).toMatchObject({
       number: 87,
       url: GITLAB_BASE_ARGS.url,
@@ -99,11 +118,10 @@ describe('buildReviewMergeRequestPrompt', () => {
     })
   })
 
-  it('mentions an existing head checkout only when it can be verified', () => {
-    const withHead = buildReviewMergeRequestPrompt(GITLAB_BASE_ARGS)
-    const withoutHead = buildReviewMergeRequestPrompt({ ...GITLAB_BASE_ARGS, headSha: null })
+  it('names the merge request when only the base branch is known', () => {
+    const prompt = buildReviewMergeRequestPrompt({ ...GITLAB_BASE_ARGS, headSha: null })
 
-    expect(withHead).toContain('git diff --merge-base origin/main a1b2c3d')
-    expect(withoutHead).not.toContain('git diff --merge-base')
+    expect(prompt).toContain('git rev-parse --abbrev-ref "main@{upstream}"')
+    expect(prompt).not.toContain('undefined')
   })
 })

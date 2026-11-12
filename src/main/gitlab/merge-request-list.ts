@@ -20,6 +20,7 @@ import {
   type LocalGitExecOptions
 } from './gl-utils'
 import { encodedProject } from './project-path-encoding'
+import { fetchApprovedMRiids } from './mr-approval-flags'
 import { readGlabViewer } from './gitlab-auth-and-rate-limit'
 import { isTaskRepositoryIneligible } from '../git/task-repository-eligibility'
 
@@ -191,11 +192,23 @@ export async function listMergeRequests(
       execOptions
     )
     const data = parseGlabJsonList<Parameters<typeof mapMRToWorkItem>[0]>(body)
+    const items = data.map((d) => mapMRToWorkItem(d, repoId, projectRef))
+    const approved = await fetchApprovedMRiids({
+      hostArgs,
+      execOptions,
+      projectPath: projectRef.path,
+      iids: items.map((item) => item.number)
+    })
+    for (const item of items) {
+      if (approved.has(item.number)) {
+        item.reviewDecision = 'approved'
+      }
+    }
     const headerTotalCount = parseGlabPaginationHeader(headers['x-total'], 0)
     // GitLab omits both totals past 10,000 rows and proxies can strip them; a full page advertises one more probe.
     const probedTotalPages = data.length < perPage ? page : page + 1
     return {
-      items: data.map((d) => mapMRToWorkItem(d, repoId, projectRef)),
+      items,
       page,
       perPage,
       totalCount: headerTotalCount ?? 0,
