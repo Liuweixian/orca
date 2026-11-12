@@ -1,6 +1,6 @@
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
-import { translate } from '@/i18n/i18n'
+import { i18n, translate } from '@/i18n/i18n'
 import { launchAgentInNewTab } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
 import { newAgentLaunchRequestId } from '@/lib/agent-session/launch/routing/agent-launch-request-id'
 import { findGithubPrWorkspaceAttachment } from '@/lib/work-items/github/github-work-item-workspace-attachment'
@@ -13,8 +13,15 @@ import {
 import type { TuiAgent } from '../../../shared/agent-launch/catalog/tui-agent'
 import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
 import type { GitLabWorkItem } from '../../../shared/gitlab-types'
+import { UI_LANGUAGE_NATIVE_NAMES } from '../../../shared/ui-language'
 import type { LaunchSource } from '../../../shared/telemetry-events'
 import type { Worktree } from '../../../shared/worktree/types'
+
+/** The review reads in the language the Orca window is using, not in English by default. */
+function reviewReportLanguage(): string {
+  const active = i18n.language
+  return Object.entries(UI_LANGUAGE_NATIVE_NAMES).find(([id]) => id === active)?.[1] ?? 'English'
+}
 
 /** Reuse a workspace the user already has: the review's own workspace, else the repository's main checkout. */
 export function resolveReviewWorktreeId(
@@ -148,13 +155,16 @@ export function startPrReviewAgent(args: {
     agent: args.agent,
     launchSource: args.launchSource,
     buildPrompt: (item) =>
-      buildReviewPullRequestPrompt({
-        number: item.number,
-        title: item.title,
-        url: item.url,
-        baseRef: item.baseRefName ?? null,
-        headSha: item.headSha ?? null
-      }),
+      buildReviewPullRequestPrompt(
+        {
+          number: item.number,
+          title: item.title,
+          url: item.url,
+          baseRef: item.baseRefName ?? null,
+          headSha: item.headSha ?? null
+        },
+        { language: reviewReportLanguage() }
+      ),
     startedMessage: translate(
       'auto.lib.pr.review.agent.launch.started',
       'Started a review agent for PR #{{value0}}.',
@@ -175,13 +185,16 @@ export function startMergeRequestReviewAgent(args: {
     agent: args.agent,
     launchSource: args.launchSource,
     buildPrompt: (item) =>
-      buildReviewMergeRequestPrompt({
-        number: item.number,
-        title: item.title,
-        url: item.url,
-        baseRef: item.baseRefName ?? null,
-        headSha: null
-      }),
+      buildReviewMergeRequestPrompt(
+        {
+          number: item.number,
+          title: item.title,
+          url: item.url,
+          baseRef: item.baseRefName ?? null,
+          headSha: null
+        },
+        { language: reviewReportLanguage() }
+      ),
     startedMessage: translate(
       'auto.lib.gitlab.review.agent.launch.started',
       'Started a review agent for MR !{{value0}}.',

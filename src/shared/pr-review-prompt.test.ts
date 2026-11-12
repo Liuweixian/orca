@@ -70,16 +70,30 @@ describe('buildReviewPullRequestPrompt', () => {
     expect(prompt).toContain('Output all findings that the original author would fix')
   })
 
-  it('applies the Codex rubric and output contract', () => {
+  it('applies the Codex rubric', () => {
     const prompt = buildReviewPullRequestPrompt(BASE_ARGS)
 
     expect(prompt).toContain(`The bug was introduced by this pull request`)
     expect(prompt).toContain('pre-existing bugs should not be flagged')
     expect(prompt).toContain('`AGENTS.override.md`, `AGENTS.md`')
-    expect(prompt).toContain('"overall_correctness"')
-    expect(prompt).toContain('Do not generate a fix for the change')
-    expect(prompt).toContain('Part 1 — the verdict the user reads')
-    expect(prompt).toContain('"Patch is correct." or "Patch is incorrect."')
+    expect(prompt).toContain('Every finding needs evidence')
+  })
+
+  it('asks for a readable report instead of a machine schema', () => {
+    const prompt = buildReviewPullRequestPrompt(BASE_ARGS)
+
+    expect(prompt).toContain('Report format')
+    expect(prompt).toContain('### [P1] <short imperative title>')
+    expect(prompt).toContain('- Confidence: high | medium | low')
+    expect(prompt).toContain('Never emit JSON, a schema, or machine fields')
+    expect(prompt).not.toContain('"overall_correctness"')
+  })
+
+  it('writes the report in the language Orca is using', () => {
+    const prompt = buildReviewPullRequestPrompt(BASE_ARGS, { language: '中文（简体）' })
+
+    expect(prompt).toContain('Write the whole report in 中文（简体）')
+    expect(buildReviewPullRequestPrompt(BASE_ARGS)).toContain('Write the whole report in English')
   })
 })
 
@@ -109,7 +123,7 @@ describe('buildReviewMergeRequestPrompt', () => {
 
     expect(prompt).toContain('git merge-base origin/main a1b2c3d')
     expect(prompt).toContain('Output all findings that the original author would fix')
-    expect(prompt).toContain('"overall_correctness"')
+    expect(prompt).toContain('Never emit JSON, a schema, or machine fields')
     expect(promptMetadata(prompt)).toMatchObject({
       number: 87,
       url: GITLAB_BASE_ARGS.url,

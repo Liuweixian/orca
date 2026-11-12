@@ -6,6 +6,11 @@ export type ReviewPromptArgs = {
   headSha?: string | null
 }
 
+export type ReviewPromptOptions = {
+  /** Native name of the language the Orca window is using; defaults to English. */
+  language?: string
+}
+
 type ReviewPromptProvider = 'github' | 'gitlab'
 
 type ProviderCopy = {
@@ -105,11 +110,10 @@ function rubricLines(label: string): string[] {
     'Repository rule attribution',
     'Use the root and scoped project instruction files that apply to the changed files, respecting normal project-document precedence (`AGENTS.override.md`, `AGENTS.md`, then configured fallback filenames such as `CLAUDE.md`). Guidance may use headings, checklists, bullets, tables, or concise prose; do not require formal IDs or schemas. More-specific guidance wins on conflict, and user instructions about review scope or style take precedence.',
     'Review the diff independently and deduplicate findings by changed location and defect or remedy. A finding is rule-supported only when applicable guidance materially contributes repository-specific scope, an invariant, remedy, convention, or confirmation behavior beyond generic correctness advice. Preserve and union rule support when candidates merge, then check every final candidate against the applicable rules. Do not omit ordinary findings or invent findings solely because a rule file exists.',
-    'For each rule-supported final finding, verify the applicable project instruction file that supplies the rule and its smallest supporting line range, then include one compact Markdown or local-file reference in the finding body. Do not fabricate citations or add hidden metadata or output fields.',
+    'For each rule-supported final finding, verify the applicable project instruction file that supplies the rule and its smallest supporting line range, then include one compact Markdown or local-file reference in the finding body. Do not fabricate citations.',
     '',
-    'The findings will be presented as inline review comments. Avoid unnecessary location details in the body, and keep the line range as short as possible for interpreting the issue — avoid ranges longer than 5–10 lines and pick the most suitable subrange that pinpoints the problem.',
+    'The findings are read one section at a time in the review report. Avoid unnecessary location details in the body, and keep the line range as short as possible for interpreting the issue — avoid ranges longer than 5–10 lines and pick the most suitable subrange that pinpoints the problem.',
     'At the beginning of the finding title, tag the bug with its priority level, for example "[P1] Un-padding slices along wrong tensor dimensions". [P0] — Drop everything to fix. Blocking release, operations, or major usage. Only use for universal issues that do not depend on any assumptions about the inputs. [P1] — Urgent. Should be addressed in the next cycle. [P2] — Normal. To be fixed eventually. [P3] — Low. Nice to have.',
-    'Additionally, include a numeric priority field in the JSON output for each finding: 0 for P0, 1 for P1, 2 for P2, 3 for P3. If a priority cannot be determined, omit the field or use null.',
     '',
     'Ignore trivial style unless it obscures meaning or violates documented standards. Use one comment per distinct issue, or a multi-line range if necessary. Use ```suggestion blocks ONLY for concrete replacement code (minimal lines, no commentary inside the block), and preserve the exact leading whitespace of the replaced lines. Do not introduce or remove outer indentation levels unless that is the actual fix.',
     '',
@@ -117,50 +121,37 @@ function rubricLines(label: string): string[] {
   ]
 }
 
-/** Codex `ReviewOutputEvent`, plus the verdict a person reads before the JSON. */
-function outputFormatLines(): string[] {
+/** The report a person reads in the agent tab; no machine schema, in the language Orca uses. */
+function reportFormatLines(language: string): string[] {
   return [
-    'Output format',
-    'Answer in two parts, in this order, with nothing before part 1.',
+    'Report format',
+    `Write the whole report in ${language} — the language this Orca window is using. That covers the verdict, every heading, each finding title, and the fix notes.`,
     '',
-    'Part 1 — the verdict the user reads, at most 6 lines:',
-    '- Line 1: "Patch is correct." or "Patch is incorrect."',
-    '- Line 2: "<N> finding(s) in <M> files read; scope <base>..<head>."',
-    '- Then one line per finding, highest priority first: "[P1] <title> — <path>:<start>-<end>".',
-    '- When nothing qualifies, write "No findings." and list what you inspected instead of padding.',
+    '1. Verdict — one line saying whether the patch is correct (existing code and tests will not break, and it has no blocking issues), then one line with the number of findings, the number of files you actually read, and the review scope (`<base>..<head>`).',
+    '2. Findings — one section per finding, highest priority first, at most five lines each:',
+    '   ### [P1] <short imperative title>',
+    '   - Location: `path:start-end`',
+    '   - Problem: at most one paragraph on why this is a bug',
+    '   - Evidence: the code, command output, or rule file and line you relied on',
+    '   - Fix: the smallest correct fix, as prose (do not apply it)',
+    '   - Confidence: high | medium | low',
+    '3. Unverified — what you could not check (no checkout, tests you could not run, projects outside this repository) and what it would take. Omit the section when everything was verified.',
+    '4. Pre-existing — problems this change did not introduce, at most three lines. Omit the section when there are none.',
     '',
-    'Part 2 — the review JSON in one ```json block, with nothing after the block:',
-    '```json',
-    '{',
-    '  "findings": [',
-    '    {',
-    '      "title": "<≤ 80 chars, imperative>",',
-    '      "body": "<valid Markdown explaining *why* this is a problem; cite files/lines/functions>",',
-    '      "confidence_score": <float 0.0-1.0>,',
-    '      "priority": <int 0-3, optional>,',
-    '      "code_location": {',
-    '        "absolute_file_path": "<absolute path in this workspace>",',
-    '        "line_range": {"start": <int>, "end": <int>}',
-    '      }',
-    '    }',
-    '  ],',
-    '  "overall_correctness": "patch is correct" | "patch is incorrect",',
-    '  "overall_explanation": "<1-3 sentence explanation justifying the overall_correctness verdict>",',
-    '  "overall_confidence_score": <float 0.0-1.0>',
-    '}',
-    '```',
-    'The code_location field is required and must include absolute_file_path and line_range. Line ranges must be as short as possible for interpreting the issue (avoid ranges over 5–10 lines; pick the most suitable subrange). The code_location should overlap with the diff. Do not generate a fix for the change.',
-    'If the review cannot run at all (no checkout, no diff, missing tooling), say so in part 1 and still emit part 2 with an empty findings list, "patch is incorrect", and the reason in overall_explanation.'
+    'When no finding qualifies, write the verdict, then "No findings", then what you inspected and what remains unverified instead of padding.',
+    'If the review cannot run at all (no checkout, no diff, missing tooling), the verdict line says the review could not run and why, and the rest of the report says what is missing.',
+    'Never emit JSON, a schema, or machine fields: the reader is a person in the agent tab.'
   ]
 }
 
 /**
  * Hosted-review review prompt. It follows Codex's review flow: switch the workspace to the head
- * branch, scope the diff against the base branch, then answer with Codex's review JSON.
+ * branch, scope the diff against the base branch, then report findings the way Orca shows them.
  */
 function buildReviewPrompt(
   provider: ReviewPromptProvider,
-  args: ReviewPromptArgs & { reference: string }
+  args: ReviewPromptArgs & { reference: string },
+  { language = 'English' }: ReviewPromptOptions
 ): string {
   const { label, checkout, evidence, wholeFile } = PROVIDER_COPY[provider]
   const baseRef = args.baseRef?.trim() || null
@@ -193,14 +184,20 @@ function buildReviewPrompt(
     '',
     ...rubricLines(label),
     '',
-    ...outputFormatLines()
+    ...reportFormatLines(language)
   ].join('\n')
 }
 
-export function buildReviewPullRequestPrompt(args: ReviewPromptArgs): string {
-  return buildReviewPrompt('github', { ...args, reference: `#${args.number}` })
+export function buildReviewPullRequestPrompt(
+  args: ReviewPromptArgs,
+  options: ReviewPromptOptions = {}
+): string {
+  return buildReviewPrompt('github', { ...args, reference: `#${args.number}` }, options)
 }
 
-export function buildReviewMergeRequestPrompt(args: ReviewPromptArgs): string {
-  return buildReviewPrompt('gitlab', { ...args, reference: `!${args.number}` })
+export function buildReviewMergeRequestPrompt(
+  args: ReviewPromptArgs,
+  options: ReviewPromptOptions = {}
+): string {
+  return buildReviewPrompt('gitlab', { ...args, reference: `!${args.number}` }, options)
 }
