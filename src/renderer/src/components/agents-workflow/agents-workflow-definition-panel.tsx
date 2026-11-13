@@ -16,8 +16,8 @@ import type {
   AgentsWorkflowSchedule
 } from '../../../../shared/agents-workflow-types'
 import type { AgentsWorkflowValidationIssue } from '../../../../shared/agents-workflow-graph'
-import type { AutomationDraft } from '../automations/AutomationEditorDialog'
-import { AutomationSchedulePicker } from '../automations/AutomationSchedulePicker'
+import type { AutomationDraft } from '../automations/authoring/AutomationEditorDialog'
+import { AutomationSchedulePicker } from '../automations/authoring/AutomationSchedulePicker'
 import { AgentsWorkflowTargetFields } from './agents-workflow-target-fields'
 import { rruleFromScheduleDraft, toScheduleDraft } from './agents-workflow-schedule-draft'
 

@@ -1,8 +1,8 @@
 import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import { i18n, translate } from '@/i18n/i18n'
-import { launchAgentInNewTab } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
-import { newAgentLaunchRequestId } from '@/lib/agent-session/launch/routing/agent-launch-request-id'
+import { launchAgentInNewTabWithOutcome } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
+import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
 import { findGithubPrWorkspaceAttachment } from '@/lib/work-items/github/github-work-item-workspace-attachment'
 import { findGitLabMrWorkspaceAttachment } from '@/lib/gitlab-work-item-workspace-attachment'
 import { reviewWorktreeOptions, type ReviewWithAgentRequest } from '@/lib/review-with-agent-request'
@@ -131,8 +131,8 @@ function launchReviewAgent<Item>(args: {
   buildPrompt: (item: Item) => string
   startedMessage: string
 }): boolean {
-  launchAgentInNewTab({
-    requestId: newAgentLaunchRequestId(),
+  launchAgentInNewTabWithOutcome({
+    requestId: createNonSecureContextUuid(),
     agent: args.agent,
     worktreeId: args.worktreeId,
     prompt: args.buildPrompt(args.item),

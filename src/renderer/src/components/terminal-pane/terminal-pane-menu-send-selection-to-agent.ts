@@ -1,13 +1,11 @@
 import { toast } from 'sonner'
-import type { ManagedPane } from '@/lib/pane-manager/pane-manager'
+import type { ManagedPane } from '@/lib/pane-manager/pane-manager-types'
 import { translate } from '@/i18n/i18n'
-import { track } from '@/lib/telemetry'
-import type { NotesSendAgentTarget } from '@/lib/notes-send-agent-targets'
-import {
-  activeAgentNotesSendFailureMessage,
-  sendNotesToActiveAgentSession
-} from '@/lib/active-agent-note-send'
-import { agentKindForAgentType } from '@/lib/agent-status'
+import { track } from '@/diagnostics/telemetry/telemetry'
+import type { NotesSendAgentTarget } from '@/lib/agent-session/messaging/notes-send-agent-targets'
+import { sendNotesToActiveAgentSession } from '@/lib/agent-session/messaging/terminal/active-agent-note-send'
+import { activeAgentNotesSendFailureMessage } from '@/lib/agent-session/messaging/terminal/active-agent-note-send-result'
+import { agentKindForAgentType } from '@/lib/agent-status/aggregation/worktree-agent-status'
 import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentation/agent-type-label'
 import { readTerminalClipboardSelection } from './clipboard/terminal-clipboard-selection-text'
 import { runTerminalCopy } from './clipboard/terminal-copy-rejection-guards'

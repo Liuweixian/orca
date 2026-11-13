@@ -9,13 +9,13 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger
 } from '@/components/ui/dropdown-menu'
-import { AgentIcon } from '@/lib/agent-catalog'
+import { AgentIcon } from '@/components/agent/icons/AgentIcon'
 import { formatAgentTypeLabel } from '../../../../shared/agent-status/presentation/agent-type-label'
 import { agentTypeToIconAgent } from '../../../../shared/agent-status/presentation/agent-type-icon-agent'
 import {
   deriveNotesSendAgentTargets,
   type NotesSendAgentTarget
-} from '@/lib/notes-send-agent-targets'
+} from '@/lib/agent-session/messaging/notes-send-agent-targets'
 import { selectLivePtyIdsForWorktree } from '@/components/sidebar/workspace-card/activity/worktree-card-status-inputs'
 import {
   getStructuredChatTabNames,

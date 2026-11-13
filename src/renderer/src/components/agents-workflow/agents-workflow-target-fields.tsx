@@ -27,8 +27,8 @@ import type {
 } from '../../../../shared/agents-workflow-types'
 import type { ProjectHostSetup } from '../../../../shared/project-types'
 import type { Repo } from '../../../../shared/repo-types'
-import AutomationProjectCombobox from '../automations/AutomationProjectCombobox'
-import { WorkspaceCombobox } from '../automations/WorkspaceCombobox'
+import AutomationProjectCombobox from '../automations/authoring/AutomationProjectCombobox'
+import { WorkspaceCombobox } from '../automations/authoring/WorkspaceCombobox'
 
 export function AgentsWorkflowTargetFields({
   definition,

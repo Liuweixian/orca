@@ -10,17 +10,20 @@ import {
 } from './scripts/ci/unit-selection/dependency-graph/ci-unit-files.mjs'
 import TimingSequencer from './scripts/ci/sharding/ci-unit-sequencer.mjs'
 import { filesSafeToShareWorker } from './scripts/test-runtime/execution-policy/vitest-shared-worker-files.mjs'
+import { gitSigningOffEnv } from './scripts/test-runtime/environment/vitest-git-signing-env.mjs'
 import RuntimeSequencer from './scripts/test-runtime/execution-policy/vitest-runtime-sequencer.mjs'
 import { getNodeRuntimeInclude } from './scripts/test-runtime/sqlite-admission/vitest-node-runtime-files.mjs'
 import { nodeRuntimePool } from './scripts/test-runtime/node-worker/vitest-node-runtime-pool'
 import { readRunFilters } from './scripts/test-runtime/execution-policy/vitest-run-filters.mjs'
 import { createWorkspaceSourceResolver } from './scripts/workspace/source-exports/workspace-source-exports.mjs'
 import { moduleCacheResolutionKey } from './scripts/test-runtime/module-cache/vitest-module-cache-resolution-key'
+import { vitestReactCompiler } from './build-plugins/vitest-react-compiler'
 
 const nodeRuntimeInclude = process.versions.bun
   ? getNodeRuntimeInclude({ filters: readRunFilters() })
   : []
 const balancedShards = process.env.ORCA_BALANCE_UNIT_SHARDS === '1'
+const gitEnv = gitSigningOffEnv()
 const moduleCachePath = process.env.ORCA_UNIT_MODULE_CACHE_PATH
 const phoneContractPattern = /\/mobile\/src\/.*\.(?:ts|tsx)(?:\?.*)?$/
 const transforms = {
@@ -45,6 +48,7 @@ const transforms = {
       }
     } satisfies Plugin,
     ...(moduleCachePath ? [moduleCacheResolutionKey()] : []),
+    ...vitestReactCompiler(),
     {
       // Unit tests have no asset server; retain real catalog parsing through fetch(data:).
       name: 'locale-catalog-test-assets',
@@ -86,7 +90,7 @@ const testOptions = {
   // Keyed by ci-unit-module-cache.mjs in CI and vitest-local-module-cache.mjs locally.
   fsModuleCache: Boolean(moduleCachePath),
   ...(moduleCachePath ? { fsModuleCachePath: moduleCachePath } : {}),
-  env: { ORCA_VITEST_RUNTIME: 'node' },
+  env: { ...gitEnv, ORCA_VITEST_RUNTIME: 'node' },
   server: { deps: { inline: ['zod'] } },
   // Node's storage globals and V8 retention checks require the existing child flags.
   execArgv: ['--no-experimental-webstorage', '--expose-gc'],
@@ -102,7 +106,7 @@ const nodeProject = {
   test: {
     ...testOptions,
     name: process.versions.bun ? 'node-runtime' : 'node',
-    env: { ORCA_VITEST_RUNTIME: process.versions.bun ? 'node-runtime' : 'node' },
+    env: { ...gitEnv, ORCA_VITEST_RUNTIME: process.versions.bun ? 'node-runtime' : 'node' },
     include: process.versions.bun ? nodeRuntimeInclude : UNIT_INCLUDE,
     sequence: { groupOrder: 1 },
     ...(process.versions.bun
@@ -116,7 +120,7 @@ const bunProject = {
   test: {
     ...testOptions,
     name: 'bun',
-    env: { ORCA_VITEST_RUNTIME: 'bun' },
+    env: { ...gitEnv, ORCA_VITEST_RUNTIME: 'bun' },
     pool: 'forks',
     exclude: [...testOptions.exclude, ...nodeRuntimeInclude],
     sequence: { groupOrder: 1 }
@@ -124,10 +128,12 @@ const bunProject = {
 }
 // Files whose state the per-file reset can undo share one worker's module cache instead of
 // re-importing thousands of modules each. ORCA_VITEST_ISOLATE_EVERY_FILE=1 turns it off.
+// Windows workers that keep native addons (process tree, ConPTY) across files die of heap
+// corruption (0xC0000374); production code loads them lazily, so the file scan can't see them.
 const runtimeProject = process.versions.bun ? bunProject : nodeProject
 const nodeRuntimeFiles = new Set(nodeRuntimeInclude.map((file) => file.replaceAll('\\', '/')))
 const sharedWorkerFiles =
-  process.env.ORCA_VITEST_ISOLATE_EVERY_FILE === '1'
+  process.env.ORCA_VITEST_ISOLATE_EVERY_FILE === '1' || process.platform === 'win32'
     ? []
     : filesSafeToShareWorker(
         process.cwd(),
@@ -149,6 +155,9 @@ const sharedProjects =
             name: `${runtimeProject.test.name}-shared`,
             include: sharedWorkerFiles,
             isolate: false,
+            runner: resolve(
+              'config/scripts/test-runtime/execution-policy/vitest-shared-worker-setup-runner.mjs'
+            ),
             setupFiles: [
               ...runtimeProject.test.setupFiles,
               resolve('config/scripts/test-runtime/environment/vitest-shared-worker-file-reset.mjs')

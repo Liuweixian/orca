@@ -1,5 +1,5 @@
-import { parseGlabApiResponse } from './glab-api-response'
-import { glabExecFileAsync } from './gl-utils'
+import { parseGlabApiResponse } from './requests/glab-api-response'
+import { glabExecFileAsync } from '../git/command-runner/hosted-cli/glab-exec-file'
 
 type ApprovalGraphResponse = {
   data?: {

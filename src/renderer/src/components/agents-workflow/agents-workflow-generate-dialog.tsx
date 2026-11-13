@@ -13,7 +13,7 @@ import {
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { translate } from '@/i18n/i18n'
-import { getAgentCatalog } from '@/lib/agent-catalog'
+import { getAgentCatalog } from '@/lib/agent-catalog/agent-catalog'
 import type { TuiAgent } from '../../../../shared/agent-launch/catalog/tui-agent'
 import type { AgentsWorkflowDefinition } from '../../../../shared/agents-workflow-types'
 import { AGENTS_WORKFLOW_GENERATION_REQUEST_LIMIT } from '../../../../shared/agents-workflow-generation'

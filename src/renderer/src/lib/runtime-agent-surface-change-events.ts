@@ -1,6 +1,6 @@
 import type { RuntimeClientEvent } from '../../../shared/runtime-client-events'
 import { emitAgentsWorkflowsChangedWindowEvent } from './agents-workflows-changed-window-event'
-import { emitAutomationsChangedWindowEvent } from './automations-changed-window-event'
+import { emitAutomationsChangedWindowEvent } from '@/components/automations/events/automations-changed-window-event'
 
 /**
  * Re-broadcast a host's automation and workflow changes to window listeners.

@@ -9,6 +9,9 @@ export const WATCHER_IGNORE_DIRS: string[] = [
   'target',
   '.venv',
   '__pycache__',
+  '.dart_tool',
+  '.gradle',
+  '.turbo',
   // Why: workflow runs create and delete this scratch folder inside the worktree; watching it only
   // produced "root was deleted" churn when the run cleaned up after itself.
   '.orca-workflow'

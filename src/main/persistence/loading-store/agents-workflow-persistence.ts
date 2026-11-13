@@ -23,7 +23,7 @@ import {
 } from '../../../shared/agents-workflow-run-types'
 import { markAgentsWorkflowRunInterrupted } from '../../../shared/agents-workflow-run-recovery'
 import type { StoreRuntimeState } from './store-runtime-state'
-import type { WriteFlushBarrierOperations } from './write-flush-barriers'
+import type { WriteFlushBarrierOperations } from './profile-writing/write-flush-barriers'
 import {
   pageAgentsWorkflowRuns,
   retainTerminalAgentsWorkflowRuns

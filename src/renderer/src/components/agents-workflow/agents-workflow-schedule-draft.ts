@@ -7,7 +7,7 @@
 import type { AgentsWorkflowSchedule } from '../../../../shared/agents-workflow-types'
 import { buildAutomationRrule } from '../../../../shared/automations/scheduling/automation-schedule-occurrences'
 import { tryParseAutomationRrule } from '../../../../shared/automations/scheduling/automation-schedule-parsing'
-import type { AutomationDraft } from '../automations/AutomationEditorDialog'
+import type { AutomationDraft } from '../automations/authoring/AutomationEditorDialog'
 
 const DEFAULT_HOUR = 9
 const DEFAULT_MINUTE = 0

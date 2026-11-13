@@ -5,7 +5,7 @@ import { Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip
 import { Button } from '@/components/ui/button'
 import { ArrowRight, ExternalLink, ScanEye } from 'lucide-react'
 import { openAppHttpLink } from '@/lib/browser/navigation/app-http-link-open'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 export function TaskPageGitLabItemList({
   model
 }: {

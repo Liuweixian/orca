@@ -1,5 +1,5 @@
 import { BaseEdge, EdgeLabelRenderer, getBezierPath, type EdgeProps } from '@xyflow/react'
-import { cn } from '@/lib/utils'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import type { AgentsWorkflowCanvasEdge } from './agents-workflow-canvas-model'
 import { agentsWorkflowBackEdgeRoute } from './agents-workflow-back-edge-route'

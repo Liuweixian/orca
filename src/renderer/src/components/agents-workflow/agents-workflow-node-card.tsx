@@ -10,8 +10,9 @@ import {
   Terminal
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-import { AgentIcon, getAgentLabel } from '@/lib/agent-catalog'
-import { cn } from '@/lib/utils'
+import { getAgentLabel } from '@/lib/agent-catalog/agent-catalog'
+import { AgentIcon } from '../agent/icons/AgentIcon'
+import { cn } from '@/lib/class-names'
 import { translate } from '@/i18n/i18n'
 import type { AgentsWorkflowCanvasNode } from './agents-workflow-canvas-model'
 

@@ -1,8 +1,8 @@
 // @vitest-environment happy-dom
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { ManagedPane } from '@/lib/pane-manager/pane-manager'
-import type { NotesSendAgentTarget } from '@/lib/notes-send-agent-targets'
+import type { ManagedPane } from '@/lib/pane-manager/pane-manager-types'
+import type { NotesSendAgentTarget } from '@/lib/agent-session/messaging/notes-send-agent-targets'
 
 const settings: { current: Record<string, unknown> } = { current: {} }
 vi.mock('@/store', () => ({
@@ -30,8 +30,11 @@ vi.mock('sonner', () => ({
   }
 }))
 
-vi.mock('@/lib/active-agent-note-send', () => ({
-  sendNotesToActiveAgentSession: harness.sendNotesToActiveAgentSession,
+vi.mock('@/lib/agent-session/messaging/terminal/active-agent-note-send', () => ({
+  sendNotesToActiveAgentSession: harness.sendNotesToActiveAgentSession
+}))
+
+vi.mock('@/lib/agent-session/messaging/terminal/active-agent-note-send-result', () => ({
   activeAgentNotesSendFailureMessage: (
     status: string,
     options: { explicitTarget?: boolean; code?: string } = {}
@@ -39,7 +42,7 @@ vi.mock('@/lib/active-agent-note-send', () => ({
     `failure:${options.explicitTarget ? 'selected' : 'active'}:${status}:${options.code ?? 'none'}`
 }))
 
-vi.mock('@/lib/telemetry', () => ({ track: harness.track }))
+vi.mock('@/diagnostics/telemetry/telemetry', () => ({ track: harness.track }))
 
 vi.mock('@/i18n/i18n', () => ({
   translate: vi.fn((_key: string, fallback: string, options?: { value0?: string }) =>

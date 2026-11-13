@@ -10,7 +10,7 @@ import type {
   AgentsWorkflowUpdateFields,
   AgentsWorkflowWorkspace
 } from '../../../../shared/agents-workflow-types'
-import { buildAutomationRunContextForRepo } from '../automations/automation-run-context'
+import { buildAutomationRunContextForRepo } from '../automations/authoring/automation-run-context'
 import { createAgentsWorkflowPageFixture } from './agents-workflow-page-fixtures'
 
 export type AgentsWorkflowNewTarget = {
