@@ -13,8 +13,12 @@ import {
   NOTIFICATION_CARD_STACK_BOTTOM,
   NOTIFICATION_CARD_STACK_HEIGHT_VAR
 } from '@/lib/notifications/notification-card-stack-height'
+import { installErrorToastCopyAction } from '@/lib/notifications/error-toast-copy-action'
 import { useNotificationCardLayoutVarReader } from '@/lib/notifications/notification-card-layout-vars'
 import { useToasterModalLayer } from './toaster-modal-layer'
+
+// Why: both entries that mount a toaster get a copy path on error text without touching call sites.
+installErrorToastCopyAction()
 
 // Why: a short outcome reads best with its action beside it; the toaster's default wraps actions below.
 export const INLINE_ACTION_CLASS_NAMES = {
