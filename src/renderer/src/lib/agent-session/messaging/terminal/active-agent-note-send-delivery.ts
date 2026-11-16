@@ -1,4 +1,4 @@
-import type { RuntimeTerminalSend } from '../../../../../../shared/runtime-terminal-send-contract'
+import type { RuntimeTerminalSend } from '../../../../../../shared/terminal/runtime/runtime-terminal-send-contract'
 import type { TuiAgent } from '../../../../../../shared/agent-launch/catalog/tui-agent'
 import {
   sanitizeBracketedPasteText as sanitizeTerminalPasteText,

@@ -1,5 +1,5 @@
 import type { StatusBarItem } from '../../../../../shared/ui-chrome-types'
-import type { FeatureInteractionId } from '../../../../../shared/feature-interaction-catalog'
+import type { FeatureInteractionId } from '../../../../../shared/feature-education/interactions/feature-interaction-catalog'
 
 /** Records the feature a status-bar toggle belongs to, so hiding a control still counts as usage. */
 export function recordStatusBarToggleInteraction(

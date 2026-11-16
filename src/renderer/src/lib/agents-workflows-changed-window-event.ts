@@ -1,4 +1,4 @@
-import type { AgentsWorkflowsChangedPayload } from '../../../shared/runtime-client-events'
+import type { AgentsWorkflowsChangedPayload } from '../../../shared/remote-runtime/session-graph/runtime-client-events'
 
 export const AGENTS_WORKFLOWS_CHANGED_WINDOW_EVENT = 'orca:agents-workflows-changed'
 

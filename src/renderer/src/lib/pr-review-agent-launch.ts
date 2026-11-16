@@ -2,7 +2,7 @@ import { useAppStore } from '@/store'
 import { toast } from 'sonner'
 import { i18n, translate } from '@/i18n/i18n'
 import { launchAgentInNewTabWithOutcome } from '@/lib/agent-session/launch/new-tab/launch-agent-in-new-tab'
-import { createNonSecureContextUuid } from '../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid } from '../../../shared/identifiers/non-secure-context-uuid'
 import { findGithubPrWorkspaceAttachment } from '@/lib/work-items/github/github-work-item-workspace-attachment'
 import { findGitLabMrWorkspaceAttachment } from '@/lib/gitlab-work-item-workspace-attachment'
 import { reviewWorktreeOptions, type ReviewWithAgentRequest } from '@/lib/review-with-agent-request'
@@ -11,10 +11,10 @@ import {
   buildReviewPullRequestPrompt
 } from '../../../shared/pr-review-prompt'
 import type { TuiAgent } from '../../../shared/agent-launch/catalog/tui-agent'
-import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
 import type { GitLabWorkItem } from '../../../shared/gitlab-types'
-import { UI_LANGUAGE_NATIVE_NAMES } from '../../../shared/ui-language'
-import type { LaunchSource } from '../../../shared/telemetry-events'
+import { UI_LANGUAGE_NATIVE_NAMES } from '../../../shared/i18n/ui-language'
+import type { LaunchSource } from '../../../shared/telemetry/schemas/telemetry-property-schemas'
 import type { Worktree } from '../../../shared/worktree/types'
 
 /** The review reads in the language the Orca window is using, not in English by default. */

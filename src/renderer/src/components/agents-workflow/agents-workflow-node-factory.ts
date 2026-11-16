@@ -1,5 +1,5 @@
 import type { SnapGrid } from '@xyflow/react'
-import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import { translate } from '@/i18n/i18n'
 import {
   AGENTS_WORKFLOW_DECISION_NO,

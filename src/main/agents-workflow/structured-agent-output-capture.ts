@@ -5,7 +5,10 @@ import type {
 import { isRootAgentJournalItem } from '../../shared/agent-session/journal/agent-session-journal-producer'
 import { withoutNativeChatVisualDirectiveLines } from '../../shared/native-chat/native-chat-visual-directive'
 import { structuredAgentSessionCommandTurnItemIds } from '../../shared/agent-session/structured-agent-session-command-entry'
-import { clampUtf8TextPrefix, isUtf8ByteLengthWithinLimit } from '../../shared/utf8-byte-limits'
+import {
+  clampUtf8TextPrefix,
+  isUtf8ByteLengthWithinLimit
+} from '../../shared/text/utf8-byte-limits'
 import { AGENTS_WORKFLOW_NODE_OUTPUT_LIMIT_BYTES } from '../../shared/agents-workflow-run-limits'
 
 export type AgentsWorkflowStructuredOutput = {

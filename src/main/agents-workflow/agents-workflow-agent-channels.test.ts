@@ -29,7 +29,7 @@ describe('agents workflow channel plans against the implementing rosters', () =>
 
   it('counts the agents each roster really covers', () => {
     const entries = agentsWorkflowAgentChannelPlanEntries()
-    expect(entries.filter((entry) => entry.plan.channels.includes('protocol'))).toHaveLength(8)
+    expect(entries.filter((entry) => entry.plan.channels.includes('protocol'))).toHaveLength(11)
     expect(entries.filter((entry) => entry.plan.channels.includes('transcript'))).toHaveLength(
       // Why 26: the 25 ai-vault agents plus OpenClaude, which writes Claude's transcript format.
       AI_VAULT_AGENTS.length + 1

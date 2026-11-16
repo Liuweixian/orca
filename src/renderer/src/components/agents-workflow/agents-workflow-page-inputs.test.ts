@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
-import type { ProjectHostSetup } from '../../../../shared/project-types'
-import type { Repo } from '../../../../shared/repo-types'
+import type { ProjectHostSetup } from '../../../../shared/project/project-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import { createAgentsWorkflowPageFixture } from './agents-workflow-page-fixtures'
 import { newWorkflowInput, workflowTargetForNewWorkflow } from './agents-workflow-page-inputs'
 
@@ -8,7 +8,7 @@ vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback
 }))
 
-vi.mock('../../../../shared/non-secure-context-uuid', () => ({
+vi.mock('../../../../shared/identifiers/non-secure-context-uuid', () => ({
   createNonSecureContextUuid: () => 'creation-key'
 }))
 

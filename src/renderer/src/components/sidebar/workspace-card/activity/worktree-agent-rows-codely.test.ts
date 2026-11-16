@@ -36,7 +36,6 @@ describe('buildWorktreeAgentRows — Codely titles', () => {
     const rows = buildWorktreeAgentRows({
       tabs: [makeTab('tab-1')],
       entries: [],
-      retained: [],
       runtimePaneTitlesByTabId: { 'tab-1': { 1: 'Codely - orca' } },
       ptyIdsByTabId: { 'tab-1': ['pty-codely'] },
       terminalLayoutsByTabId: { 'tab-1': makeSingleLayout(LEAF_ID_1) },
@@ -52,7 +51,6 @@ describe('buildWorktreeAgentRows — Codely titles', () => {
     const rows = buildWorktreeAgentRows({
       tabs: [makeTab('tab-1')],
       entries: [],
-      retained: [],
       runtimePaneTitlesByTabId: { 'tab-1': { 1: '\u23f8\ufe0f Codely - orca' } },
       ptyIdsByTabId: { 'tab-1': ['pty-codely'] },
       terminalLayoutsByTabId: { 'tab-1': makeSingleLayout(LEAF_ID_1) },

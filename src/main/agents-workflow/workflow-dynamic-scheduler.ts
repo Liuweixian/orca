@@ -8,7 +8,10 @@ import {
   AGENTS_WORKFLOW_RUN_OUTPUT_LIMIT_BYTES,
   AGENTS_WORKFLOW_TERMINAL_ATTEMPT_OUTPUT_LIMIT_BYTES
 } from '../../shared/agents-workflow-run-limits'
-import { clampUtf8TextPrefix, isUtf8ByteLengthWithinLimit } from '../../shared/utf8-byte-limits'
+import {
+  clampUtf8TextPrefix,
+  isUtf8ByteLengthWithinLimit
+} from '../../shared/text/utf8-byte-limits'
 import type { AgentsWorkflowRuntimeValues } from './workflow-runtime-values'
 import type {
   AgentsWorkflowScheduleCheckpoint,

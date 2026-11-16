@@ -4,7 +4,7 @@
 // it. The pane's text is run-history evidence only.
 
 import type { AgentsWorkflowNodeOutput } from '../../shared/agents-workflow-run-types'
-import { createAutomationOutputSnapshotBuffer } from '../automations/automation-launch'
+import { createAutomationOutputSnapshotBuffer } from '../automations/launch/automation-launch'
 import type { AgentsWorkflowStepExecutor } from './workflow-dynamic-scheduler'
 import {
   paneTurnRefusal,

@@ -3,7 +3,7 @@ import type { AgentJournalRenderItem } from '../../shared/agent-session/journal/
 import {
   createStructuredAgentSessionOperationId,
   structuredAgentSessionPayloadFingerprint
-} from '../../shared/agent-session/lifecycle/structured-agent-session-mutation'
+} from '../../shared/agent-session/lifecycle/operations/structured-agent-session-mutation'
 import {
   createStructuredAgentSessionId,
   structuredAgentSessionCreateParams
@@ -34,7 +34,7 @@ type StructuredWorkflowRuntime = Pick<
 
 type WorkflowStructuredHost = Pick<
   StructuredAgentSessionHost,
-  'cancel' | 'journalSnapshot' | 'send' | 'subscribeTurnCompletions'
+  'automationRun' | 'cancel' | 'send' | 'subscribeTurnCompletions'
 > & {
   /** Committed provider deaths, so a chat the user closes ends its node instead of stalling it. */
   readonly deps: { readonly store: Pick<AgentSessionRecordStore, 'onDeathEvidence'> }
@@ -273,7 +273,8 @@ export class WorkflowStructuredTurnRunner implements AgentsWorkflowStructuredTur
         return sent
       }
     })
-    const snapshot = await active.host.journalSnapshot(active.sessionId)
+    // Why the run-scoped read: the host no longer exposes a whole-journal snapshot, and this send owns the turn.
+    const snapshot = await active.host.automationRun(active.sessionId, clientMessageId, [])
     const turnItemId = journalTurnItemIdForProviderTurn(snapshot.items, settled.completion.turnId)
     if (!turnItemId) {
       throw new Error('The completed provider turn is missing from the structured journal.')

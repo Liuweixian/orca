@@ -1,5 +1,5 @@
 import { ipcRenderer } from 'electron'
-import type { AgentsWorkflowsChangedPayload } from '../../shared/runtime-client-events'
+import type { AgentsWorkflowsChangedPayload } from '../../shared/remote-runtime/session-graph/runtime-client-events'
 import type { PreloadApi } from '../api-types'
 
 export const agentsWorkflowsApi = {

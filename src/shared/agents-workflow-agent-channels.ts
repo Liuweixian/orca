@@ -173,7 +173,7 @@ export const AGENTS_WORKFLOW_AGENT_CHANNEL_PLANS = {
     fileHandoff: true
   },
   cursor: {
-    channels: ['transcript', 'file', 'snapshot'],
+    channels: ['protocol', 'transcript', 'file', 'snapshot'],
     transcriptSource: 'cursor',
     fileHandoff: true
   },
@@ -183,7 +183,7 @@ export const AGENTS_WORKFLOW_AGENT_CHANNEL_PLANS = {
     fileHandoff: true
   },
   kimi: {
-    channels: ['transcript', 'file', 'snapshot'],
+    channels: ['protocol', 'transcript', 'file', 'snapshot'],
     transcriptSource: 'kimi',
     fileHandoff: true
   },
@@ -211,7 +211,7 @@ export const AGENTS_WORKFLOW_AGENT_CHANNEL_PLANS = {
     fileHandoff: true
   },
   copilot: {
-    channels: ['transcript', 'file', 'snapshot'],
+    channels: ['protocol', 'transcript', 'file', 'snapshot'],
     transcriptSource: 'copilot',
     fileHandoff: true
   },

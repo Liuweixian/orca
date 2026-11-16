@@ -3,7 +3,7 @@ import { AlertCircle, ExternalLink, Loader2, Pencil, RotateCw, Trash2 } from 'lu
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
-import { normalizeExternalBrowserUrl } from '../../../../../shared/browser-url'
+import { normalizeExternalBrowserUrl } from '../../../../../shared/browser/navigation/browser-url'
 import { translate } from '@/i18n/i18n'
 import { useAppStore } from '@/store'
 import { TaskPageBrowserUrlForm } from './TaskPageBrowserUrlForm'

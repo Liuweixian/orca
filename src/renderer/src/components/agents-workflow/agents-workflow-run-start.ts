@@ -1,6 +1,6 @@
 import { toast } from 'sonner'
 import { translate } from '@/i18n/i18n'
-import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import { RuntimeRpcCallError } from '@/runtime/rpc/calls/runtime-rpc-result'
 import { AGENTS_WORKFLOW_RUN_CONFLICT } from '../../../../shared/agents-workflow-errors'
 import type { AgentsWorkflowRun } from '../../../../shared/agents-workflow-run-types'

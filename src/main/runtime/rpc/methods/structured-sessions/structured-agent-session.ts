@@ -1,3 +1,4 @@
+import { STRUCTURED_AGENT_SESSION_MCP_METHODS } from './catalog/structured-agent-session-mcp'
 import { STRUCTURED_AGENT_SESSION_ACCOUNT_USAGE_METHODS } from './catalog/structured-agent-session-account-usage'
 import { STRUCTURED_AGENT_SESSION_USAGE_LIMIT_CONTINUE_METHODS } from './catalog/structured-agent-session-usage-limit-continue'
 import { STRUCTURED_AGENT_SESSION_CLOSE_METHOD } from './conversation/structured-agent-session-close-method'
@@ -45,15 +46,14 @@ import {
   CreateParams,
   CreateSupportParams,
   HistoryParams,
-  WorkStateParams,
   RewindParams,
   SendParams,
   SleepWorkspaceParams,
   UnsubscribeParams
-} from '../../../../../shared/rpc-contract/structured-agent-session-params'
-import '../../../../../shared/rpc-contract/structured-agent-session-continue-params'
-import '../../../../../shared/rpc-contract/structured-agent-session-rename-params'
-import '../../../../../shared/rpc-contract/structured-agent-session-queued-edit-params'
+} from '../../../../../shared/rpc-contract/structured-agent-session/structured-agent-session-params'
+import '../../../../../shared/rpc-contract/structured-agent-session/structured-agent-session-continue-params'
+import '../../../../../shared/rpc-contract/structured-agent-session/structured-agent-session-rename-params'
+import '../../../../../shared/rpc-contract/structured-agent-session/structured-agent-session-queued-edit-params'
 import { sendStructuredAgentSessionForClient } from './conversation/structured-agent-session-send-compatibility'
 import { runConversationCommandForClient } from './conversation/structured-agent-session-conversation-command'
 import { getStructuredAgentSessionHost } from '../../../../native-chat/agent-session-wire/host/structured-agent-session-registry'
@@ -192,16 +192,6 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
       )
     }
   }),
-  // Waiters poll this instead of history: no history page or running-turn scan, and no transcript in the reply.
-  defineMethod({
-    name: 'agentSession.workState',
-    permission: 'workspace',
-    params: WorkStateParams,
-    handler: async (params, ctx) =>
-      (await requireInstalledHost(ctx, params.sessionId)).backgroundTasks.workState(
-        params.sessionId
-      )
-  }),
   STRUCTURED_AGENT_SESSION_SUBSCRIBE_METHOD,
   defineMethod({
     name: 'agentSession.unsubscribe',
@@ -233,5 +223,6 @@ export const STRUCTURED_AGENT_SESSION_METHODS = [
   ...STRUCTURED_AGENT_SESSION_SEND_RECORDED_METHODS,
   ...STRUCTURED_AGENT_SESSION_CURRENT_REQUESTS_METHODS,
   ...STRUCTURED_AGENT_SESSION_ACCOUNT_USAGE_METHODS,
+  ...STRUCTURED_AGENT_SESSION_MCP_METHODS,
   ...STRUCTURED_AGENT_SESSION_OPTIONS_READ_METHODS
 ]

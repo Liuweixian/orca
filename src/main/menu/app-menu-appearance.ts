@@ -1,5 +1,5 @@
 import { translateMain } from '../i18n/main-i18n'
-import type { KeybindingActionId } from '../../shared/keybindings'
+import type { KeybindingActionId } from '../../shared/keybindings/types'
 import type { AppearanceMenuKey, AppearanceMenuState } from './register-app-menu'
 
 export type AppMenuAppearanceOptions = {

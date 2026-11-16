@@ -1,5 +1,11 @@
 {
   "accounts": {
+    "antigravity": {
+      "chatDescription": "Chats use their own Antigravity sign-in, separate from your agy account above. Sign in once on this device.",
+      "chatNotSignedIn": "Not signed in on {{host}}.",
+      "chatSignedInOn": "Signed in on {{host}}.",
+      "scope": "Manage the native agy account on {{host}}."
+    },
     "claude": {
       "switchSessions": {
         "body_one": "{{count}} Claude session is still running on {{previous}}. Restarting continues the conversation on {{next}}. Busy sessions wait for idle before restarting.",
@@ -57,6 +63,7 @@
   "auto": {
     "components": {
       "GitHubItemDialog": {
+        "e31651a224": "Rerun failed checks",
         "filesViewed_one": "{{viewed}} / {{count}} file viewed",
         "filesViewed_other": "{{viewed}} / {{count}} files viewed",
         "reactionCount_one": "{{count}} {{reaction}} reaction",
@@ -93,6 +100,9 @@
         "resumingCount_other": "Resuming {{count}} chats"
       },
       "PullRequestPage": {
+        "5a01ca7253": "Failed to sync viewed state with GitHub.",
+        "68605516dd": "Rerun failed checks",
+        "996a1897d2": "Unable to sync viewed state for this pull request.",
         "filesViewed_one": "{{viewed}} / {{count}} file viewed",
         "filesViewed_other": "{{viewed}} / {{count}} files viewed"
       },
@@ -101,6 +111,7 @@
         "filesFound_other": "{{count}} files found"
       },
       "TaskPage": {
+        "524f095d55": "Needs review",
         "changedFileCount_one": "{{count}} file",
         "changedFileCount_other": "{{count}} files",
         "labelCount_one": "{{count}} label",
@@ -111,6 +122,9 @@
         "projectsFailedToLoad_other": "{{failed}} of {{count}} projects failed to load",
         "shownCount_one": "{{count}} shown",
         "shownCount_other": "{{count}} shown"
+      },
+      "Terminal": {
+        "e57db40c11": "Could not build launch command for {{value0}}."
       },
       "WorktreeJumpPalette": {
         "itemsAvailable_one": "{{count}} item available.",
@@ -134,10 +148,7 @@
           "markManyRead_other": "Mark {{count}} Agents Read",
           "markManyUnread": "Mark {{count}} Agents Unread",
           "markManyUnread_one": "Mark {{count}} Agent Unread",
-          "markManyUnread_other": "Mark {{count}} Agents Unread",
-          "clearMany": "Clear {{count}} Agents from List",
-          "markManyRead": "Mark {{count}} Agents Read",
-          "markManyUnread": "Mark {{count}} Agents Unread"
+          "markManyUnread_other": "Mark {{count}} Agents Unread"
         },
         "ActivityTitlebarControls": {
           "unreadCount_one": "{{count}} unread",
@@ -153,15 +164,19 @@
           "graceHours_one": "{{count}} hour",
           "graceHours_other": "{{count}} hours",
           "graceMinutes_one": "{{count}} minute",
-          "graceMinutes_other": "{{count}} minutes"
+          "graceMinutes_other": "{{count}} minutes",
+          "usageDetail_one": "{{tokens}} tokens · {{known}}/{{count}} run reported",
+          "usageDetail_other": "{{tokens}} tokens · {{known}}/{{count}} runs reported"
         },
         "AutomationRunsDashboard": {
+          "historyUnavailableMany": "Run history is unavailable for {{count}} automations. Counts include available history only.",
+          "historyUnavailableOne": "Run history is unavailable for 1 automation. Counts include available history only.",
           "historyUnavailable_one": "Run history is unavailable for {{count}} automation. Counts include available history only.",
           "historyUnavailable_other": "Run history is unavailable for {{count}} automations. Counts include available history only.",
           "local": "Local",
           "remote": "Remote",
-          "historyUnavailableMany": "Run history is unavailable for {{count}} automations. Counts include available history only.",
-          "historyUnavailableOne": "Run history is unavailable for 1 automation. Counts include available history only."
+          "runs": "Runs",
+          "triggered": "Triggered"
         },
         "AutomationSchedulePicker": {
           "55b2ef82a4": "Hourly",
@@ -197,6 +212,16 @@
           "partialFailureOfHosts_one": "{{failed}} of {{count}} host could not be loaded",
           "partialFailureOfHosts_other": "{{failed}} of {{count}} hosts could not be loaded"
         },
+        "listGroups": {
+          "active": "Active",
+          "attention": "Needs attention",
+          "paused": "Paused"
+        },
+        "recentRuns": {
+          "allRuns": "All {{count}} runs",
+          "allRuns_one": "All {{count}} run",
+          "allRuns_other": "All {{count}} runs"
+        },
         "runHistory": {
           "occurrencesCount_one": "{{count}} time",
           "occurrencesCount_other": "{{count}} times",
@@ -217,6 +242,20 @@
           "errorUnavailable": "Screenshot markup is not available on this page."
         }
       },
+      "cmd": {
+        "j": {
+          "quick": {
+            "actions": {
+              "splitChatDownDescription": "Open a new chat in a split pane below.",
+              "splitChatRightDescription": "Open a new chat in a split pane to the right.",
+              "verbs": {
+                "newChatBelow": "new chat below",
+                "newChatRight": "new chat right"
+              }
+            }
+          }
+        }
+      },
       "dashboard": {
         "DashboardAgentChildDisclosure": {
           "hideChildAgents_one": "Hide {{count}} child agent",
@@ -227,6 +266,11 @@
         "DashboardAgentRow": {
           "dispatchedAgents_one": "{{agentType}} - dispatched {{count}} agent",
           "dispatchedAgents_other": "{{agentType}} - dispatched {{count}} agents"
+        }
+      },
+      "dictation": {
+        "DictationController": {
+          "7afff43472": "Dictation finished, but no text field was focused."
         }
       },
       "editor": {
@@ -255,8 +299,7 @@
           "showAiNotes_other": "Show {{count}} AI notes",
           "skippedConflictsExcluded": "{{count}} unresolved conflicts were excluded from this diff view.",
           "skippedConflictsExcluded_one": "{{count}} unresolved conflict was excluded from this diff view.",
-          "skippedConflictsExcluded_other": "{{count}} unresolved conflicts were excluded from this diff view.",
-          "skippedConflictsExcluded": "{{count}} unresolved conflicts were excluded from this diff view."
+          "skippedConflictsExcluded_other": "{{count}} unresolved conflicts were excluded from this diff view."
         },
         "ConflictComponents": {
           "unresolvedConflicts_one": "{{count}} unresolved conflict",
@@ -320,8 +363,36 @@
           }
         }
       },
+      "emulator": {
+        "pane": {
+          "emulator": {
+            "pane": {
+              "toolbar": {
+                "3d836b879c": "Choose emulator"
+              }
+            }
+          }
+        }
+      },
+      "feature": {
+        "wall": {
+          "AiCommitPrSettingsCard": {
+            "4b2fc4b80c": "Thinking effort",
+            "be8917699e": "Model"
+          }
+        }
+      },
+      "floating": {
+        "terminal": {
+          "FloatingTerminalWindowControls": {
+            "82da3701e7": "Could not build launch command for {{value0}}."
+          }
+        }
+      },
       "github": {
         "PRFilterSections": {
+          "authorCount_one": "{{count}} author",
+          "authorCount_other": "{{count}} authors",
           "labelCount_one": "{{count}} label",
           "labelCount_other": "{{count}} labels"
         },
@@ -356,8 +427,14 @@
         "AgentStep": {
           "showMoreAgents": "Show {{value0}} more agents →",
           "showMoreAgents_one": "Show {{count}} more agent →",
-          "showMoreAgents_other": "Show {{count}} more agents →",
-          "showMoreAgents": "Show {{value0}} more agents →"
+          "showMoreAgents_other": "Show {{count}} more agents →"
+        },
+        "OnboardingFlow": {
+          "04ae28d8ca": "Pick the look you want to stare at for hours.",
+          "322fc50a18": "Orca works with every CLI agent. Choose the one you'll reach for most. Switch any time."
+        },
+        "OnboardingFooter": {
+          "111d3f8d92": "Skip to project setup"
         }
       },
       "prCheckCounts": {
@@ -405,6 +482,12 @@
           "BulkActionBar": {
             "selectedCount_one": "{{count}} selected",
             "selectedCount_other": "{{count}} selected"
+          },
+          "GitHistoryCommitFiles": {
+            "a1b2c3d4e5": "Loading files…"
+          },
+          "GitHistoryPanel": {
+            "781a8bcf7b": "Loading graph..."
           },
           "Search": {
             "fileCount_one": "{{count}} file",
@@ -579,6 +662,13 @@
           },
           "source": {
             "control": {
+              "ai": {
+                "recovery": {
+                  "launch": {
+                    "5540ff50cc": "Could not build the agent launch command."
+                  }
+                }
+              },
               "compare": {
                 "summary": {
                   "commitsAhead_one": "{{count}} commit ahead of {{ref}}",
@@ -650,11 +740,21 @@
           "4d03dec2d0": "Read app interface trees and perform requested actions.",
           "6b5a2cd3a5": "Accessibility"
         },
+        "GhosttyImportModal": {
+          "e4bda7ce6f": "No Ghostty config found on this system."
+        },
         "McpConfigSection": {
           "detectedServers_one": "{{detected}} detected · {{count}} server",
           "detectedServers_other": "{{detected}} detected · {{count}} servers"
         },
+        "MobileEmulatorSettingsPane": {
+          "143961d031": "Default Device",
+          "b2fd62ea75": "Default device for new emulator tabs and agent attach commands. Auto-select prefers an already running device.",
+          "f62a1bb759": "Orca will auto-select an emulator device after devices are detected."
+        },
         "OrchestrationPane": {
+          "coordinatorApprovalsKeywordApprove": "approve",
+          "coordinatorApprovalsKeywordPermission": "permission",
           "workerAutoReleaseKeywordClose": "close",
           "workerAutoReleaseKeywordRelease": "release"
         },
@@ -707,6 +807,18 @@
           "dailyWarning": "Daily builds ship straight from main with no test gate, and the Windows ones are unsigned. Keep a stable build handy.",
           "hourlyWarning": "Hourly builds ship straight from main with no test gate, and the Windows ones are unsigned. Keep a stable build handy."
         },
+        "RepositoryRemoveProjectSection": {
+          "checkoutCount_one": "{{count}} checkout",
+          "checkoutCount_other": "{{count}} checkouts",
+          "hostCount_one": "{{count}} host",
+          "hostCount_other": "{{count}} hosts",
+          "terminalWarning_one": "{{count}} open terminal in this project will be closed.",
+          "terminalWarning_other": "{{count}} open terminals in this project will be closed."
+        },
+        "RepositorySourceControlAiActionRows": {
+          "0ffb081b3a": "Use default agent",
+          "2b2f38652b": "Custom command"
+        },
         "Settings": {
           "084d8fac5b": "Privacy & Security",
           "23931df7e8": "Remote Hosts",
@@ -715,9 +827,23 @@
           "9abb9be3bc": "Set Up",
           "e1578cd4bc": "Workflows"
         },
+        "SettingsFormControls": {
+          "4e11f87ca6": "Showing",
+          "9119fb2268": "Current",
+          "c822571b2e": " matching \"{{value0}}\"",
+          "cb330ef7f8": " of {{value0}}",
+          "delete_theme": "Delete theme",
+          "fbb428db98": "Selected:",
+          "from_plugin": "From {{value0}}",
+          "imported_from": "Imported from {{value0}}"
+        },
         "SshPane": {
           "syncedServerPlural": "Synced {{count}} servers",
           "syncedServerSingular": "Synced {{count}} server"
+        },
+        "SshTargetForm": {
+          "allowRemoteCliControl": "Allow this host's orca CLI to control Orca",
+          "allowRemoteCliControlHelp": "On by default for new hosts. Lets orca commands run on this host open and drive Orca browser tabs on this desktop, only in this host's workspaces and only while it is connected, and lets terminals started by an older Orca on this host run orchestration commands (check, inbox, send, ask, reply) for their own supervised work. They cannot read your files, clipboard or cookies. When off, they reach only this host's own Orca server."
         },
         "WarpThemeImportModal": {
           "found_theme": "Found {{value0}} themes",
@@ -817,9 +943,7 @@
           "linkedProjects_other": "This host’s Orca server already had {{paths}}, so this desktop now uses the server’s copy. This desktop’s tabs and {{count}} automations there were not moved, and worktrees it created there show as external worktrees.",
           "olderTerminals": "{{count}} terminals started by an older version of Orca are still running on this host, and they don’t stop on their own. Close them in that version of Orca or end them on the host, then reconnect.",
           "olderTerminals_one": "{{count}} terminal started by an older version of Orca is still running on this host, and it doesn’t stop on its own. Close it in that version of Orca or end it on the host, then reconnect.",
-          "olderTerminals_other": "{{count}} terminals started by an older version of Orca are still running on this host, and they don’t stop on their own. Close them in that version of Orca or end them on the host, then reconnect.",
-          "linkedProjects": "This host’s Orca server already had {{paths}}, so this desktop now uses the server’s copy. This desktop’s tabs and {{count}} automations there were not moved, and worktrees it created there show as external worktrees.",
-          "olderTerminals": "{{count}} terminals started by an older version of Orca are still running on this host, and they don’t stop on their own. Close them in that version of Orca or end them on the host, then reconnect."
+          "olderTerminals_other": "{{count}} terminals started by an older version of Orca are still running on this host, and they don’t stop on their own. Close them in that version of Orca or end them on the host, then reconnect."
         },
         "task": {
           "tracker": {
@@ -860,8 +984,7 @@
         "AddRemoteHostDialog": {
           "sshImportSynced": "Added {{value0}} host{{value1}} to Orca.",
           "sshImportSynced_one": "Added {{count}} host to Orca.",
-          "sshImportSynced_other": "Added {{count}} hosts to Orca.",
-          "sshImportSynced": "Added {{value0}} host{{value1}} to Orca."
+          "sshImportSynced_other": "Added {{count}} hosts to Orca."
         },
         "AddRepoNestedImportStep": {
           "foundRepositories_one": "Found {{count}} repository in {{path}}.",
@@ -874,6 +997,8 @@
           "removeBatchGit_other": "Remove <target>{{count}} workspaces</target> from git and delete their workspace folders.",
           "removeBatchMixed_one": "Remove <target>{{count}} workspace</target> from Orca. Git worktrees will also be removed from git and disk; folder workspaces will only remove the Orca workspace entry.",
           "removeBatchMixed_other": "Remove <target>{{count}} workspaces</target> from Orca. Git worktrees will also be removed from git and disk; folder workspaces will only remove the Orca workspace entry.",
+          "removeSingleFolder": "Remove <target/> from Orca. The project folder on disk will not be deleted.",
+          "removeSingleGit": "Remove <target/> from git and delete its workspace folder.",
           "removeWithChildrenFolder_one": "Remove <target/> and <descendants>{{count}} child workspace</descendants> from Orca. Project folders on disk will not be deleted.",
           "removeWithChildrenFolder_other": "Remove <target/> and <descendants>{{count}} child workspaces</descendants> from Orca. Project folders on disk will not be deleted.",
           "removeWithChildrenGit_one": "Remove <target/> and <descendants>{{count}} child workspace</descendants> from git and delete their workspace folders.",
@@ -882,20 +1007,23 @@
           "removeWithChildrenMixed_other": "Remove <target/> and <descendants>{{count}} child workspaces</descendants> from Orca. Git worktrees will also be removed from git and disk; folder workspaces will only remove the Orca workspace entry."
         },
         "DeleteWorktreeDirtyChangeHint": {
+          "changeCount_one": "{{count}} uncommitted or untracked change",
+          "changeCount_other": "{{count}} uncommitted or untracked changes",
+          "changes": "Uncommitted or untracked changes",
           "changesLost_one": "{{count}} uncommitted change will be lost",
           "changesLost_other": "{{count}} uncommitted changes will be lost",
           "moreLoadedPaths": "and {{value0}} more loaded paths",
           "moreLoadedPaths_one": "and {{count}} more loaded path",
-          "moreLoadedPaths_other": "and {{count}} more loaded paths",
-          "changeCount_one": "{{count}} uncommitted or untracked change",
-          "changeCount_other": "{{count}} uncommitted or untracked changes",
-          "moreLoadedPaths": "and {{value0}} more loaded paths"
+          "moreLoadedPaths_other": "and {{count}} more loaded paths"
         },
         "DeleteWorktreeLineageNotice": {
           "alsoDeletesChildren_one": "Deleting this workspace also deletes {{count}} child workspace.",
           "alsoDeletesChildren_other": "Deleting this workspace also deletes {{count}} child workspaces.",
           "moreChildren_one": "+{{count}} more",
           "moreChildren_other": "+{{count}} more"
+        },
+        "DeleteWorktreeSkipConfirmOption": {
+          "29aefb7e52": "Don't ask again"
         },
         "HostRemoveDialog": {
           "alsoRemoveWorkspaces_one": "Also remove this workspace from Orca",
@@ -908,6 +1036,8 @@
           "workspaceCount_other": "{{count}} workspaces"
         },
         "ImportedWorktreesVisibilityLine": {
+          "hidingInRepo_one": "Hiding {{count}} discovered worktree in {{repo}}",
+          "hidingInRepo_other": "Hiding {{count}} discovered worktrees in {{repo}}",
           "hiding_one": "Hiding {{count}} discovered worktree",
           "hiding_other": "Hiding {{count}} discovered worktrees",
           "keepHiddenAriaLabel_one": "Keep {{count}} discovered worktree hidden for {{repo}}; recover from the project menu",
@@ -925,12 +1055,6 @@
           "reviewHiddenWorktrees_one": "Review {{count}} hidden worktree in {{scope}}",
           "reviewHiddenWorktrees_other": "Review {{count}} hidden worktrees in {{scope}}"
         },
-        "PreservedBranchBatchReviewDialog": {
-          "a0f9863597": "Force Delete {{count}} Branches",
-          "a0f9863597_one": "Force Delete {{count}} Branch",
-          "a0f9863597_other": "Force Delete {{count}} Branches",
-          "a0f9863597": "Force Delete {{count}} Branches"
-        },
         "ProjectGroupDeleteDialog": {
           "moreProjects_one": "+{{count}} more",
           "moreProjects_other": "+{{count}} more",
@@ -944,6 +1068,9 @@
         "SetupScriptCodeBlock": {
           "showMore_one": "Show {{count}} more line",
           "showMore_other": "Show {{count}} more lines"
+        },
+        "SetupScriptPromptCardViews": {
+          "96a7f4198c": "Save local setup"
         },
         "SidebarRepositoryFilterSection": {
           "selectedProjects_one": "{{count}} project",
@@ -966,6 +1093,12 @@
         "WorktreeCardPorts": {
           "livePorts_one": "{{count}} live port",
           "livePorts_other": "{{count}} live ports"
+        },
+        "WorktreeContextMenu": {
+          "3350101edb": "Copy Path",
+          "439fa94d53": "Update",
+          "copyWorktreeName": "Copy Worktree Name",
+          "sleepWithDescendants": "Sleep with Descendants ({{value0}})"
         },
         "WorktreeList": {
           "childCount_one": "{{count}} child",
@@ -1013,12 +1146,7 @@
                 "cea24c2b7d_other": "{{count}} workspaces removed",
                 "d42f1f14e0": "Retry {{count}} Branches",
                 "d42f1f14e0_one": "Retry {{count}} Branch",
-                "d42f1f14e0_other": "Retry {{count}} Branches",
-                "0e0379f24a": "{{count}} branches kept",
-                "6310412304": "Review {{count}} Branches",
-                "a3cdd9d9e6": "Git kept {{count}} local branches because they may contain unmerged commits. Kept branches do not retain workspace folders; their commits remain in the repository. Orca may continue freeing workspace disk space in the background.",
-                "cea24c2b7d": "{{count}} workspaces removed",
-                "d42f1f14e0": "Retry {{count}} Branches"
+                "d42f1f14e0_other": "Retry {{count}} Branches"
               }
             }
           }
@@ -1181,6 +1309,7 @@
             "moreSshHosts_other": "Find among {{count}} more SSH hosts…"
           },
           "StatusBar": {
+            "c98ea88392": "No other accounts",
             "codexSignInError": "Codex sign-in failed. Please try again.",
             "rateLimitResetsAvailable_one": "{{count}} rate-limit reset available",
             "rateLimitResetsAvailable_other": "{{count}} rate-limit resets available",
@@ -1216,10 +1345,6 @@
             "browserTabsOpen_other": "{{count}} browser tabs open",
             "changedFiles_one": "{{count}} changed file",
             "changedFiles_other": "{{count}} changed files",
-            "completedAgentsRetained_one": "{{count}} completed agent retained",
-            "completedAgentsRetained_other": "{{count}} completed agents retained",
-            "completedAgents_one": "{{count}} completed agent",
-            "completedAgents_other": "{{count}} completed agents",
             "dirtyEditorBuffers_one": "{{count}} dirty editor buffer",
             "dirtyEditorBuffers_other": "{{count}} dirty editor buffers",
             "editorFilesOpen_one": "{{count}} editor file open",
@@ -1235,14 +1360,20 @@
           }
         }
       },
+      "tab": {
+        "bar": {
+          "QuickLaunchButton": {
+            "465e432ef1": "Could not build launch command for {{value0}}."
+          }
+        }
+      },
       "task": {
         "project": {
           "source": {
             "combobox": {
               "hostCount": "{{value0}} hosts",
               "hostCount_one": "{{count}} host",
-              "hostCount_other": "{{count}} hosts",
-              "hostCount": "{{value0}} hosts"
+              "hostCount_other": "{{count}} hosts"
             }
           }
         }
@@ -1264,6 +1395,9 @@
             "ptyAllocationLimit": "Your system cannot allocate any more pty devices. Close some terminals you are not using, in Orca or another program, then try again.",
             "terminalProcessLimit": "Your system cannot start another terminal process. Close unused terminals or quit unused processes, then try again."
           },
+          "TerminalLinkActionPopover": {
+            "openInThisGroup": "Open in this group"
+          },
           "terminal": {
             "drop": {
               "handler": {
@@ -1281,20 +1415,39 @@
             }
           }
         }
+      },
+      "workspace": {
+        "cleanup": {
+          "WorkspaceCleanupDialog": {
+            "0b1766738a": "Repo",
+            "4d0b72481c": "Ignore",
+            "deleteCount": "Delete workspaces: {{value0}}?",
+            "deletingCount": "Deleting workspaces: {{value0}}",
+            "selectedForDeletionCount": "Selected for deletion: {{value0}}"
+          },
+          "candidateRow": {
+            "commitsLabel": "Commits"
+          }
+        }
       }
     },
     "hooks": {
+      "useAutomationDispatchEvents": {
+        "16a21d6413": "SSH reconnect requires interactive credentials.",
+        "386db94f3e": "The target project is no longer available.",
+        "3ad7d77f57": "The target workspace is on a different host than this automation run target.",
+        "59718b120b": "The target workspace is no longer available.",
+        "workspaceHostUnresolved": "The target workspace spans more than one host, so this run has no single host to use."
+      },
       "useComposerState": {
         "dropPartiallyAttached": "{{failureCount}} of {{count}} items could not be attached.",
         "dropPartiallyAttached_one": "{{failureCount}} of {{count}} item could not be attached.",
-        "dropPartiallyAttached_other": "{{failureCount}} of {{count}} items could not be attached.",
-        "dropPartiallyAttached": "{{failureCount}} of {{count}} items could not be attached."
+        "dropPartiallyAttached_other": "{{failureCount}} of {{count}} items could not be attached."
       },
       "useGlobalFileDrop": {
         "nativeDropTempCopyFailed": "Orca couldn't copy {{count}} dropped files.",
         "nativeDropTempCopyFailed_one": "Orca couldn't copy {{count}} dropped file.",
-        "nativeDropTempCopyFailed_other": "Orca couldn't copy {{count}} dropped files.",
-        "nativeDropTempCopyFailed": "Orca couldn't copy {{count}} dropped files."
+        "nativeDropTempCopyFailed_other": "Orca couldn't copy {{count}} dropped files."
       }
     },
     "lib": {
@@ -1340,6 +1493,26 @@
       "emulator": {
         "androidSdkNotFound": "Android SDK not found. Install Android Studio and set ANDROID_HOME.",
         "xcodeSimulatorToolsUnavailable": "Xcode Simulator tools are unavailable. Install full Xcode, open it once, then select it with `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer`."
+      },
+      "fix": {
+        "checks": {
+          "agent": {
+            "launch": {
+              "822bf52295": "Unable to resolve the workspace launch platform.",
+              "fb6c294e85": "Could not build the agent launch command."
+            }
+          }
+        }
+      },
+      "launch": {
+        "work": {
+          "item": {
+            "direct": {
+              "19c7683acf": "Selected agent is not available in the created workspace.",
+              "8bc45efdbc": "Failed to resolve PR head."
+            }
+          }
+        }
       },
       "rateLimits": {
         "errors": {
@@ -1613,7 +1786,15 @@
     }
   },
   "components": {
+    "RepositoryBrowserProfileSection": {
+      "keywordCookies": "cookies",
+      "keywordProfile": "browser profile",
+      "keywordSignIn": "sign in"
+    },
     "native-chat": {
+      "agentMessage": {
+        "showMore": "Show more"
+      },
       "approval": {
         "allow": "Allow",
         "deny": "Deny",
@@ -1638,8 +1819,7 @@
         "awaitingUnnamed": "Awaiting user input",
         "questionCount": "{{value0}} questions",
         "questionCount_one": "{{count}} question",
-        "questionCount_other": "{{count}} questions",
-        "questionCount": "{{value0}} questions"
+        "questionCount_other": "{{count}} questions"
       },
       "backgroundTasks": {
         "agent": "Background agent",
@@ -1701,15 +1881,7 @@
         "stopAll": "Stop background tasks",
         "stopTask": "Stop {{value0}}",
         "task": "Background task",
-        "workflow": "Background workflow",
-        "headerTotal": "{{value0}} background tasks",
-        "stateBlockedCount": "{{value0}} blocked",
-        "stateDoneCount": "{{value0}} done",
-        "stateIdleCount": "{{value0}} stopped",
-        "stateMonitoringCount": "{{value0}} monitoring",
-        "stateUnverifiableCount": "{{value0}} with status unavailable",
-        "stateWaitingCount": "{{value0}} waiting",
-        "stateWorkingCount": "{{value0}} working"
+        "workflow": "Background workflow"
       },
       "composer": {
         "placeholder": "Ask anything, @ to mention files, / for commands"
@@ -1724,6 +1896,7 @@
         "modelApplyFailed": "Could not apply model {{value}}.",
         "modelPickerFailed": "Could not open the model picker."
       },
+      "deliveryUnconfirmed": "Delivery unconfirmed — check chat before retrying",
       "failureWords": {
         "accountSwitchInProgress": "{{agent}}'s setup is changing on this host. Try again after it finishes.",
         "agentCommandNotRunnable": "{{agent}}'s Command in Settings → Agents must start with a program Orca can find. Variables, pipes and other shell syntax aren't supported; use the Environment setting for variables. Change it or reset it.",
@@ -1860,12 +2033,26 @@
         "settingsUnconfirmed": "Codex did not confirm the selected model and effort. This goal change was not sent. Check the chat and try again.",
         "stopUnconfirmed": "Codex could not confirm Stop. Check the chat before continuing."
       },
+      "interruptedContinue": {
+        "unconfirmed": "Couldn't confirm whether {{agent}} received Continue. Check the chat before trying again."
+      },
+      "mcp": {
+        "status": {
+          "tools_one": "{{count}} tool",
+          "tools_other": "{{count}} tools"
+        },
+        "summary": {
+          "needsAuth_one": "{{count}} needs sign-in",
+          "needsAuth_other": "{{count}} need sign-in"
+        }
+      },
       "notices": {
         "compaction": "Context compacted",
         "contextCleared": "Context cleared",
         "continuedOutside": "Continued outside this chat.",
         "continuedOutsideRewound": "Continued outside this chat. Earlier replies above are no longer in this conversation's history.",
         "forkedFrom": "Forked from",
+        "forkedFromUnknown": "Forked from another chat",
         "historyItemTooLarge": "This part of the chat was too large to show.",
         "historyRepaired": "Part of this chat's history couldn't be loaded.",
         "modelFallback": "Claude switched models: {{from}} → {{to}}.",
@@ -1887,6 +2074,7 @@
         "byteCount_other": "{{count}} bytes"
       },
       "queuedMessages": {
+        "behindReturnedHold": "Waiting — a message ahead needs attention",
         "editChanged": "This message changed while you were editing. Your edit is in the chat box.",
         "editChangedNotSaved": "This message changed while you were editing. Your edit wasn't saved.",
         "editChangedPrompt": "This message changed while you were editing. Your edit will be in the chat box after you answer the agent.",
@@ -1895,8 +2083,7 @@
         "editGonePrompt": "This message was already sent or removed. Your edit will be in the chat box after you answer the agent.",
         "imageCount": "{{count}} images",
         "imageCount_one": "{{count}} image",
-        "imageCount_other": "{{count}} images",
-        "imageCount": "{{count}} images"
+        "imageCount_other": "{{count}} images"
       },
       "receipt": {
         "cancelled": "Cancelled",
@@ -1905,6 +2092,9 @@
         "resolved": "Resolved",
         "resolver": "Answered on {{device}}",
         "unavailable": "Selected answer unavailable"
+      },
+      "resumeInNewChat": {
+        "terminalExitUnprovenInChat": "Orca closed {{agent}}'s terminal but couldn't confirm {{agent}} stopped. Make sure it has stopped, then try again."
       },
       "sessionOptionErrors": {
         "afterStartOnly": "This option is only available after the session starts.",
@@ -1971,20 +2161,14 @@
           "working": "working",
           "workingCount": "{{value0}} working",
           "workingCount_one": "{{count}} working",
-          "workingCount_other": "{{count}} working",
-          "failedCount": "{{value0}} failed",
-          "idleCount": "{{value0}} idle",
-          "stoppedCount": "{{value0}} stopped",
-          "unverifiableCount": "{{value0}} with status unavailable",
-          "workingCount": "{{value0}} working"
+          "workingCount_other": "{{count}} working"
         },
         "tokens": "{{value0}} tokens"
       },
       "taskList": {
         "progress": "{{completed}} of {{total}} tasks completed",
         "progress_one": "{{completed}} of {{count}} task completed",
-        "progress_other": "{{completed}} of {{count}} tasks completed",
-        "progress": "{{completed}} of {{total}} tasks completed"
+        "progress_other": "{{completed}} of {{count}} tasks completed"
       },
       "tool": {
         "callCount_one": "{{count}} tool call",
@@ -2042,7 +2226,12 @@
       },
       "turnDiff": {
         "changedFiles_one": "{{count}} changed file",
-        "changedFiles_other": "{{count}} changed files"
+        "changedFiles_other": "{{count}} changed files",
+        "hidden": "Hidden",
+        "hiddenDescription": "You can change this anytime in <settings>Settings › Chat UI</settings>",
+        "hideDiff": "Hide diff",
+        "hideFailed": "Couldn't hide changed files. Try again, or turn off Changed files summary in Settings › Chat UI.",
+        "showDiff": "Show diff"
       },
       "writeNotice": {
         "agentRefused": "The agent turned this down.",
@@ -2122,25 +2311,6 @@
         "waitForStart": "Wait for the agent to finish starting.",
         "waitForTurn": "Wait for the agent to finish responding, or stop it.",
         "waitMoment": "Wait a moment."
-      },
-      "usage": {
-        "description": "Show usage for this chat’s Codex account",
-        "loading": "Loading Codex usage…",
-        "failed": "Codex usage couldn’t be loaded. Try again.",
-        "codexVersion": "This Codex version doesn’t report usage. Update Codex.",
-        "apiKeyAuth": "Codex usage isn’t available with an API key. Sign in to Codex with a ChatGPT account to view usage.",
-        "title": "Codex usage",
-        "account": "Account used by this chat",
-        "retry": "Retry",
-        "resetFailed": "Codex limits couldn’t be reset. Try again.",
-        "confirmReset": "This uses one Codex rate-limit reset credit for {{account}} and resets any eligible usage windows immediately.",
-        "sharedAccount": "Current shared account",
-        "outcome": {
-          "reset": "Codex limits were reset.",
-          "nothingToReset": "Nothing to reset right now.",
-          "noCredit": "No Codex reset credit is left on this account.",
-          "alreadyRedeemed": "That reset credit was already used."
-        }
       }
     },
     "onboarding": {
@@ -2159,6 +2329,40 @@
       "workers_one": "{{count}} worker",
       "workers_other": "{{count}} workers"
     },
+    "settings": {
+      "workspaceCleanup": {
+        "activity": {
+          "notListed_one": "1 more kept workspace is not listed.",
+          "notListed_other": "{{count}} more kept workspaces are not listed."
+        },
+        "change": {
+          "description_one": "This change makes 1 more workspace match right now. It'll be deleted a few seconds after you apply it.",
+          "description_other": "This change makes {{count}} more workspaces match right now. They'll be deleted a few seconds after you apply it."
+        },
+        "disableIgnoredFiles": {
+          "matches_one": "Without pinning, {{count}} additional workspace will be deleted a few seconds after you turn off protection.",
+          "matches_other": "Without pinning, {{count}} additional workspaces will be deleted a few seconds after you turn off protection."
+        },
+        "enable": {
+          "description_one": "1 workspace matches right now. It'll be deleted a few seconds after you turn this on.",
+          "description_other": "{{count}} workspaces match right now. They'll be deleted a few seconds after you turn this on."
+        },
+        "rules": {
+          "inactiveDescription": "No activity for {{count}} days.",
+          "inactiveDescription_one": "No activity for 1 day.",
+          "inactiveDescription_other": "No activity for {{count}} days.",
+          "matchesCount": "Matches {{count}} workspaces now",
+          "matchesCount_one": "Matches 1 workspace now",
+          "matchesCount_other": "Matches {{count}} workspaces now"
+        },
+        "status": {
+          "lastRunFreed_one": "Last run {{when}} removed 1 workspace and freed {{size}}.",
+          "lastRunFreed_other": "Last run {{when}} removed {{count}} workspaces and freed {{size}}.",
+          "lastRunRemoved_one": "Last run {{when}} removed 1 workspace.",
+          "lastRunRemoved_other": "Last run {{when}} removed {{count}} workspaces."
+        }
+      }
+    },
     "tab": {
       "bar": {
         "bulkClose": {
@@ -2176,6 +2380,8 @@
         "browse": {
           "forceDeleteRisk_one": "{{count}} workspace currently shows risk and may need a force delete",
           "forceDeleteRisk_other": "{{count}} workspaces currently show risk and may need a force delete",
+          "measureSizes": "Scan",
+          "measureSizesDescription": "Scan disk usage to compare, sort, and filter workspaces by size.",
           "selectAllSafetyChecked_one": "Select {{count}} safety-checked workspace",
           "selectAllSafetyChecked_other": "Select all {{count}} safety-checked workspaces",
           "selectionVanishedCount_one": "{{count}} selected workspace no longer exists.",
@@ -2186,8 +2392,6 @@
           "workspaceCount_other": "{{count}} workspaces"
         },
         "confirm": {
-          "deleteTitle_one": "Delete {{count}} workspace?",
-          "deleteTitle_other": "Delete {{count}} workspaces?",
           "deletingTitle_one": "Deleting {{count}} workspace",
           "deletingTitle_other": "Deleting {{count}} workspaces"
         },
@@ -2201,6 +2405,9 @@
         }
       },
       "delete": {
+        "changes": {
+          "clean": "No uncommitted or untracked changes"
+        },
         "unsavedEdits": {
           "blocked_one": "Save or close {{count}} unsaved file in {{name}} first",
           "blocked_other": "Save or close {{count}} unsaved files in {{name}} first",
@@ -2292,6 +2499,17 @@
       "suspendExitedWithoutCode": "Suspend exited with code unknown."
     }
   },
+  "featureTips": {
+    "chatUiHere": {
+      "liveSwitching": "Live switching available",
+      "liveSwitchingCouncilTab": "Council Review",
+      "liveSwitchingDescription": "Right-click an agent tab to switch between Chat UI and the terminal.",
+      "liveSwitchingGotIt": "Got it",
+      "liveSwitchingPolishTab": "Polish Bottom…",
+      "liveSwitchingTerminalTab": "Claude Code",
+      "liveSwitchingTitle": "Live switching 101"
+    }
+  },
   "jira": {
     "workspace": {
       "linkedCount_one": "{{count}} workspace linked to {{key}}",
@@ -2301,6 +2519,9 @@
   "localBuild": {
     "liveTerminals_one": "{{count}} live terminal will reconnect after restart.",
     "liveTerminals_other": "{{count}} live terminals will reconnect after restart."
+  },
+  "macosUpdateRequirement": {
+    "whyIntro": "We updated Electron, the foundation Orca runs on, to bring:"
   },
   "menu": {
     "about": "About Orca",
@@ -2394,6 +2615,7 @@
   },
   "sessionSearch": {
     "panel": {
+      "consent": "Enable full-text search? Orca builds an index on this computer from local agent transcripts, including full conversations and up to 3,072 characters per tool output. Content is not redacted. Authenticated paired clients can search it.",
       "resultCount_one": "{{count}} result",
       "resultCount_other": "{{count}} results",
       "sessionCount_one": "{{count}} session",
@@ -2414,6 +2636,21 @@
       "permissionOverridesFollow_other": "{{count}} agents now follow {{mode}}",
       "permissionOverridesKept_one": "{{count}} agent still uses their own permission setting:",
       "permissionOverridesKept_other": "{{count}} agents still use their own permission setting:"
+    },
+    "appearance": {
+      "chat": {
+        "changedFilesSummary": "Changed files summary",
+        "changedFilesSummaryDescription": "Shows the files each turn changed, with line counts, below the reply.",
+        "changedFilesSummaryKeywordDiff": "diff",
+        "changedFilesSummaryKeywordEdits": "edits"
+      }
+    },
+    "chat": {
+      "providers": {
+        "antigravityDescription": "Antigravity chats run a server Orca downloads to this host, separate from the agy CLI.",
+        "antigravityNotSignedIn": "Not signed in. Chats need an Antigravity sign-in, separate from your agy terminal account.",
+        "antigravitySignInNeeded": "Chats need an Antigravity sign-in, separate from your agy terminal account."
+      }
     },
     "diagnostics": {
       "errors": {
@@ -2487,6 +2724,11 @@
         "needModifier": "Include at least one modifier key.",
         "needNonModifier": "Press a key, not only a modifier.",
         "stringArrayRequired": "Use a string array."
+      }
+    },
+    "sourceControl": {
+      "actionModel": {
+        "invalidArgs": "The CLI arguments for {{value0}} are invalid. Fix them in Settings → Source Control AI."
       }
     },
     "ssh": {
@@ -2622,14 +2864,12 @@
       }
     },
     "discard": {
+      "deleteUntrackedFilesDescription": "This will permanently delete these {{count}} untracked files. This cannot be undone.",
       "deleteUntrackedFilesDescription_one": "This will permanently delete {{count}} untracked file. This cannot be undone.",
       "deleteUntrackedFilesDescription_other": "This will permanently delete these {{count}} untracked files. This cannot be undone.",
-      "deleteUntrackedTitle_one": "Delete {{count}} untracked file?",
-      "deleteUntrackedTitle_other": "Delete {{count}} untracked files?",
+      "unstagedFilesIncludingUntrackedDescription": "This will revert unstaged changes and permanently delete any untracked files among these {{count}} files. This cannot be undone.",
       "unstagedFilesIncludingUntrackedDescription_one": "This will revert unstaged changes and permanently delete any untracked files among {{count}} file. This cannot be undone.",
-      "unstagedFilesIncludingUntrackedDescription_other": "This will revert unstaged changes and permanently delete any untracked files among these {{count}} files. This cannot be undone.",
-      "deleteUntrackedFilesDescription": "This will permanently delete these {{count}} untracked files. This cannot be undone.",
-      "unstagedFilesIncludingUntrackedDescription": "This will revert unstaged changes and permanently delete any untracked files among these {{count}} files. This cannot be undone."
+      "unstagedFilesIncludingUntrackedDescription_other": "This will revert unstaged changes and permanently delete any untracked files among these {{count}} files. This cannot be undone."
     },
     "textGeneration": {
       "errors": {
@@ -2761,16 +3001,12 @@
       "reopened_other": "Reopened {{count}} terminals",
       "resumed": "{{count}} agent sessions resumed.",
       "resumed_one": "{{count}} agent session resumed.",
-      "resumed_other": "{{count}} agent sessions resumed.",
-      "reopenTerminal": "Reopen {{count}} terminals",
-      "reopened": "Reopened {{count}} terminals",
-      "resumed": "{{count}} agent sessions resumed."
+      "resumed_other": "{{count}} agent sessions resumed."
     },
     "severedDaemonBanner": {
       "count": "{{count}} running terminals",
       "count_one": "{{count}} running terminal",
-      "count_other": "{{count}} running terminals",
-      "count": "{{count}} running terminals"
+      "count_other": "{{count}} running terminals"
     }
   },
   "updates": {

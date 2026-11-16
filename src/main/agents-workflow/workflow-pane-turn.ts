@@ -13,8 +13,8 @@ import {
   TUI_AGENT_CONFIG
 } from '../../shared/agent-launch/catalog/tui-agent-config'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
-import { createRuntimeAutomationRunTerminalObserver } from '../automations/runtime-terminal-run-observer'
-import type { AutomationRunAgentEvidence } from '../automations/automation-run-agent-evidence'
+import { createRuntimeAutomationRunTerminalObserver } from '../automations/observation/runtime-terminal-run-observer'
+import type { AutomationRunAgentEvidence } from '../automations/observation/automation-run-agent-evidence'
 
 export type WorkflowPaneTurnRuntime = Pick<
   OrcaRuntimeService,

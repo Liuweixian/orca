@@ -1,7 +1,7 @@
-import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/non-secure-context-uuid'
+import { createNonSecureContextUuid as createBrowserUuid } from '../../../../shared/identifiers/non-secure-context-uuid'
 import { translate } from '@/i18n/i18n'
-import type { ProjectHostSetup } from '../../../../shared/project-types'
-import type { Repo } from '../../../../shared/repo-types'
+import type { ProjectHostSetup } from '../../../../shared/project/project-types'
+import type { Repo } from '../../../../shared/repository/repo-types'
 import type {
   AgentsWorkflowCreateInput,
   AgentsWorkflowDefinition,

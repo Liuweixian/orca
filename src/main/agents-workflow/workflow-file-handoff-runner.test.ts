@@ -16,7 +16,7 @@ const observer = vi.hoisted(() => ({
   )
 }))
 
-vi.mock('../automations/runtime-terminal-run-observer', () => ({
+vi.mock('../automations/observation/runtime-terminal-run-observer', () => ({
   createRuntimeAutomationRunTerminalObserver: () => observer
 }))
 

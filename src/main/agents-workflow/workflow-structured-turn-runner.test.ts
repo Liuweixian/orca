@@ -97,7 +97,7 @@ function harness() {
         queued: { messageId: 'queued-1', position: 1, state: 'waiting' as const }
       }
     })),
-    journalSnapshot: vi.fn(async () => ({
+    automationRun: vi.fn(async () => ({
       sessionId: 'session-1',
       cursor: { epoch: 'epoch-1', sequence: 2 },
       items: [turnItem()],

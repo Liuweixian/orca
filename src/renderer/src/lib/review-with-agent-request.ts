@@ -1,6 +1,6 @@
-import type { GitHubWorkItem } from '../../../shared/github/work-item-types'
+import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
 import type { GitLabWorkItem } from '../../../shared/gitlab-types'
-import type { LaunchSource } from '../../../shared/telemetry-events'
+import type { LaunchSource } from '../../../shared/telemetry/schemas/telemetry-property-schemas'
 import type { Worktree } from '../../../shared/worktree/types'
 
 export type ReviewWithAgentRequest = {

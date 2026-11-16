@@ -10,7 +10,7 @@ vi.mock('../ai-vault/session-scanner', () => ({
   scanAiVaultSessions: scanner.scanAiVaultSessions
 }))
 
-vi.mock('../ai-vault/session-scanner-agent-parser', () => ({
+vi.mock('../ai-vault/parsing/session-scanner-agent-parser', () => ({
   parseAgentSessionFile: parser.parseAgentSessionFile
 }))
 

@@ -1,4 +1,4 @@
-import { isFolderRepo } from '../../shared/repo-kind'
+import { isFolderRepo } from '../../shared/repository/repo-kind'
 import type { AgentsWorkflowDefinition } from '../../shared/agents-workflow-types'
 import type { RuntimeManagedWorktreeCreateArgs } from '../runtime/workspaces/creation/runtime-managed-worktree-create-types'
 
