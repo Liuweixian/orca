@@ -32,6 +32,12 @@ export function installErrorToastCopyAction(): void {
     }
     return showErrorToast(message, {
       ...data,
+      classNames: {
+        ...data?.classNames,
+        actionButton: ['toast-copy-action', data?.classNames?.actionButton]
+          .filter(Boolean)
+          .join(' ')
+      },
       action: {
         label: translate('menu.copy', 'Copy'),
         onClick: () => void window.api.ui.writeClipboardText(text)

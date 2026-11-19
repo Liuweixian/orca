@@ -3,6 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { MarkdownDocument } from '../../../../../../shared/file-listing/file-document'
 import { useAppStore } from '@/store/index'
 import { translate } from '@/i18n/i18n'
+import { extractIpcErrorMessage } from '@/runtime/errors/ipc-error'
 import '@/lib/workspace/ownership/connection-context'
 import { getConnectionIdFromState } from '@/lib/workspace/ownership/connection-owner-resolution'
 import { statRuntimePath } from '@/runtime/files/metadata/runtime-file-metadata-client'
@@ -137,13 +138,14 @@ export function useMarkdownDocuments(
           return
         }
         if (requestRef.current === requestId) {
+          const detail = extractIpcErrorMessage(err, '')
           toast.error(
-            err instanceof Error
-              ? err.message
-              : translate(
-                  'auto.components.editor.useMarkdownDocuments.listFailed',
-                  'Failed to list Markdown documents.'
-                )
+            translate(
+              'auto.components.editor.useMarkdownDocuments.listFailed',
+              'Failed to list Markdown documents.'
+            ),
+            // Why: the IPC wrapper and class name would only push the reason off the first line.
+            detail ? { description: detail } : undefined
           )
         }
         if (requestRef.current === requestId) {

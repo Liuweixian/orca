@@ -663,9 +663,9 @@ body[data-modal-overlay-open] [data-toasts-raised] [data-sonner-toaster] {
 }
 
 [data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-button] {
-  /* Move Sonner actions below copy to avoid squeezing long notices; align footer text after the icon. */
+  /* Lay the footer under the copy, ending at the card's right edge like a dialog footer. */
   margin-top: 2px;
-  margin-left: 26px;
+  margin-left: auto;
   margin-right: 0;
 }
 
@@ -703,6 +703,18 @@ body[data-modal-overlay-open] [data-toasts-raised] [data-sonner-toaster] {
   [data-sonner-toast][data-styled='true']
   [data-button][data-cancel]:hover {
   background: color-mix(in oklab, var(--secondary) 80%, transparent);
+}
+
+/* Why: the copy affordance reports the notice, it does not drive it; keep it quieter than a retry. */
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-button].toast-copy-action {
+  background: var(--notice-secondary);
+  color: var(--popover-foreground);
+}
+
+[data-sonner-toaster]
+  [data-sonner-toast][data-styled='true']
+  [data-button].toast-copy-action:hover {
+  background: color-mix(in oklab, var(--popover-foreground) 12%, var(--notice-surface));
 }
 
 [data-sonner-toaster] [data-sonner-toast][data-styled='true'] [data-button]:focus-visible {
@@ -744,6 +756,11 @@ body[data-modal-overlay-open]
   color: var(--accent-foreground);
   background: var(--accent);
   border-color: var(--notice-border);
+}
+
+/* Why: tint the fault instead of the whole notice; IPC text stays neutral and readable. */
+[data-sonner-toaster] [data-sonner-toast][data-styled='true'][data-type='error'] [data-icon] {
+  color: var(--destructive);
 }
 
 /* Re-evaluate chat colors where the appearance producer supplies their source colors. */
