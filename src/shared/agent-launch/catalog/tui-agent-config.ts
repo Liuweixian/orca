@@ -1,5 +1,5 @@
 import type { TuiAgent } from './tui-agent'
-import { skipsLinuxOrcaCliRename } from '../../orca-cli-command-name'
+import { skipsLinuxOrcaCliRename } from '../../cli/orca-cli-command-name'
 import type { TuiAgentConfig, TuiAgentConfigSource } from './tui-agent-config-types'
 import { TUI_AGENT_CONFIG_SOURCE } from './tui-agent-config-entries'
 

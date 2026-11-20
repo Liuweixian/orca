@@ -1,7 +1,8 @@
 import type React from 'react'
 
-import type { GlobalSettings } from '../../../../../shared/global-settings-types'
-import { recordStatusBarToggleInteraction } from './appearance-status-bar-toggle-interaction'
+import type { GlobalSettings } from '../../../../../shared/settings/global-settings-types'
+import type { StatusBarItem } from '../../../../../shared/ui-chrome/ui-chrome-types'
+import type { FeatureInteractionId } from '../../../../../shared/feature-education/interactions/feature-interaction-catalog'
 import { SearchableSetting } from '../section-layout/SearchableSetting'
 import { SettingsGroupDisclosure } from '../section-layout/SettingsGroupDisclosure'
 import { SettingsGroupNestedRows, SettingsGroupSubsection } from '../section-layout/SettingsGroup'
@@ -37,6 +38,32 @@ type AppearanceWindowSidebarSectionProps = {
   settings: GlobalSettings
   updateSettings: (updates: Partial<GlobalSettings>) => void
   forceVisiblePrimary?: boolean
+}
+
+function recordStatusBarToggleInteraction(
+  id: StatusBarItem,
+  recordFeatureInteraction: (feature: FeatureInteractionId) => void
+): void {
+  if (id === 'resource-usage') {
+    recordFeatureInteraction('resource-manager')
+  } else if (id === 'ports') {
+    recordFeatureInteraction('ports')
+  } else if (id === 'ssh') {
+    recordFeatureInteraction('ssh')
+  } else if (
+    id === 'claude' ||
+    id === 'codex' ||
+    id === 'gemini' ||
+    id === 'opencode-go' ||
+    id === 'kimi' ||
+    id === 'antigravity' ||
+    id === 'minimax' ||
+    id === 'grok' ||
+    id === 'cursor' ||
+    id === 'muse'
+  ) {
+    recordFeatureInteraction('usage-tracking')
+  }
 }
 
 /** Window & Sidebar appearance section: sidebar/chrome appearance, status bar controls, and layout advanced settings. */

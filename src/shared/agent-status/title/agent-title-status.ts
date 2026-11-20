@@ -22,14 +22,15 @@ import {
 import {
   CURSOR_NATIVE_TITLE_LOWER,
   STRONG_IDLE_KEYWORDS_RE,
-  STRONG_PERMISSION_KEYWORDS_RE,
   STRONG_WORKING_KEYWORDS_RE,
   containsLegacyAgentName,
   isClaudeManagementTitle,
   isPiAgentTitle,
   isPiTerminalTitle,
   isGeminiTerminalTitle,
-  isGrokRotatingWorkingTitle,
+  grokFrameTitleStatus,
+  GROK_PERMISSION_TITLE,
+  GROK_WORKING_TITLE,
   type AgentStatus
 } from './agent-title-core'
 import { isDshTerminalTitle } from './providers/dsh-terminal-title'
@@ -41,6 +42,7 @@ import {
 } from './providers/pi-compatible-synthetic-title'
 import { getPiStateTitleStatus } from './providers/pi-state-title-marker'
 import { getWrapperTitleSegments } from './terminal-title-wrapper-segments'
+import { hasPermissionTitleSegment } from './permission-title-segment'
 import { resolveExplicitTerminalTitleAgentType } from './terminal-title-agent-type'
 import { memoizeTitleClassification } from './terminal-title-classification-memo'
 
@@ -146,7 +148,6 @@ export function normalizeTerminalTitle(title: string): string {
 const GEMINI_DISPLAY_LABEL = 'Gemini CLI'
 const QODER_DISPLAY_LABEL = 'Qoder CLI'
 const QODER_CN_DISPLAY_LABEL = 'Qoder CLI CN'
-const GROK_WORKING_TITLE = '\u280b Grok'
 const QODER_TITLE_GLYPHS = { working: GEMINI_WORKING, permission: '▲', idle: GEMINI_IDLE } as const
 const DESTRUCTIVE_TITLE_STAMPS: ReadonlySet<string> = new Set([
   ...[GEMINI_WORKING, GEMINI_PERMISSION, GEMINI_IDLE].map(
@@ -155,7 +156,8 @@ const DESTRUCTIVE_TITLE_STAMPS: ReadonlySet<string> = new Set([
   ...Object.values(QODER_TITLE_GLYPHS).flatMap((glyph) =>
     [QODER_DISPLAY_LABEL, QODER_CN_DISPLAY_LABEL].map((label) => `${glyph} ${label}`)
   ),
-  GROK_WORKING_TITLE
+  GROK_WORKING_TITLE,
+  GROK_PERMISSION_TITLE
 ])
 
 export function isNormalizedAgentTitleStamp(title: string): boolean {
@@ -197,9 +199,10 @@ function proposeTerminalTitle(title: string): string {
     return canonicalizeBrailleSpinnerFrame(title)
   }
 
-  // Collapse Grok spinner/status churn to one label; idle titles pass through so the final semantic title remains (#7863).
-  if (isGrokRotatingWorkingTitle(title)) {
-    return GROK_WORKING_TITLE
+  // Collapse Grok spinner/activity/blink churn to one label per state; idle titles pass through so the final semantic title remains (#7863).
+  const grokStatus = grokFrameTitleStatus(title)
+  if (grokStatus) {
+    return grokStatus === 'permission' ? GROK_PERMISSION_TITLE : GROK_WORKING_TITLE
   }
 
   return title
@@ -217,18 +220,6 @@ function canonicalizeBrailleSpinnerFrame(title: string): string {
 }
 
 // agy titles carry its conversation summary and its waits arrive only through hooks.
-function hasPermissionTitleSegment(title: string): boolean {
-  return getWrapperTitleSegments(title).some(
-    (segment) =>
-      !AGY_AGENT_NAME_RE.test(segment) &&
-      !titleHasAgentName(segment, 'antigravity') &&
-      (containsLegacyAgentName(segment) ||
-        DROID_AGENT_NAME_RE.test(segment) ||
-        HERMES_AGENT_NAME_RE.test(segment)) &&
-      STRONG_PERMISSION_KEYWORDS_RE.test(segment)
-  )
-}
-
 function computeAgentStatusFromTitle(title: string): AgentStatus | null {
   const buildStatus = getDeepSeekBuildTitleStatus(title)
   if (buildStatus) {
@@ -241,6 +232,10 @@ function computeAgentStatusFromTitle(title: string): AgentStatus | null {
   const cursorStatus = cursorTitleStatus(title)
   if (cursorStatus) {
     return cursorStatus
+  }
+  const grokStatus = grokFrameTitleStatus(title)
+  if (grokStatus) {
+    return grokStatus
   }
   if (!title || isClaudeManagementTitle(title)) {
     return null
@@ -271,8 +266,7 @@ function computeAgentStatusFromTitle(title: string): AgentStatus | null {
       return 'idle'
     }
   }
-  // Why: Codely's waiting state only prefixes its base title with ⏸️; gate on the
-  // codely name so an ordinary pause-emoji task title cannot claim permission.
+  // Why: gate ⏸️ on the codely name, or an ordinary pause-emoji task title would claim permission.
   if (title.includes(CODELY_WAITING) && titleHasAgentName(title, 'codely')) {
     return 'permission'
   }

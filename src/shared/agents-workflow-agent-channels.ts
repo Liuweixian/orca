@@ -201,7 +201,7 @@ export const AGENTS_WORKFLOW_AGENT_CHANNEL_PLANS = {
     fileHandoff: true
   },
   hermes: {
-    channels: ['transcript', 'file', 'snapshot'],
+    channels: ['protocol', 'transcript', 'file', 'snapshot'],
     transcriptSource: 'hermes',
     fileHandoff: true
   },

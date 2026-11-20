@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { AgentsWorkflowDefinition } from '../../shared/agents-workflow-types'
 import type { AgentsWorkflowRun } from '../../shared/agents-workflow-run-types'
-import { LOCAL_EXECUTION_HOST_ID } from '../../shared/execution-host'
+import { LOCAL_EXECUTION_HOST_ID } from '../../shared/execution-host/execution-host'
 import { AgentsWorkflowRunService, type AgentsWorkflowRunPersistence } from './workflow-run-service'
 
 function definition(): AgentsWorkflowDefinition {

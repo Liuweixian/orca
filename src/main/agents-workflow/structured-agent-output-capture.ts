@@ -3,8 +3,8 @@ import type {
   AgentJournalTurnItem
 } from '../../shared/agent-session/journal/agent-session-journal-types'
 import { isRootAgentJournalItem } from '../../shared/agent-session/journal/agent-session-journal-producer'
-import { withoutNativeChatVisualDirectiveLines } from '../../shared/native-chat/native-chat-visual-directive'
-import { structuredAgentSessionCommandTurnItemIds } from '../../shared/agent-session/structured-agent-session-command-entry'
+import { withoutNativeChatVisualDirectiveLines } from '../../shared/native-chat/visuals/native-chat-visual-directive'
+import { structuredAgentSessionCommandTurnItemIds } from '../../shared/agent-session/requests/structured-agent-session-command-entry'
 import {
   clampUtf8TextPrefix,
   isUtf8ByteLengthWithinLimit

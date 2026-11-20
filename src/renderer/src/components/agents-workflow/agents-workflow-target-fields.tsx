@@ -18,7 +18,7 @@ import {
   LOCAL_EXECUTION_HOST_ID,
   normalizeExecutionHostId,
   parseExecutionHostId
-} from '../../../../shared/execution-host'
+} from '../../../../shared/execution-host/execution-host'
 import { buildWorkspaceRunContext } from '../../../../shared/work-items/task-source-context'
 import type {
   AgentsWorkflowDefinition,

@@ -1,5 +1,5 @@
 import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
-import type { GitLabWorkItem } from '../../../shared/gitlab-types'
+import type { GitLabWorkItem } from '../../../shared/gitlab/gitlab-types'
 import type { LaunchSource } from '../../../shared/telemetry/schemas/telemetry-property-schemas'
 import type { Worktree } from '../../../shared/worktree/types'
 

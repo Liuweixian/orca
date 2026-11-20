@@ -4,7 +4,7 @@ import { findFirstIndexedWorktree } from '../../../lib/workspace/ownership/workt
 import type { GitHubWorkItem } from '../../../../../shared/github/work-items/work-item-types'
 import type { JiraIssue } from '../../../../../shared/jira/jira-types'
 import type { LinearIssue } from '../../../../../shared/linear/issue-types'
-import type { GitLabWorkItem } from '../../../../../shared/gitlab-types'
+import type { GitLabWorkItem } from '../../../../../shared/gitlab/gitlab-types'
 import {
   getTaskSourceCacheScope,
   type TaskSourceContext
@@ -24,19 +24,14 @@ import {
 const MAX_HISTORY = 50
 
 // Why: entries may be page sentinels, not just worktree IDs; names keep the "worktree" prefix for call-site stability.
-export type WorktreeNavHistorySimpleViewEntry =
-  | 'tasks'
-  | 'automations'
-  | 'agents-workflow'
-  | 'artifacts'
-  | 'skills'
-const SIMPLE_VIEW_ENTRIES: readonly WorktreeNavHistorySimpleViewEntry[] = [
+const SIMPLE_VIEW_ENTRIES = [
   'tasks',
   'automations',
   'agents-workflow',
   'artifacts',
   'skills'
-]
+] as const
+export type WorktreeNavHistorySimpleViewEntry = (typeof SIMPLE_VIEW_ENTRIES)[number]
 export type WorktreeNavHistoryTaskDetailEntry =
   | {
       kind: 'task-detail'
@@ -157,7 +152,9 @@ function getHistoryEntryKey(entry: WorktreeNavHistoryEntry): string {
   return `view:task-detail:linear:${sourceScope}:${entry.issue.workspaceId ?? 'selected'}:${entry.issue.id}`
 }
 
-function isLiveEntry(entry: WorktreeNavHistoryEntry, state: AppState): boolean {
+type WorkspaceCatalog = Pick<AppState, 'folderWorkspaces' | 'worktreesByRepo'>
+
+function isLiveEntry(entry: WorktreeNavHistoryEntry, state: WorkspaceCatalog): boolean {
   if (isViewEntry(entry)) {
     return true
   }
@@ -196,6 +193,21 @@ export function appendHistoryEntry(
     worktreeNavHistory: truncated,
     worktreeNavHistoryIndex: nextIndex
   }
+}
+
+/** The most recent still-existing workspace at or before the current history entry, skipping pages. */
+export function findLastVisitedLiveWorkspaceId(
+  history: readonly WorktreeNavHistoryEntry[],
+  index: number,
+  catalog: WorkspaceCatalog
+): string | null {
+  for (let i = index; i >= 0; i--) {
+    const entry = history[i]
+    if (!isViewEntry(entry) && isLiveEntry(entry, catalog)) {
+      return entry
+    }
+  }
+  return null
 }
 
 export function findPrevLiveWorktreeHistoryIndex(state: AppState): number | null {

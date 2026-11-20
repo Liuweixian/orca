@@ -4,7 +4,7 @@
 // never produce overlapping cards and the model never has to reason about canvas coordinates.
 
 import { z } from 'zod'
-import { LOCAL_EXECUTION_HOST_ID } from './execution-host'
+import { LOCAL_EXECUTION_HOST_ID } from './execution-host/execution-host'
 import type { TuiAgent } from './agent-launch/catalog/tui-agent'
 import { validateParsedAgentsWorkflowDefinition } from './agents-workflow-graph-validation'
 import type { AgentsWorkflowValidationIssue } from './agents-workflow-graph'

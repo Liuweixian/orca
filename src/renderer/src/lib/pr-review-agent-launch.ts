@@ -12,7 +12,7 @@ import {
 } from '../../../shared/pr-review-prompt'
 import type { TuiAgent } from '../../../shared/agent-launch/catalog/tui-agent'
 import type { GitHubWorkItem } from '../../../shared/github/work-items/work-item-types'
-import type { GitLabWorkItem } from '../../../shared/gitlab-types'
+import type { GitLabWorkItem } from '../../../shared/gitlab/gitlab-types'
 import { UI_LANGUAGE_NATIVE_NAMES } from '../../../shared/i18n/ui-language'
 import type { LaunchSource } from '../../../shared/telemetry/schemas/telemetry-property-schemas'
 import type { Worktree } from '../../../shared/worktree/types'

@@ -4,7 +4,7 @@ import '@testing-library/jest-dom/vitest'
 import { act, cleanup, fireEvent, render, waitFor } from '@testing-library/react'
 import type { SearchAddon } from '@xterm/addon-search'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import TerminalSearch from './TerminalSearch'
+import TerminalSearch from './terminal-pane/search/TerminalSearch'
 
 vi.mock('@/i18n/i18n', () => ({
   translate: (_key: string, fallback: string) => fallback

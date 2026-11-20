@@ -7,7 +7,7 @@ import { LoadedStateParsingOperations } from './profile-loading/loaded-state-par
 import { StateSerializationSecretHandlingOperations } from './profile-writing/state-serialization-secret-handling'
 import { PrimaryStateWriteOperations } from './profile-writing/primary-state-writes'
 import { scheduleSave, WriteSchedulingOperations } from './profile-writing/write-scheduling'
-import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../shared/layout-owner-switch'
+import { ORCA_LAYOUT_OWNER_IS_MAIN } from '../../../shared/workspace-layout/layout-owner-switch'
 import { WriteFlushBarrierOperations } from './profile-writing/write-flush-barriers'
 import { ProfilePreferences } from './profile-preferences/profile-preferences'
 import { RepoLifecycleOperations } from './project-catalog/repo-lifecycle-operations'
@@ -21,6 +21,7 @@ import { ProjectCollectionOperations } from './project-catalog/project-collectio
 import { AutomationPersistence } from './automation-state/automation-persistence'
 import { AgentsWorkflowPersistence } from './agents-workflow-persistence'
 import { MobileTabSelectionPersistence } from './profile-preferences/mobile-tab-selection-persistence'
+import { BotPersistence } from './bot-state/bot-persistence'
 import { RemoteLayoutSnapshotPersistence } from '../../remote-layout-snapshot/remote-layout-snapshot-persistence'
 import { HostRepoCatalogSnapshotPersistence } from '../../host-repo-catalog-snapshot/host-repo-catalog-snapshot-persistence'
 import { SparsePresetPersistence } from './project-catalog/sparse-preset-persistence'
@@ -38,6 +39,7 @@ export type StoreDomainOperations = WriteSchedulingOperations &
   ProjectCollectionOperations &
   RepoLifecycleOperations &
   MobileTabSelectionPersistence &
+  BotPersistence &
   RemoteLayoutSnapshotPersistence &
   HostRepoCatalogSnapshotPersistence &
   SparsePresetPersistence &
@@ -79,6 +81,7 @@ export type StoreDomains = {
   automations: AutomationPersistence
   agentsWorkflows: AgentsWorkflowPersistence
   mobileTabSelections: MobileTabSelectionPersistence
+  bots: BotPersistence
   remoteLayoutSnapshots: RemoteLayoutSnapshotPersistence
   hostRepoCatalogSnapshots: HostRepoCatalogSnapshotPersistence
   sparsePresets: SparsePresetPersistence
@@ -98,6 +101,7 @@ export const STORE_DOMAIN_OPERATION_CLASSES = [
   ProjectCollectionOperations,
   RepoLifecycleOperations,
   MobileTabSelectionPersistence,
+  BotPersistence,
   RemoteLayoutSnapshotPersistence,
   HostRepoCatalogSnapshotPersistence,
   SparsePresetPersistence,
@@ -156,7 +160,9 @@ export function createStoreDomains(runtime: StoreRuntimeState): StoreDomains {
   const remoteLayoutSnapshots = new RemoteLayoutSnapshotPersistence(runtime, scheduling)
   const sparsePresets = new SparsePresetPersistence(runtime, scheduling)
   const ptyBindings = new PtyBindingPersistenceOperations(runtime, sessions)
-  const sshProfiles = new SshProfileOperations(runtime, scheduling, repos)
+  const sshProfiles = new SshProfileOperations(runtime, scheduling, repos, () =>
+    serialization.sessionSaveBaseline.clear()
+  )
   const retiredWorktreeNames = new RetiredWorktreeNamePersistence(runtime, scheduling)
   const sshLeases = new SshLeaseRecoveryOperations(
     runtime,
@@ -185,6 +191,7 @@ export function createStoreDomains(runtime: StoreRuntimeState): StoreDomains {
     automations,
     agentsWorkflows,
     mobileTabSelections,
+    bots: new BotPersistence(runtime, scheduling),
     remoteLayoutSnapshots,
     hostRepoCatalogSnapshots: new HostRepoCatalogSnapshotPersistence(runtime, scheduling),
     sparsePresets,

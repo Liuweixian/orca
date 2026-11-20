@@ -4,17 +4,15 @@ import {
   createStructuredAgentSessionOperationId,
   structuredAgentSessionPayloadFingerprint
 } from '../../shared/agent-session/lifecycle/operations/structured-agent-session-mutation'
-import {
-  createStructuredAgentSessionId,
-  structuredAgentSessionCreateParams
-} from '../../shared/agent-session/structured-agent-session-create'
+import { structuredAgentSessionCreateParams } from '../../shared/agent-session/lifecycle/operations/structured-agent-session-create'
+import { createOrcaSessionId } from '../../shared/agent-session/identity/orca-session-address'
 import {
   structuredAgentSessionMessageSendMutation,
   structuredAgentSessionSendBody
 } from '../../shared/agent-session/requests/structured-agent-session-send-mutation'
 import type { OrcaRuntimeService } from '../runtime/orca-runtime'
 import type { AgentSessionRecordStore } from '../runtime/agent-session/records/agent-session-record-store'
-import { closeStructuredAgentSessionChild } from '../runtime/agent-session/structured-agent-session-close'
+import { closeStructuredAgentSessionChild } from '../runtime/agent-session/lifecycle/structured-agent-session-close'
 import { structuredAgentRuntimeMetadata } from '../runtime/agent-session/installation/structured-agent-runtime-metadata'
 import { observeStructuredSession } from '../runtime/orchestration/terminal-authority/structured-sessions/structured-worker-authority'
 import { createStructuredAgentSessionForWorktree } from '../runtime/rpc/methods/structured-sessions/creation/structured-agent-session-create'
@@ -137,7 +135,7 @@ export class WorkflowStructuredTurnRunner implements AgentsWorkflowStructuredTur
 
     const caller = { callerKey: `agents-workflow:${runId}` }
     const create = structuredAgentSessionCreateParams({
-      sessionId: createStructuredAgentSessionId(metadata.definition.agent, randomUUID),
+      sessionId: createOrcaSessionId(randomUUID),
       worktree: selector,
       agent: metadata.definition.agent,
       randomUuid: randomUUID

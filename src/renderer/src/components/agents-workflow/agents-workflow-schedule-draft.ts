@@ -22,6 +22,7 @@ export function toScheduleDraft(schedule: AgentsWorkflowSchedule | null): Automa
     prompt: '',
     agentId: 'claude',
     extraAgentArgs: '',
+    bot: null,
     projectId: '',
     workspaceMode: 'new_per_run',
     workspaceId: '',

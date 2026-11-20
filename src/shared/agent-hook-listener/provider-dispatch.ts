@@ -60,6 +60,8 @@ export function normalizeProviderEvent(input: {
   envelope: Record<string, unknown>
   extractedPrompt: ExtractedPromptText
   previousOpenCodeMainAgent?: AgentMainAgentStatus
+  /** A new Claude prompt_id opened the turn on this event. */
+  opensTurn?: boolean
 }): ProviderDispatchResult {
   const { state, source, promptText, paneKey, hookPayload, envelope, extractedPrompt } = input
   // Ephemeral side chats share the pane but must not replace its recorded main turn.
@@ -91,7 +93,14 @@ export function normalizeProviderEvent(input: {
       )
       break
     case 'claude':
-      payload = normalizeClaudeEvent(state, eventName, promptText, paneKey, hookPayload)
+      payload = normalizeClaudeEvent(
+        state,
+        eventName,
+        promptText,
+        paneKey,
+        hookPayload,
+        input.opensTurn
+      )
       break
     case 'codex':
       payload = normalizeCodexEvent(

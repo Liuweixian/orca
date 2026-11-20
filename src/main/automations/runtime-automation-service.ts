@@ -22,40 +22,16 @@ import {
   createRuntimeAutomationRunTerminalObserver
 } from './observation/runtime-terminal-run-observer'
 import { closeEarlierHookReviewRunTerminals } from './terminal-retention/hook-review-blocked-run-terminals'
+import { bindBotAutomations, botAutomationServiceOptions } from './bot-automation-service-wiring'
 import {
   runPaneKeepsRunPty,
   runTabWasFocused
 } from './terminal-retention/run-terminal-workspace-session'
-import type { AutomationRun } from '../../shared/automations/history/automation-run'
-import type { RunCompletionSubject } from './observation/automation-run-agent-evidence'
+import { findLatestAutomationRun } from './observation/latest-automation-run'
 import { automationRunSetupSkip } from './launch/automation-run-setup-skip'
 import { automationSystemSettled } from './dispatch/automation-wake-settle'
 
 const MAX_REMEMBERED_LAUNCHES = 256
-
-/** Why: the observer accepts any run subject, but only an automation run owns a launch receipt and the pane and history this cleanup compares; workflow turns name no automation. */
-function findLatestAutomationRun(
-  store: Store,
-  subject: RunCompletionSubject | undefined
-): AutomationRun | undefined {
-  if (!subject?.automationId) {
-    return undefined
-  }
-  return (
-    store
-      .listAutomationRuns(subject.automationId)
-      .find((entry) => entry.terminalPaneKey === subject.terminalPaneKey) ??
-    // Why: a subject that still carries run identity names its run even before the run is stored.
-    asAutomationRun(subject)
-  )
-}
-
-function asAutomationRun(subject: RunCompletionSubject | undefined): AutomationRun | undefined {
-  // oxlint-disable-next-line typescript/consistent-type-assertions -- SAFETY: only the automation run that produced the subject carries these fields.
-  return subject && 'id' in subject && 'sessionKind' in subject
-    ? (subject as AutomationRun)
-    : undefined
-}
 
 export function createRuntimeAutomationService(input: {
   store: Store
@@ -190,6 +166,7 @@ export function createRuntimeAutomationService(input: {
     },
     onAutomationsChanged: (payload) => runtime.notifyAutomationsChanged(payload),
     allowRemoteHostScheduling: input.allowRemoteHostScheduling,
+    ...botAutomationServiceOptions(runtime),
     chatDispatcher: async (request) => {
       const { terminalHandle, ...launched } = await launchAutomationChatAgent(runtime, {
         ...request,
@@ -242,6 +219,7 @@ export function createRuntimeAutomationService(input: {
   })
   service.wakeGate.settled = () => automationSystemSettled()
   runtime.setAutomationService(service)
+  bindBotAutomations(service, store, runtime)
   return service
 }
 

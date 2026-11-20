@@ -27,18 +27,18 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { shouldIgnoreTerminalMenuPointerDownOutside } from './terminal-context-menu-dismiss'
 import type { TerminalQuickCommand } from '../../../../../shared/terminal/quick-commands/terminal-quick-command-types'
-import type { ExecutionHostId } from '../../../../../shared/execution-host'
+import type { ExecutionHostId } from '../../../../../shared/execution-host/execution-host'
 import type { ManagedPane } from '@/lib/pane-manager/pane-manager-types'
 import {
   formatOptionalPrimaryShortcutLabel,
   formatPrimaryShortcutLabel
-} from '@/hooks/useShortcutLabel'
+} from '@/lib/keyboard/useShortcutLabel'
 import type { KeybindingOverrides } from '../../../../../shared/keybindings/types'
 import { useTranslate } from '@/i18n/use-translate'
 import { AgentSessionContinuationMenuItem } from '../../agent-session-continuation/AgentSessionContinuationMenuItem'
 import { AgentSessionContextCopyMenuItem } from '../clipboard/AgentSessionContextCopyMenuItem'
 import { ClearPaneTitleMenuItem } from '../titles/ClearPaneTitleMenuItem'
-import type { TerminalQuickCommandMenuHost } from '@/hooks/use-terminal-quick-command-hosts'
+import type { TerminalQuickCommandMenuHost } from '@/lib/terminal/quick-commands/use-terminal-quick-command-hosts'
 import { TerminalQuickCommandsSubmenu } from '../quick-commands/TerminalQuickCommandsSubmenu'
 import { TerminalSendToAgentSubmenu } from '../TerminalSendToAgentSubmenu'
 import { sendTerminalSelectionToAgentTarget } from '../terminal-pane-menu-send-selection-to-agent'
